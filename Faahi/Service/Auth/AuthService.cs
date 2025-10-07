@@ -345,9 +345,7 @@ namespace Faahi.Service.Auth
             var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
             DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
             string emailPart = email.Substring(0, 3).ToUpper();
-            var table = "am_emailVerifications";
-            var am_table = await _context.am_table_next_key.FindAsync(table);
-            var key = Convert.ToInt16(am_table.next_key);
+            
             am_emailVerifications am_Email = new am_emailVerifications
             {
 
@@ -373,8 +371,7 @@ namespace Faahi.Service.Auth
             var emailService = new EmailService(_configuration);
             await emailService.SendEmailAsync(email, subject, body);
 
-            am_table.next_key = key + 1;
-            _context.am_table_next_key.Update(am_table);
+            
             await _context.SaveChangesAsync();
             return new ServiceResult<am_emailVerifications>
             {
@@ -414,9 +411,7 @@ namespace Faahi.Service.Auth
             var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
             DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
             string emailPart = email.Substring(0, 3).ToUpper();
-            var table = "am_emailVerifications";
-            var am_table = await _context.am_table_next_key.FindAsync(table);
-            var key = Convert.ToInt16(am_table.next_key);
+          
             am_emailVerifications am_Email = new am_emailVerifications
             {
 
@@ -442,8 +437,7 @@ namespace Faahi.Service.Auth
             var emailService = new EmailService(_configuration);
             await emailService.SendEmailAsync(email, subject, body);
 
-            am_table.next_key = key + 1;
-            _context.am_table_next_key.Update(am_table);
+           
             await _context.SaveChangesAsync();
             return new ServiceResult<am_emailVerifications>
             {
@@ -743,9 +737,7 @@ namespace Faahi.Service.Auth
             var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
             DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
             string emailPart = email.Substring(0, 3).ToUpper();
-            var table = "am_emailVerifications";
-            var am_table = await _context.am_table_next_key.FindAsync(table);
-            var key = Convert.ToInt16(am_table.next_key);
+           
 
             if (existing != null)
             {
@@ -804,8 +796,7 @@ namespace Faahi.Service.Auth
             var emailService = new EmailService(_configuration);
             await emailService.SendEmailAsync(email, subject, body);
 
-            am_table.next_key = key + 1;
-            _context.am_table_next_key.Update(am_table);
+          
             await _context.SaveChangesAsync();
             return new ServiceResult<string>
             {

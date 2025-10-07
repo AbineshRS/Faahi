@@ -313,9 +313,7 @@ namespace Faahi.Service.CoBusiness
             var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
             DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
             string emailPart = email.Substring(0, 3).ToUpper();
-            var table = "am_emailVerifications";
-            var am_table = await _context.am_table_next_key.FindAsync(table);
-            var key = Convert.ToInt16(am_table.next_key);
+        
 
             if (existing != null)
             {
@@ -374,8 +372,7 @@ namespace Faahi.Service.CoBusiness
             var emailService = new EmailService(_configuration);
             await emailService.SendEmailAsync(email, subject, body);
 
-            am_table.next_key = key + 1;
-            _context.am_table_next_key.Update(am_table);
+   
             await _context.SaveChangesAsync();
             return new ServiceResult<string>
             {
@@ -708,9 +705,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
 
-            // Get next key
-            var tableName = "co_avl_countries";
-            var amTable = await _context.am_table_next_key.FindAsync(tableName);
+         
 
 
             // Assign values
@@ -725,8 +720,7 @@ namespace Faahi.Service.CoBusiness
             await _context.co_avl_countries.AddAsync(co_Avl_Countries);
 
             // Increment next_key
-            amTable.next_key += 1;
-            _context.am_table_next_key.Update(amTable);
+          
 
 
             await _context.SaveChangesAsync();
@@ -857,8 +851,7 @@ namespace Faahi.Service.CoBusiness
             im_site.status = "T";
             foreach (var im_item in im_site.im_item_site)
             {
-                var tableName2 = "im_item_site";
-                var amTable2 = await _context.am_table_next_key.FindAsync(tableName2);
+               
 
                 im_item.item_id = Guid.CreateVersion7();
                 im_item.site_id = im_site.site_id;
@@ -874,8 +867,6 @@ namespace Faahi.Service.CoBusiness
                 im_item.on_hold = im_item.on_hold;
                 im_item.status = im_item.status;
 
-                amTable2.next_key += 1;
-                _context.am_table_next_key.Update(amTable2);
 
             }
            
