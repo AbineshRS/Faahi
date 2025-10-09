@@ -1074,11 +1074,12 @@ namespace Faahi.Service.CoBusiness
             while (exists);
             var imsite= await _context.im_site.FirstOrDefaultAsync(a => a.site_id == im_Site_Users.site_id);
             var company_user = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == imsite.company_id);
-            im_Site_Users.company_id = im_Site_Users.company_id;
+            im_Site_Users.company_id = company_user.company_id;
             string sitePrefix = imsite.site_name.Length >= 2 ? imsite.site_name.Substring(0, 2) : imsite.site_name;
             string firstNamePrefix = im_Site_Users.firstName.Length >= 2 ? im_Site_Users.firstName.Substring(0, 2) : im_Site_Users.firstName;
 
             im_Site_Users.site_user_code = sitePrefix+firstNamePrefix+ "-"+ Convert.ToString(userCode);
+            string without_hased_password = im_Site_Users.password;
             var hasedpassword = PasswordHelper.HashPassword(im_Site_Users.password);
             im_Site_Users.password = hasedpassword;
             im_Site_Users.email = im_Site_Users.email;
@@ -1090,12 +1091,110 @@ namespace Faahi.Service.CoBusiness
             im_Site_Users.status = "T";
             _context.im_site_users.Add(im_Site_Users);
             await _context.SaveChangesAsync();
+
+            var email_send = Send_Emails.EmailBody_site_users(im_Site_Users.fullName,im_Site_Users.site_user_code, without_hased_password);
+            string subject = "Welcome to Faahi – Your Site User Account is Ready!";
+            var emailService = new EmailService(_configuration);
+            await emailService.SendEmailAsync(im_Site_Users.email, subject, email_send);
+
             return new ServiceResult<im_site_users>
             {
                 Success = true,
                 Status = 1,
                 Message = "Success",
                 Data = im_Site_Users
+            };
+        }
+        public async Task<ServiceResult<im_site_users>> site_user(Guid user_id)
+        {
+            if (_context.im_site_users == null)
+            {
+                return new ServiceResult<im_site_users>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "no data found"
+                };
+            }
+            var site_user = await _context.im_site_users.FirstOrDefaultAsync(a => a.userId == user_id);
+            if (site_user == null)
+            {
+                return new ServiceResult<im_site_users>
+                {
+                    Success = false,
+                    Status = -2,
+                    Message = "NOt found"
+                };
+            }
+            return new ServiceResult<im_site_users>
+            {
+                Success = true,
+                Status = 1,
+                Data = site_user
+            };
+        }
+        public async Task<ServiceResult<List<im_site_users>>> site_user_list(Guid site_id)
+        {
+            if (_context.im_site_users == null)
+            {
+                return new ServiceResult<List<im_site_users>>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "no data found"
+                };
+            }
+            var site_user = await _context.im_site_users.Where(a=>a.site_id== site_id).ToListAsync();
+            if (site_user == null)
+            {
+                return new ServiceResult<List<im_site_users>>
+                {
+                    Success = false,
+                    Status = -2,
+                    Message = "NOt found"
+                };
+            }
+            return new ServiceResult<List<im_site_users>>
+            {
+                Success = true,
+                Status = 1,
+                Data = site_user
+            };
+        }
+        public async Task<ServiceResult<im_site_users>> Update_site_users(Guid userId, im_site_users im_Site_Users)
+        {
+            if(userId == null || im_Site_Users == null)
+            {
+                return new ServiceResult<im_site_users>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "No data found"
+                };
+            }
+            var site_user = await _context.im_site_users.FirstOrDefaultAsync(a => a.userId == userId);
+            
+            site_user.site_id = im_Site_Users.site_id;
+            var imsite = await _context.im_site.FirstOrDefaultAsync(a => a.site_id == im_Site_Users.site_id);
+            var company_user = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == imsite.company_id);
+            site_user.company_id = company_user.company_id;
+
+            site_user.firstName = im_Site_Users.firstName;
+            site_user.lastName = im_Site_Users.lastName;
+            site_user.fullName = im_Site_Users.firstName + " " + im_Site_Users.lastName;
+            //site_user.email = im_Site_Users.email;
+            site_user.phoneNumber= im_Site_Users.phoneNumber;
+            site_user.address= im_Site_Users.address;
+            site_user.status= im_Site_Users.status;
+
+            _context.im_site_users.Update(site_user);
+            await _context.SaveChangesAsync();
+            return new ServiceResult<im_site_users>
+            {
+                Success = true,
+                Status = 1,
+                Message = "Success",
+                Data = site_user
             };
         }
         public async Task<ServiceResult<List<co_business>>> Dekiru(string searchTerm)

@@ -204,6 +204,43 @@ namespace Faahi.Controllers.Cobusiness
             var created = await _co_businessService.Add_site_users(im_Site_Users);
             return Ok(created);
         }
+        [Authorize]
+        [HttpGet]
+        [Route("site_user/{user_id}")]
+        public async Task<IActionResult> site_user(Guid user_id)
+        {
+            if (user_id == null)
+            {
+                return Ok("No data found");
+            }
+            var user_list = await _co_businessService.site_user(user_id);
+            return Ok(user_list);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("site_user_list/{site_id}")]
+        public async Task<IActionResult> site_user_list(Guid site_id)
+        {
+            if (site_id == null)
+            {
+                return Ok("No data found");
+            }
+            var user_list = await _co_businessService.site_user_list(site_id);
+
+            return Ok(user_list);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("update_site_user/{user_id}")]
+        public async Task<ActionResult<im_site_users>> Update_site_user(Guid user_id, im_site_users im_Site_Users)
+        {
+            if (user_id == null || im_Site_Users == null)
+            {
+                return Ok("not found");
+            }
+            var updated = await _co_businessService.Update_site_users(user_id,im_Site_Users);
+            return Ok(updated);
+        }
         [HttpGet]
         [Route("Dekiru/{searchTerm}")]
         public async Task<ActionResult> Dekiru(string searchTerm)
