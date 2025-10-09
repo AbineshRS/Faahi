@@ -10,6 +10,9 @@ namespace Faahi.Model.Shared_tables
         [Column(TypeName = "uniqueidentifier")]
         public Guid party_id { get; set; }
 
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? vsco_id { get; set; } = null;
+
         [Column(TypeName = "varchar(20)")]
         public string party_type { get; set; } = null;
 

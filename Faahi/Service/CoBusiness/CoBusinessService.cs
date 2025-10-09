@@ -1035,6 +1035,69 @@ namespace Faahi.Service.CoBusiness
                 Data = imsite
             };
         }
+        public async Task<ServiceResult<im_site_users>> Add_site_users(im_site_users im_Site_Users)
+        {
+            if(im_Site_Users == null)
+            {
+                return new ServiceResult<im_site_users>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "no data found"
+                };
+            }
+            var site_users = await _context.im_site_users.FirstOrDefaultAsync(a => a.email == im_Site_Users.email);
+            if(site_users != null)
+            {
+                return new ServiceResult<im_site_users>
+                {
+                    Success = false,
+                    Status = -2,
+                    Message = "Email already Exisit"
+                };
+            }
+                
+            im_Site_Users.userId = Guid.CreateVersion7();
+            im_Site_Users.site_id = im_Site_Users.site_id;
+            im_Site_Users.firstName = im_Site_Users.firstName;
+            im_Site_Users.lastName = im_Site_Users.lastName;
+            im_Site_Users.fullName=im_Site_Users.firstName + " " + im_Site_Users.lastName;
+            var random = new Random();
+            string userCode;
+            bool exists;
+
+            do
+            {
+                userCode = random.Next(100000, 999999).ToString();
+                exists = await _context.im_site_users.AnyAsync(v => v.site_user_code == userCode);
+            }
+            while (exists);
+            var imsite= await _context.im_site.FirstOrDefaultAsync(a => a.site_id == im_Site_Users.site_id);
+            var company_user = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == imsite.company_id);
+            im_Site_Users.company_id = im_Site_Users.company_id;
+            string sitePrefix = imsite.site_name.Length >= 2 ? imsite.site_name.Substring(0, 2) : imsite.site_name;
+            string firstNamePrefix = im_Site_Users.firstName.Length >= 2 ? im_Site_Users.firstName.Substring(0, 2) : im_Site_Users.firstName;
+
+            im_Site_Users.site_user_code = sitePrefix+firstNamePrefix+ "-"+ Convert.ToString(userCode);
+            var hasedpassword = PasswordHelper.HashPassword(im_Site_Users.password);
+            im_Site_Users.password = hasedpassword;
+            im_Site_Users.email = im_Site_Users.email;
+            im_Site_Users.userRole = im_Site_Users.userRole;
+            im_Site_Users.created_at = DateTime.Now;
+            im_Site_Users.edit_user_id = company_user.name;
+            im_Site_Users.phoneNumber= im_Site_Users.phoneNumber;
+            im_Site_Users.address= im_Site_Users.address;
+            im_Site_Users.status = "T";
+            _context.im_site_users.Add(im_Site_Users);
+            await _context.SaveChangesAsync();
+            return new ServiceResult<im_site_users>
+            {
+                Success = true,
+                Status = 1,
+                Message = "Success",
+                Data = im_Site_Users
+            };
+        }
         public async Task<ServiceResult<List<co_business>>> Dekiru(string searchTerm)
         {
             FilterMacros.Add<string, string, bool>(

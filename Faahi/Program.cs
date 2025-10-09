@@ -4,6 +4,7 @@ using Faahi.Service.CoBusiness;
 using Faahi.Service.Email;
 using Faahi.Service.im_products;
 using Faahi.Service.im_products.category;
+using Faahi.Service.im_products.im_purchase;
 using Faahi.Service.im_products.im_tags;
 using Faahi.Service.PartyService;
 using Faahi.Service.table_key;
@@ -80,6 +81,7 @@ builder.Services.AddScoped<IPartyService,PartyService>();
 builder.Services.AddScoped<ICategory,CategoryService>();
 builder.Services.AddScoped<Iim_tags,im_tags>();
 builder.Services.AddScoped<IUser,User_service>();
+builder.Services.AddScoped<Iim_purchase,im_purchase_service>();
 
 var app = builder.Build();
 

@@ -192,6 +192,18 @@ namespace Faahi.Controllers.Cobusiness
             var updated = await _co_businessService.Update_imsite(site_id, imsite);
             return Ok(updated);
         }
+        [Authorize]
+        [HttpPost]
+        [Route("add_site_users")]
+        public async Task<ActionResult<im_site_users>> Add_site_users(im_site_users im_Site_Users)
+        {
+            if (im_Site_Users == null)
+            {
+                return Ok("no data found");
+            }
+            var created = await _co_businessService.Add_site_users(im_Site_Users);
+            return Ok(created);
+        }
         [HttpGet]
         [Route("Dekiru/{searchTerm}")]
         public async Task<ActionResult> Dekiru(string searchTerm)

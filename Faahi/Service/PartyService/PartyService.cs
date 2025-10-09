@@ -26,23 +26,10 @@ namespace Faahi.Service.PartyService
                     Status = -1
                 };
             }
-            //var table = "st_Parties";
-            //var am_table = await _context.am_table_next_key.FindAsync(table);
-            //var next_key = Convert.ToInt16(am_table.next_key);
-
-            //var table2 = "st_PartyRoles";
-            //var am_table2 = await _context.am_table_next_key.FindAsync(table2);
-            //var next_key2 = Convert.ToInt16(am_table2.next_key);
-
-            //var table3 = "st_PartyAddresses";
-            //var am_table3 = await _context.am_table_next_key.FindAsync(table3);
-            //var next_key3 = Convert.ToInt16(am_table3.next_key);
-
-            //var table4 = "st_Parties";
-            //var am_table4 = await _context.am_table_next_key.FindAsync(table4);
-            //var next_key4 = Convert.ToInt16(am_table4.next_key);
+            
 
             parties.party_id = Guid.CreateVersion7();
+            parties.vsco_id = parties.vsco_id;
             parties.party_type = parties.party_type;
             parties.display_name=parties.display_name;
             parties.legal_name=parties.legal_name;

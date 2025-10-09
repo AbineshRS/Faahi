@@ -64,7 +64,7 @@ namespace Faahi.Service.im_products.category
         }
         public async Task<ServiceResult<im_item_subcategory>> Create_sub_category(im_item_subcategory subcategory, string item_class_id)
         {
-            if (subcategory == null || item_class_id == null)
+            if (subcategory == null || string.IsNullOrWhiteSpace(item_class_id))
             {
                 return new ServiceResult<im_item_subcategory>
                 {
@@ -73,31 +73,55 @@ namespace Faahi.Service.im_products.category
                     Status = -1,
                 };
             }
-            var guid_item_class_id=Guid.Parse(item_class_id);
-            var category = await _context.im_item_Category.Include(a => a.im_item_subcategory).FirstOrDefaultAsync(a => a.item_class_id == guid_item_class_id);
-           
-            im_item_Category im_Item_Category = new im_item_Category();
 
-            subcategory.item_subclass_id = Guid.CreateVersion7();
-            subcategory.item_class_id = category.item_class_id;
+            // Safely parse the incoming item_class_id
+            if (!Guid.TryParse(item_class_id, out Guid guid_item_class_id))
+            {
+                return new ServiceResult<im_item_subcategory>
+                {
+                    Success = false,
+                    Message = "Invalid item_class_id",
+                    Status = -1,
+                };
+            }
+
+            // Load the category with tracking
+            var category = await _context.im_item_Category
+                .Include(c => c.im_item_subcategory) // Include the navigation
+                .FirstOrDefaultAsync(c => c.item_class_id == guid_item_class_id);
+
+            if (category == null)
+            {
+                return new ServiceResult<im_item_subcategory>
+                {
+                    Success = false,
+                    Message = "Item category not found",
+                    Status = -1,
+                };
+            }
+
+            // Assign necessary fields
+            subcategory.item_subclass_id = Guid.NewGuid(); // Or use Guid.CreateVersion7() if available
+            subcategory.item_class_id = category.item_class_id; // Foreign key
             subcategory.company_id = category.company_id;
-            subcategory.description = subcategory.description;
-            subcategory.edit_user_id = subcategory.edit_user_id;
             subcategory.edit_date_time = DateTime.Now;
-            subcategory.status = subcategory.status;
 
+            // Add to the parent category's navigation property
             category.im_item_subcategory.Add(subcategory);
+            _context.Entry(subcategory).State = EntityState.Added;
 
+            // Save all changes
             await _context.SaveChangesAsync();
+
             return new ServiceResult<im_item_subcategory>
             {
                 Success = true,
-                Message = "Success",
+                Message = "Subcategory created successfully",
                 Status = 1,
                 Data = subcategory
             };
-
         }
+
         public async Task<ServiceResult<List<im_item_Category>>> categoryList()
         {
             if (_context.im_item_Category == null)

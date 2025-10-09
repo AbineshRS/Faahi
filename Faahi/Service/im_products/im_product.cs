@@ -234,9 +234,7 @@ namespace Faahi.Service.im_products
         }
         public async Task<ActionResult<ServiceResult<string>>> UploadMutiple_image(IFormFile[] formFile, string product_id, string variant_id)
         {
-            var table = "im_ProductImages";
-            var am_table = await _context.am_table_next_key.FindAsync(table);
-            var next_key = Convert.ToInt32(am_table.next_key);
+            
 
             int itemNumber = 0;
             var guid_varientid= Guid.Parse(variant_id);
@@ -293,8 +291,7 @@ namespace Faahi.Service.im_products
                 };
                 _context.im_ProductImages.Add(image);
             }
-            am_table.next_key = next_key;
-            _context.am_table_next_key.Update(am_table);
+           
 
             await _context.SaveChangesAsync();
 
@@ -307,9 +304,7 @@ namespace Faahi.Service.im_products
         }
         public async Task<ActionResult<ServiceResult<string>>> Upload_vedio(IFormFile[] formFile, string product_id, string variant_id)
         {
-            var table = "im_ProductImages";
-            var am_table = await _context.am_table_next_key.FindAsync(table);
-            var next_key = Convert.ToInt32(am_table.next_key);
+           
             var guid_varientid = Guid.Parse(variant_id);
             var guid_product_id = Guid.Parse(product_id);
             int itemNumber = 0;
@@ -351,7 +346,7 @@ namespace Faahi.Service.im_products
 
 
             // Create target folder: .../ProductSubImages/{variant_id}/video/
-            string folderPath = Path.Combine(_webHostEnvironment.WebRootPath, "Images", "ProductItems", product_id, "ProductSubImages", variant_id, "video");
+            string folderPath = Path.Combine(_webHostEnvironment.WebRootPath, "Images", "ProductItems", product_id,"video",variant_id);
 
             if (!Directory.Exists(folderPath))
             {
@@ -388,8 +383,7 @@ namespace Faahi.Service.im_products
             }
 
             // Update next_key and save
-            am_table.next_key = next_key;
-            _context.am_table_next_key.Update(am_table);
+           
 
             await _context.SaveChangesAsync();
 
@@ -581,6 +575,7 @@ namespace Faahi.Service.im_products
 
                 existingVariant.barcode = varient.barcode;
                 existingVariant.color = varient.color;
+                existingVariant.uom_id = varient.uom_id;
                 existingVariant.size = varient.size;
                 existingVariant.price = varient.price;
                 existingVariant.stock_quantity = varient.stock_quantity;
@@ -620,6 +615,7 @@ namespace Faahi.Service.im_products
             {
                 Success = true,
                 Message = "Product updated successfully.",
+                Data= product
             };
         }
 
@@ -630,24 +626,10 @@ namespace Faahi.Service.im_products
                 return new ServiceResult<im_ProductVariants>
                 {
                     Success = false,
-                    Message = "NO  found"
+                    Message = "Not  found"
                 };
             }
-            //var table = "im_ProductVariants";
-            //var am_table = await _context.am_table_next_key.FindAsync(table);
-            //var next_key = Convert.ToInt16(am_table.next_key);
-
-            //var table2 = "im_Product_Subvariants";
-            //var am_table2 = await _context.am_table_next_key.FindAsync(table2);
-            //var next_key2 = Convert.ToInt16(am_table2.next_key);
-
-            //var table3 = "im_PriceTiers";
-            //var am_table3 = await _context.am_table_next_key.FindAsync(table3);
-            //var next_key3 = Convert.ToInt16(am_table3.next_key);
-
-            //var table4 = "im_ProductVariantPrices";
-            //var am_table4 = await _context.am_table_next_key.FindAsync(table4);
-            //var next_key4 = Convert.ToInt16(am_table4.next_key);
+         
 
             var guid_product_id = Guid.Parse(product_id);
 
@@ -730,21 +712,18 @@ namespace Faahi.Service.im_products
                         im_ProductVariantPrices.Add(price_varient);
                     }
                     price_tair.im_ProductVariantPrices = im_ProductVariantPrices;
-                    im_Product_Subvariants.Add(sub_varient);
+                    im_PriceTiers.Add(price_tair);
                 }
+                sub_varient.im_PriceTiers = im_PriceTiers;
+                im_Product_Subvariants.Add(sub_varient);
             }
             
 
             im_varint.im_Product_Subvariants = im_Product_Subvariants;
+
             im_prodct.im_ProductVariants.Add(im_varint);
+            _context.im_ProductVariants.Add(im_varint);
 
-
-
-            
-
-            //_context.am_table_next_key.Update(am_table);
-            //_context.am_table_next_key.Update(am_table2);
-            //_context.am_table_next_key.Update(am_table3);
 
             await _context.SaveChangesAsync();
             return new ServiceResult<im_ProductVariants>

@@ -161,16 +161,12 @@ namespace Faahi.Service.im_products.im_tags
                     Status = -1
                 };
             }
-            var table = "im_UnitsOfMeasure";
-            var am_table = await _context.am_table_next_key.FindAsync(table);
-            var next_key = Convert.ToInt16(am_table.next_key);
+            
         
             _UnitsOfMeasure.uom_id=Guid.CreateVersion7();
             _UnitsOfMeasure.name = _UnitsOfMeasure.name;
             _UnitsOfMeasure.abbreviation = _UnitsOfMeasure.abbreviation;
 
-            am_table.next_key = next_key + 1;
-            _context.am_table_next_key.Update(am_table);
 
             _context.im_UnitsOfMeasures.Add(_UnitsOfMeasure);
             await _context.SaveChangesAsync();

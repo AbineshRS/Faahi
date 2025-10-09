@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251008141736_listing_1")]
+    partial class listing_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1197,9 +1200,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal?>("quantity")
-                        .HasColumnType("decimal(18, 4)");
-
                     b.Property<Guid?>("sub_variant_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -1253,70 +1253,6 @@ namespace Faahi.Migrations
                     b.HasKey("site_id");
 
                     b.ToTable("im_site");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_site_users", b =>
-                {
-                    b.Property<Guid>("userId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("address")
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<Guid?>("company_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<DateTime?>("edit_date_time")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("edit_user_id")
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<string>("email")
-                        .IsRequired()
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("firstName")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("fullName")
-                        .IsRequired()
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<string>("lastName")
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("password")
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<string>("phoneNumber")
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<Guid?>("site_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("site_user_code")
-                        .HasColumnType("varchar(30)");
-
-                    b.Property<string>("status")
-                        .IsRequired()
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<string>("userName")
-                        .HasColumnType("varchar(32)");
-
-                    b.Property<string>("userRole")
-                        .HasColumnType("varchar(20)");
-
-                    b.HasKey("userId");
-
-                    b.ToTable("im_site_users");
                 });
 
             modelBuilder.Entity("Faahi.Model.table_key.am_table_next_key", b =>

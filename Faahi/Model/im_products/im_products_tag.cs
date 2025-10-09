@@ -11,12 +11,12 @@ namespace Faahi.Model.im_products
 
         [ForeignKey("item_class_id")]
         [Display(Name = "im_item_Category")]
-        [Column(TypeName = "varchar(20)")]
+        [Column(TypeName = "uniqueidentifier")]
         public Guid? item_class_id { get; set; }
 
         [ForeignKey("item_subclass_id")]
         [Display(Name = "im_item_subcategory")]
-        [Column(TypeName = "varchar(20)")]
+        [Column(TypeName = "uniqueidentifier")]
         public Guid? item_subclass_id { get; set; }
 
         [Column(TypeName = "varchar(200)")]

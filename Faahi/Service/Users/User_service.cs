@@ -24,9 +24,7 @@ namespace Faahi.Service.Users
                     Status = -1
                 };
             }
-            var table = "ap_Vendors";
-            var am_table = await _context.am_table_next_key.FindAsync(table);
-            var next_key = Convert.ToInt16(am_table.next_key);
+           
             var random = new Random();
             string vendorCode;
             bool exists;
@@ -42,7 +40,7 @@ namespace Faahi.Service.Users
 
             vendors.vendor_id = Guid.CreateVersion7();
             vendors.vendor_code="V-"+ Convert.ToString( vendorCode);
-            vendors.payment_term_id = Guid.CreateVersion7();
+            vendors.payment_term_id = vendors.payment_term_id ;
             vendors.preferred_payment_method=vendors.preferred_payment_method;
             vendors.withholding_tax_rate=vendors.withholding_tax_rate;
             vendors.ap_control_account=vendors.ap_control_account;
@@ -50,8 +48,7 @@ namespace Faahi.Service.Users
             vendors.created_at=DateTime.Now;
             vendors.updated_at=DateTime.Now;
             _context.ap_Vendors.Add(vendors);
-            am_table.next_key = next_key + 1;
-            _context.am_table_next_key.Update(am_table);
+           
 
             await _context.SaveChangesAsync();
 

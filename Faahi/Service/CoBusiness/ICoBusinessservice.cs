@@ -40,6 +40,8 @@ namespace Faahi.Service.CoBusiness
 
         Task<ServiceResult<im_site>> Update_imsite(string site_id, im_site imsite);
 
+        Task<ServiceResult<im_site_users>> Add_site_users(im_site_users im_Site_Users);
+
         Task<ServiceResult<List<co_business>>> Dekiru(string searchTerm);
 
     }

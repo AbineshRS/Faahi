@@ -63,6 +63,12 @@ namespace Faahi.Controllers.Application
 
         public DbSet<ap_Vendors> ap_Vendors { get; set; }
 
+        public DbSet<im_purchase_listing> im_purchase_listing { get; set; }
+
+        public DbSet<im_purchase_listing_details> im_purchase_listing_details { get; set; }
+
+        public DbSet<im_site_users> im_site_users { get; set; }
+
 
     }
 
