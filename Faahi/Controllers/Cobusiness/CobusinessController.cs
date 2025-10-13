@@ -218,14 +218,14 @@ namespace Faahi.Controllers.Cobusiness
         }
         [Authorize]
         [HttpGet]
-        [Route("site_user_list/{site_id}")]
-        public async Task<IActionResult> site_user_list(Guid site_id)
+        [Route("site_user_list/{company_id}")]
+        public async Task<IActionResult> site_user_list(Guid company_id)
         {
-            if (site_id == null)
+            if (company_id == null)
             {
                 return Ok("No data found");
             }
-            var user_list = await _co_businessService.site_user_list(site_id);
+            var user_list = await _co_businessService.site_user_list(company_id);
 
             return Ok(user_list);
         }

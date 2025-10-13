@@ -1176,7 +1176,7 @@ namespace Faahi.Service.CoBusiness
                 Data = site_user
             };
         }
-        public async Task<ServiceResult<List<im_site_users>>> site_user_list(Guid site_id)
+        public async Task<ServiceResult<List<im_site_users>>> site_user_list(Guid company_id)
         {
             if (_context.im_site_users == null)
             {
@@ -1187,7 +1187,7 @@ namespace Faahi.Service.CoBusiness
                     Message = "no data found"
                 };
             }
-            var site_user = await _context.im_site_users.Where(a => a.site_id == site_id).ToListAsync();
+            var site_user = await _context.im_site_users.Where(a => a.company_id == company_id).ToListAsync();
             if (site_user == null)
             {
                 return new ServiceResult<List<im_site_users>>
