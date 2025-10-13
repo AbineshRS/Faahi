@@ -1,4 +1,5 @@
-﻿using Dekiru.QueryFilter.Extensions;
+﻿using Azure.Core;
+using Dekiru.QueryFilter.Extensions;
 using Dekiru.QueryFilter.Macros;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
@@ -44,7 +45,7 @@ namespace Faahi.Service.CoBusiness
             {
                 return new ServiceResult<co_business> { Success = false, Message = "NO data found" };
             }
-            var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == business.email && a.verificationType== "EmailVerification" && a.userType== "co-admin");
+            var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == business.email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
             if (email_verify.verified == "F")
             {
                 return new ServiceResult<co_business> { Success = false, Message = "You need to verify your account", Status = -1 };
@@ -55,7 +56,7 @@ namespace Faahi.Service.CoBusiness
                 return new ServiceResult<co_business> { Success = false, Message = "Username already exists.", Status = -2 };
             }
 
-            
+
 
             var namePart = Regex.Replace(business.business_name ?? "", @"\s+", "")
                     .Substring(0, Math.Min(3, (business.business_name ?? "").Length))
@@ -78,7 +79,7 @@ namespace Faahi.Service.CoBusiness
             }
 
 
-           
+
             await _context.co_business.AddAsync(business);
             string subject = "Congratulations! Your Seller Account on Faahi is Ready";
             string body = @"
@@ -255,7 +256,22 @@ namespace Faahi.Service.CoBusiness
             var user = _context.co_business.FirstOrDefault(a => a.name == username || a.email == username);
             if (user is null)
             {
-                return null;
+                var site_user = await _context.im_site_users.FirstOrDefaultAsync(a => a.site_user_code == username);
+                if (site_user is null)
+                {
+                    return null;
+                }
+                if (!BCrypt.Net.BCrypt.Verify(password, site_user.password))
+                {
+                    return null;
+                }
+                var accessToken_site_users = CreatTokensite_user(site_user, 10);   // 10 minutes
+                var refreshToken_site_users = CreatTokensite_user(site_user, 10080); // 7 days (in minutes)
+                return new AuthResponse
+                {
+                    AccessToken = accessToken_site_users,
+                    RefreshToken = refreshToken_site_users
+                };
             }
 
             if (!BCrypt.Net.BCrypt.Verify(password, user.password))
@@ -264,6 +280,7 @@ namespace Faahi.Service.CoBusiness
             }
             var accessToken = CreatToken(user, 10);   // 10 minutes
             var refreshToken = CreatToken(user, 10080); // 7 days (in minutes)
+
             return new AuthResponse
             {
                 AccessToken = accessToken,
@@ -275,7 +292,33 @@ namespace Faahi.Service.CoBusiness
             var claims = new List<Claim>
             {
                  new Claim(ClaimTypes.NameIdentifier, user.company_id.ToString() ?? ""), // important for RefreshToken
-                 new Claim(ClaimTypes.Name, user.company_id.ToString() ?? "")
+                 new Claim(ClaimTypes.Name, user.company_id.ToString() ?? ""),
+                 new Claim("userRole", "co-admin" ?? "")
+            };
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:key")!));
+
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
+
+            var tokendescription = new JwtSecurityToken(
+                issuer: _configuration.GetValue<string>("AppSettings:Issuer"),
+                audience: _configuration.GetValue<string>("AppSettings:Audience"),
+                claims = claims,
+                expires: DateTime.UtcNow.AddMinutes(minutes),
+                signingCredentials: creds
+                );
+            return new JwtSecurityTokenHandler().WriteToken(tokendescription);
+        }
+        private string CreatTokensite_user(im_site_users user, int minutes)
+        {
+            var claims = new List<Claim>
+            {
+                 new Claim(ClaimTypes.NameIdentifier, user.company_id.ToString() ?? ""), // important for RefreshToken
+                 new Claim(ClaimTypes.Name, user.company_id.ToString() ?? ""),
+                 new Claim("userId", user.userId.ToString() ?? ""),
+                 new Claim("site_id", user.site_id.ToString() ?? ""),
+                 new Claim("company_id", user.company_id.ToString() ?? ""),
+                 new Claim("userRole", user.userRole.ToString() ?? "")
             };
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:key")!));
@@ -313,7 +356,7 @@ namespace Faahi.Service.CoBusiness
             var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
             DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
             string emailPart = email.Substring(0, 3).ToUpper();
-        
+
 
             if (existing != null)
             {
@@ -335,7 +378,7 @@ namespace Faahi.Service.CoBusiness
                     tokenExpiryTime = tokenExpiryTime,
                     isExpired = "F",
                     verified = "F",
-                    userType= "co-admin"
+                    userType = "co-admin"
                 };
                 _context.am_emailVerifications.Add(am_Email);
 
@@ -372,7 +415,7 @@ namespace Faahi.Service.CoBusiness
             var emailService = new EmailService(_configuration);
             await emailService.SendEmailAsync(email, subject, body);
 
-   
+
             await _context.SaveChangesAsync();
             return new ServiceResult<string>
             {
@@ -523,7 +566,7 @@ namespace Faahi.Service.CoBusiness
 
                 };
             }
-            var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType== "co-admin");
+            var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType == "co-admin");
 
             if (am_email.token != token)
             {
@@ -552,7 +595,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -3
                 };
             }
-            
+
             var handler = new JwtSecurityTokenHandler();
             JwtSecurityToken jwtToken;
             jwtToken = handler.ReadToken(token) as JwtSecurityToken;
@@ -705,7 +748,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
 
-         
+
 
 
             // Assign values
@@ -720,7 +763,7 @@ namespace Faahi.Service.CoBusiness
             await _context.co_avl_countries.AddAsync(co_Avl_Countries);
 
             // Increment next_key
-          
+
 
 
             await _context.SaveChangesAsync();
@@ -851,7 +894,7 @@ namespace Faahi.Service.CoBusiness
             im_site.status = "T";
             foreach (var im_item in im_site.im_item_site)
             {
-               
+
 
                 im_item.item_id = Guid.CreateVersion7();
                 im_item.site_id = im_site.site_id;
@@ -869,7 +912,7 @@ namespace Faahi.Service.CoBusiness
 
 
             }
-           
+
             _context.im_site.Add(im_site);
             await _context.SaveChangesAsync();
             return new ServiceResult<im_site>
@@ -1006,7 +1049,7 @@ namespace Faahi.Service.CoBusiness
                     site_item.status = site_item.status;
                     im_site_data.im_item_site.Add(site_item);
 
-                    
+
 
                 }
                 else
@@ -1037,7 +1080,7 @@ namespace Faahi.Service.CoBusiness
         }
         public async Task<ServiceResult<im_site_users>> Add_site_users(im_site_users im_Site_Users)
         {
-            if(im_Site_Users == null)
+            if (im_Site_Users == null)
             {
                 return new ServiceResult<im_site_users>
                 {
@@ -1047,7 +1090,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
             var site_users = await _context.im_site_users.FirstOrDefaultAsync(a => a.email == im_Site_Users.email);
-            if(site_users != null)
+            if (site_users != null)
             {
                 return new ServiceResult<im_site_users>
                 {
@@ -1056,12 +1099,12 @@ namespace Faahi.Service.CoBusiness
                     Message = "Email already Exisit"
                 };
             }
-                
+
             im_Site_Users.userId = Guid.CreateVersion7();
             im_Site_Users.site_id = im_Site_Users.site_id;
             im_Site_Users.firstName = im_Site_Users.firstName;
             im_Site_Users.lastName = im_Site_Users.lastName;
-            im_Site_Users.fullName=im_Site_Users.firstName + " " + im_Site_Users.lastName;
+            im_Site_Users.fullName = im_Site_Users.firstName + " " + im_Site_Users.lastName;
             var random = new Random();
             string userCode;
             bool exists;
@@ -1072,13 +1115,13 @@ namespace Faahi.Service.CoBusiness
                 exists = await _context.im_site_users.AnyAsync(v => v.site_user_code == userCode);
             }
             while (exists);
-            var imsite= await _context.im_site.FirstOrDefaultAsync(a => a.site_id == im_Site_Users.site_id);
+            var imsite = await _context.im_site.FirstOrDefaultAsync(a => a.site_id == im_Site_Users.site_id);
             var company_user = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == imsite.company_id);
             im_Site_Users.company_id = company_user.company_id;
             string sitePrefix = imsite.site_name.Length >= 2 ? imsite.site_name.Substring(0, 2) : imsite.site_name;
             string firstNamePrefix = im_Site_Users.firstName.Length >= 2 ? im_Site_Users.firstName.Substring(0, 2) : im_Site_Users.firstName;
 
-            im_Site_Users.site_user_code = sitePrefix+firstNamePrefix+ "-"+ Convert.ToString(userCode);
+            im_Site_Users.site_user_code = sitePrefix + firstNamePrefix + "-" + Convert.ToString(userCode).ToUpper();
             string without_hased_password = im_Site_Users.password;
             var hasedpassword = PasswordHelper.HashPassword(im_Site_Users.password);
             im_Site_Users.password = hasedpassword;
@@ -1086,13 +1129,13 @@ namespace Faahi.Service.CoBusiness
             im_Site_Users.userRole = im_Site_Users.userRole;
             im_Site_Users.created_at = DateTime.Now;
             im_Site_Users.edit_user_id = company_user.name;
-            im_Site_Users.phoneNumber= im_Site_Users.phoneNumber;
-            im_Site_Users.address= im_Site_Users.address;
+            im_Site_Users.phoneNumber = im_Site_Users.phoneNumber;
+            im_Site_Users.address = im_Site_Users.address;
             im_Site_Users.status = "T";
             _context.im_site_users.Add(im_Site_Users);
             await _context.SaveChangesAsync();
 
-            var email_send = Send_Emails.EmailBody_site_users(im_Site_Users.fullName,im_Site_Users.site_user_code, without_hased_password);
+            var email_send = Send_Emails.EmailBody_site_users(im_Site_Users.fullName, im_Site_Users.site_user_code, without_hased_password);
             string subject = "Welcome to Faahi – Your Site User Account is Ready!";
             var emailService = new EmailService(_configuration);
             await emailService.SendEmailAsync(im_Site_Users.email, subject, email_send);
@@ -1144,7 +1187,7 @@ namespace Faahi.Service.CoBusiness
                     Message = "no data found"
                 };
             }
-            var site_user = await _context.im_site_users.Where(a=>a.site_id== site_id).ToListAsync();
+            var site_user = await _context.im_site_users.Where(a => a.site_id == site_id).ToListAsync();
             if (site_user == null)
             {
                 return new ServiceResult<List<im_site_users>>
@@ -1163,7 +1206,7 @@ namespace Faahi.Service.CoBusiness
         }
         public async Task<ServiceResult<im_site_users>> Update_site_users(Guid userId, im_site_users im_Site_Users)
         {
-            if(userId == null || im_Site_Users == null)
+            if (userId == null || im_Site_Users == null)
             {
                 return new ServiceResult<im_site_users>
                 {
@@ -1173,7 +1216,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
             var site_user = await _context.im_site_users.FirstOrDefaultAsync(a => a.userId == userId);
-            
+
             site_user.site_id = im_Site_Users.site_id;
             var imsite = await _context.im_site.FirstOrDefaultAsync(a => a.site_id == im_Site_Users.site_id);
             var company_user = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == imsite.company_id);
@@ -1183,9 +1226,9 @@ namespace Faahi.Service.CoBusiness
             site_user.lastName = im_Site_Users.lastName;
             site_user.fullName = im_Site_Users.firstName + " " + im_Site_Users.lastName;
             //site_user.email = im_Site_Users.email;
-            site_user.phoneNumber= im_Site_Users.phoneNumber;
-            site_user.address= im_Site_Users.address;
-            site_user.status= im_Site_Users.status;
+            site_user.phoneNumber = im_Site_Users.phoneNumber;
+            site_user.address = im_Site_Users.address;
+            site_user.status = im_Site_Users.status;
 
             _context.im_site_users.Update(site_user);
             await _context.SaveChangesAsync();
