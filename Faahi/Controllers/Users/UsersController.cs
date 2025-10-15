@@ -40,5 +40,29 @@ namespace Faahi.Controllers.Users
             var customer= await _iuser.Create_customer(ar_Customers);
             return Ok(customer);
         }
+        [Authorize]
+        [HttpGet]
+        [Route("get_all_customer/{company_id}")]
+        public async Task<ActionResult<ar_Customers>> Get_all_customer(Guid company_id)
+        {
+            if(company_id == null)
+            {
+                return Ok("NO data found");
+            }
+            var customer= await _iuser.Get_all_customer(company_id);
+            return Ok(customer);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_all_vendors/{company_id}")]
+        public async Task<ActionResult<ap_Vendors>> Get_all_vendors(Guid company_id)
+        {
+            if (company_id == null)
+            {
+                return Ok("NO data found");
+            }
+            var vendors = await _iuser.Get_all_vendors(company_id);
+            return Ok(vendors);
+        }
     }
 }

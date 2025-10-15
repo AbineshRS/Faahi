@@ -8,15 +8,18 @@ namespace Faahi.Service.im_products.category
     public class CategoryService:ICategory
     {
         private readonly ApplicationDbContext _context;
-        public CategoryService(ApplicationDbContext context)
+        private readonly ILogger<CategoryService> _logger;
+        public CategoryService(ApplicationDbContext context, ILogger<CategoryService> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         public async Task<ServiceResult<im_item_Category>> Create_category(im_item_Category im_Item_)
         {
             if (im_Item_ == null)
             {
+                _logger.LogWarning("Create_category called with null im_Item_");
                 return new ServiceResult<im_item_Category>
                 {
                     Success = false,
@@ -25,47 +28,61 @@ namespace Faahi.Service.im_products.category
 
                 };
             }
-          
-
-            im_Item_.item_class_id = Guid.CreateVersion7();
-            im_Item_.company_id = im_Item_.company_id;
-            im_Item_.item_class = im_Item_.item_class;
-            im_Item_.description = im_Item_.description;
-            im_Item_.categoryType = im_Item_.categoryType;
-            im_Item_.item_count = im_Item_.item_count;
-            im_Item_.Sales_count = im_Item_.Sales_count;
-            im_Item_.code = im_Item_.item_class.Substring(0, 3).ToUpper();
-            im_Item_.edit_user_id = im_Item_.edit_user_id;
-            im_Item_.edit_date_time = DateTime.Now;
-            im_Item_.categoryImage = im_Item_.categoryImage;
-            im_Item_.status = im_Item_.status;
-            im_Item_.publish = im_Item_.publish;
-            foreach (var im_sub in im_Item_.im_item_subcategory)
+            try
             {
-                im_sub.item_subclass_id = Guid.CreateVersion7();
-                im_sub.item_class_id = im_Item_.item_class_id;
-                im_sub.company_id = im_Item_.company_id;
-                im_sub.description = im_Item_.description;
-                im_sub.edit_date_time = DateTime.Now;
-                im_sub.edit_user_id = im_Item_.edit_user_id;
-                im_sub.status = im_sub.status;
+                im_Item_.item_class_id = Guid.CreateVersion7();
+                im_Item_.company_id = im_Item_.company_id;
+                im_Item_.item_class = im_Item_.item_class;
+                im_Item_.description = im_Item_.description;
+                im_Item_.categoryType = im_Item_.categoryType;
+                im_Item_.item_count = im_Item_.item_count;
+                im_Item_.Sales_count = im_Item_.Sales_count;
+                im_Item_.code = im_Item_.item_class.Substring(0, 3).ToUpper();
+                im_Item_.edit_user_id = im_Item_.edit_user_id;
+                im_Item_.edit_date_time = DateTime.Now;
+                im_Item_.categoryImage = im_Item_.categoryImage;
+                im_Item_.status = im_Item_.status;
+                im_Item_.publish = im_Item_.publish;
+                foreach (var im_sub in im_Item_.im_item_subcategory)
+                {
+                    im_sub.item_subclass_id = Guid.CreateVersion7();
+                    im_sub.item_class_id = im_Item_.item_class_id;
+                    im_sub.company_id = im_Item_.company_id;
+                    im_sub.description = im_Item_.description;
+                    im_sub.edit_date_time = DateTime.Now;
+                    im_sub.edit_user_id = im_Item_.edit_user_id;
+                    im_sub.status = im_sub.status;
+                }
+                _context.im_item_Category.Add(im_Item_);
+
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_item_Category>
+                {
+                    Success = true,
+                    Message = "Success",
+                    Status = 1,
+                    Data = im_Item_
+                };
             }
-            _context.im_item_Category.Add(im_Item_);
-
-
-            await _context.SaveChangesAsync();
-            return new ServiceResult<im_item_Category>
+            catch(Exception ex)
             {
-                Success = true,
-                Message = "Success",
-                Status = 1,
-                Data = im_Item_
-            };
+                _logger.LogError(ex, "Error occurred while creating category");
+                return new ServiceResult<im_item_Category>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = -1,
+                };
+            }
+
+            
         }
         public async Task<ServiceResult<im_item_subcategory>> Create_sub_category(im_item_subcategory subcategory, string item_class_id)
         {
             if (subcategory == null || string.IsNullOrWhiteSpace(item_class_id))
             {
+                _logger.LogWarning("Create_sub_category called with null subcategory or empty item_class_id");
                 return new ServiceResult<im_item_subcategory>
                 {
                     Success = false,
@@ -73,53 +90,66 @@ namespace Faahi.Service.im_products.category
                     Status = -1,
                 };
             }
-
-            // Safely parse the incoming item_class_id
-            if (!Guid.TryParse(item_class_id, out Guid guid_item_class_id))
+            try
             {
+                // Safely parse the incoming item_class_id
+                if (!Guid.TryParse(item_class_id, out Guid guid_item_class_id))
+                {
+                    return new ServiceResult<im_item_subcategory>
+                    {
+                        Success = false,
+                        Message = "Invalid item_class_id",
+                        Status = -1,
+                    };
+                }
+
+                // Load the category with tracking
+                var category = await _context.im_item_Category
+                    .Include(c => c.im_item_subcategory) // Include the navigation
+                    .FirstOrDefaultAsync(c => c.item_class_id == guid_item_class_id);
+
+                if (category == null)
+                {
+                    return new ServiceResult<im_item_subcategory>
+                    {
+                        Success = false,
+                        Message = "Item category not found",
+                        Status = -1,
+                    };
+                }
+
+                // Assign necessary fields
+                subcategory.item_subclass_id = Guid.NewGuid(); // Or use Guid.CreateVersion7() if available
+                subcategory.item_class_id = category.item_class_id; // Foreign key
+                subcategory.company_id = category.company_id;
+                subcategory.edit_date_time = DateTime.Now;
+
+                // Add to the parent category's navigation property
+                category.im_item_subcategory.Add(subcategory);
+                _context.Entry(subcategory).State = EntityState.Added;
+
+                // Save all changes
+                await _context.SaveChangesAsync();
+
+                return new ServiceResult<im_item_subcategory>
+                {
+                    Success = true,
+                    Message = "Subcategory created successfully",
+                    Status = 1,
+                    Data = subcategory
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while creating subcategory");
                 return new ServiceResult<im_item_subcategory>
                 {
                     Success = false,
-                    Message = "Invalid item_class_id",
+                    Message = "An error occurred while processing your request.",
                     Status = -1,
                 };
             }
-
-            // Load the category with tracking
-            var category = await _context.im_item_Category
-                .Include(c => c.im_item_subcategory) // Include the navigation
-                .FirstOrDefaultAsync(c => c.item_class_id == guid_item_class_id);
-
-            if (category == null)
-            {
-                return new ServiceResult<im_item_subcategory>
-                {
-                    Success = false,
-                    Message = "Item category not found",
-                    Status = -1,
-                };
-            }
-
-            // Assign necessary fields
-            subcategory.item_subclass_id = Guid.NewGuid(); // Or use Guid.CreateVersion7() if available
-            subcategory.item_class_id = category.item_class_id; // Foreign key
-            subcategory.company_id = category.company_id;
-            subcategory.edit_date_time = DateTime.Now;
-
-            // Add to the parent category's navigation property
-            category.im_item_subcategory.Add(subcategory);
-            _context.Entry(subcategory).State = EntityState.Added;
-
-            // Save all changes
-            await _context.SaveChangesAsync();
-
-            return new ServiceResult<im_item_subcategory>
-            {
-                Success = true,
-                Message = "Subcategory created successfully",
-                Status = 1,
-                Data = subcategory
-            };
+           
         }
 
         public async Task<ServiceResult<List<im_item_Category>>> categoryList()
@@ -168,6 +198,7 @@ namespace Faahi.Service.im_products.category
         {
             if (im_Item_ == null)
             {
+                _logger.LogWarning("Update called with null im_Item_");
                 return new ServiceResult<im_item_Category>
                 {
                     Success = false,
@@ -175,62 +206,77 @@ namespace Faahi.Service.im_products.category
                     Status = -1,
                 };
             }
-            var guid_item_class_id = Guid.Parse(item_class_id);
-
-            var category = await _context.im_item_Category
-                .Include(a => a.im_item_subcategory)
-                .FirstOrDefaultAsync(a => a.item_class_id == guid_item_class_id);
-
-            if (category == null)
+            try
             {
+                var guid_item_class_id = Guid.Parse(item_class_id);
+
+                var category = await _context.im_item_Category
+                    .Include(a => a.im_item_subcategory)
+                    .FirstOrDefaultAsync(a => a.item_class_id == guid_item_class_id);
+
+                if (category == null)
+                {
+                    return new ServiceResult<im_item_Category>
+                    {
+                        Success = false,
+                        Message = "Category not found",
+                        Status = -1,
+                    };
+                }
+
+                category.company_id = im_Item_.company_id;
+                category.item_class = im_Item_.item_class;
+                category.description = im_Item_.description;
+                category.categoryType = im_Item_.categoryType;
+                category.item_count = im_Item_.item_count;
+                category.Sales_count = im_Item_.Sales_count;
+                category.code = im_Item_.item_class?.Substring(0, 3).ToUpper();
+                //category.item_cat_id = im_Item_.item_cat_id;
+                category.edit_user_id = im_Item_.edit_user_id;
+                category.edit_date_time = DateTime.Now;
+                category.categoryImage = im_Item_.categoryImage;
+                category.status = im_Item_.status;
+                category.publish = im_Item_.publish;
+
+                foreach (var im_sub in im_Item_.im_item_subcategory)
+                {
+                    var item_sub = category.im_item_subcategory.FirstOrDefault(v => v.item_subclass_id == im_sub.item_subclass_id);
+
+                    item_sub.item_class_id = im_sub.item_class_id;
+                    item_sub.company_id = im_sub.company_id;
+                    item_sub.description = im_sub.description;
+                    item_sub.edit_date_time = DateTime.Now;
+                    item_sub.edit_user_id = im_sub.edit_user_id;
+                }
+                _context.im_item_Category.Update(category);
+
+                await _context.SaveChangesAsync();
+
+                return new ServiceResult<im_item_Category>
+                {
+                    Success = true,
+                    Message = "Success",
+                    Status = 1,
+                    Data = category
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating category");
                 return new ServiceResult<im_item_Category>
                 {
                     Success = false,
-                    Message = "Category not found",
+                    Message = "An error occurred while processing your request.",
                     Status = -1,
                 };
             }
-
-            category.company_id = im_Item_.company_id;
-            category.item_class = im_Item_.item_class;
-            category.description = im_Item_.description;
-            category.categoryType = im_Item_.categoryType;
-            category.item_count = im_Item_.item_count;
-            category.Sales_count = im_Item_.Sales_count;
-            category.code = im_Item_.item_class?.Substring(0, 3).ToUpper();
-            //category.item_cat_id = im_Item_.item_cat_id;
-            category.edit_user_id = im_Item_.edit_user_id;
-            category.edit_date_time = DateTime.Now;
-            category.categoryImage = im_Item_.categoryImage;
-            category.status = im_Item_.status;
-            category.publish = im_Item_.publish;
-
-            foreach (var im_sub in im_Item_.im_item_subcategory)
-            {
-                var item_sub = category.im_item_subcategory.FirstOrDefault(v => v.item_subclass_id == im_sub.item_subclass_id);
-
-                item_sub.item_class_id = im_sub.item_class_id;
-                item_sub.company_id = im_sub.company_id;
-                item_sub.description = im_sub.description;
-                item_sub.edit_date_time = DateTime.Now;
-                item_sub.edit_user_id = im_sub.edit_user_id;
-            }
-            _context.im_item_Category.Update(category);
-
-            await _context.SaveChangesAsync();
-
-            return new ServiceResult<im_item_Category>
-            {
-                Success = true,
-                Message = "Success",
-                Status = 1,
-                Data = category
-            };
+            
         }
         public async Task<ServiceResult<im_item_Category>> Delete(string item_class_id)
         {
             if(item_class_id == null)
             {
+
                 return new ServiceResult<im_item_Category>
                 {
                     Success = false,

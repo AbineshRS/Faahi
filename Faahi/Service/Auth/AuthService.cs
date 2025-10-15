@@ -18,30 +18,47 @@ namespace Faahi.Service.Auth
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
-        public AuthService(ApplicationDbContext context, IConfiguration configuration)
+        private readonly ILogger<AuthService> _logger;
+        public AuthService(ApplicationDbContext context, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _context = context;
             _configuration = configuration;
+            _logger = logger;
         }
-        public async Task<AuthResponse> LoginAsyn(string username,string password)
+        public async Task<AuthResponse> LoginAsyn(string username, string password)
         {
-            var user = _context.am_users.FirstOrDefault(a => a.userName == username || a.email==username);
-            if (user is null)
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
+                _logger.LogWarning("Login attempt with empty username or password.");
+                return null;
+            }
+            try
+            {
+                var user = _context.am_users.FirstOrDefault(a => a.userName == username || a.email == username);
+                if (user is null)
+                {
+                    return null;
+                }
+
+                if (!BCrypt.Net.BCrypt.Verify(password, user.password))
+                {
+                    return null;
+                }
+                var accessToken = CreatToken(user, 10);   // 10 minutes
+                var refreshToken = CreatToken(user, 10080); // 7 days (in minutes)
+                return new AuthResponse
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during login attempt for user {Username}", username);
                 return null;
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(password, user.password))
-            {
-                return null;
-            }
-            var accessToken = CreatToken(user, 10);   // 10 minutes
-            var refreshToken = CreatToken(user, 10080); // 7 days (in minutes)
-            return new AuthResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            };
+
         }
         private string CreatToken(am_users user, int minutes)
         {
@@ -133,55 +150,63 @@ namespace Faahi.Service.Auth
         {
             if (user == null)
             {
-                return null;
+                _logger.LogWarning("Attempt to create account with null user data.");
+                return new ServiceResult<am_users>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "NO data found to insert"
+                };
             }
-            var existing = await _context.am_users.FirstOrDefaultAsync(a => a.userName == user.userName);
-            if (existing != null)
+            try
             {
-                return new ServiceResult<am_users> { Success = false, Message = "Username already exists." };
-            }
-            var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == user.email  && a.verificationType== "EmailVerification" && a.userType=="User");
-            if (email_verify.verified == "F")
-            {
-                return new ServiceResult<am_users> { Success = false, Message = "Email is Not verified" };
+                var existing = await _context.am_users.FirstOrDefaultAsync(a => a.userName == user.userName);
+                if (existing != null)
+                {
+                    return new ServiceResult<am_users> { Success = false, Message = "Username already exists." };
+                }
+                var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == user.email && a.verificationType == "EmailVerification" && a.userType == "User");
+                if (email_verify.verified == "F")
+                {
+                    return new ServiceResult<am_users> { Success = false, Message = "Email is Not verified" };
 
-            }
+                }
 
 
-            //var table = "am_users";
-            //var am_table = await _context.am_table_next_key.FindAsync(table);
-            //var key = Convert.ToInt16(am_table.next_key);
+                //var table = "am_users";
+                //var am_table = await _context.am_table_next_key.FindAsync(table);
+                //var key = Convert.ToInt16(am_table.next_key);
 
-            am_users am_Users = new am_users();
-            am_Users.userId = Guid.CreateVersion7();
-            am_Users.userName = user.email;
-            var hashedPassword = PasswordHelper.HashPassword(user?.password);
-            am_Users.password = hashedPassword;
-            am_Users.firstName = user.firstName;
-            am_Users.lastName = user.lastName;
-            am_Users.fullName = user.firstName + user.lastName;
+                am_users am_Users = new am_users();
+                am_Users.userId = Guid.CreateVersion7();
+                am_Users.userName = user.email;
+                var hashedPassword = PasswordHelper.HashPassword(user?.password);
+                am_Users.password = hashedPassword;
+                am_Users.firstName = user.firstName;
+                am_Users.lastName = user.lastName;
+                am_Users.fullName = user.firstName + user.lastName;
 
-            am_Users.email = user.email;
-            string email = user.email;
-            if (email_verify != null)
-            {
-                am_Users.emailVerified = "T";
-            }
+                am_Users.email = user.email;
+                string email = user.email;
+                if (email_verify != null)
+                {
+                    am_Users.emailVerified = "T";
+                }
 
-            //am_Users.siteId = user.siteId;
-            //am_Users.company_id = user.company_id;
-            //am_Users.userRole = user.userRole;
-           
-            am_Users.created_at = DateTime.Now;
-            am_Users.edit_date_time = DateTime.Now;
-            am_Users.edit_user_id = user.edit_user_id;
-            am_Users.phoneNumber = user.phoneNumber;
-            am_Users.address1 = user.address1;
-            am_Users.address2 = user.address2;
-            am_Users.status = user.status;
-            _context.am_users.Add(am_Users);
-            string subject = "Welcome to Faahi - Account Created Successfully!";
-            string body = @"
+                //am_Users.siteId = user.siteId;
+                //am_Users.company_id = user.company_id;
+                //am_Users.userRole = user.userRole;
+
+                am_Users.created_at = DateTime.Now;
+                am_Users.edit_date_time = DateTime.Now;
+                am_Users.edit_user_id = user.edit_user_id;
+                am_Users.phoneNumber = user.phoneNumber;
+                am_Users.address1 = user.address1;
+                am_Users.address2 = user.address2;
+                am_Users.status = user.status;
+                _context.am_users.Add(am_Users);
+                string subject = "Welcome to Faahi - Account Created Successfully!";
+                string body = @"
                         <!DOCTYPE html>
                         <html lang='en'>
                         <head>
@@ -273,24 +298,32 @@ namespace Faahi.Service.Auth
                         ";
 
 
-            try
-            {
+
                 //am_table.next_key = key + 1;
                 //_context.am_table_next_key.Update(am_table);
                 await _context.SaveChangesAsync();
                 var emailService = new EmailService(_configuration);
                 await emailService.SendEmailAsync(email, subject, body);
+
+
+                return new ServiceResult<am_users>
+                {
+                    Success = true,
+                    Message = "User created successfully",
+                    Data = am_Users
+                };
             }
-            catch (DbUpdateException)
+            catch (Exception ex)
             {
-                return null;
+                _logger.LogError(ex, "Error occurred while creating account for user {Username}", user.userName);
+                return new ServiceResult<am_users>
+                {
+                    Success = false,
+                    Status = -2,
+                    Message = "An error occurred while creating the account."
+                };
             }
-            return new ServiceResult<am_users>
-            {
-                Success = true,
-                Message = "User created successfully",
-                Data = am_Users
-            };
+
 
         }
         public string CreateToken_email(string email, int minutes)
@@ -325,62 +358,77 @@ namespace Faahi.Service.Auth
         {
             if (email is null)
             {
+                _logger.LogWarning("Attempt to verify email with null email address.");
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
                     Message = "NO data found",
                 };
             }
-            var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType== "EmailVerification" && a.userType== "co-admin");
-            var co_existing = await _context.co_business.FirstOrDefaultAsync(a => a.email == email);
-            if (existing != null || co_existing!=null)
+            try
             {
-                return new ServiceResult<am_emailVerifications> { Success = false, Message = "Email already exists.",Status= -1 };
+                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
+                var co_existing = await _context.co_business.FirstOrDefaultAsync(a => a.email == email);
+                if (existing != null || co_existing != null)
+                {
+                    return new ServiceResult<am_emailVerifications> { Success = false, Message = "Email already exists.", Status = -1 };
+                }
+
+
+                string token = CreateToken_email(email, 5);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
+                DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
+                string emailPart = email.Substring(0, 3).ToUpper();
+
+                am_emailVerifications am_Email = new am_emailVerifications
+                {
+
+                    Email_id = Guid.CreateVersion7(),
+                    email = email,
+                    verificationType = "EmailVerification",
+                    token = token,
+                    tokenExpiryTime = tokenExpiryTime,
+                    isExpired = "F",
+                    verified = "F",
+                    userType = "co-admin"
+                };
+
+                _context.am_emailVerifications.Add(am_Email);
+
+
+                var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+
+
+                string subject = "Verify Your Email Address";
+                string body = $"<p>Hello,</p><p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">Verify Your Email</a></p><p>Thank you!</p>";
+
+                var emailService = new EmailService(_configuration);
+                await emailService.SendEmailAsync(email, subject, body);
+
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<am_emailVerifications>
+                {
+                    Success = true,
+                    Message = "Email send successfully",
+                    Status = 1,
+                    Data = am_Email
+
+                };
             }
-
-
-            string token = CreateToken_email(email, 5);
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
-            DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
-            string emailPart = email.Substring(0, 3).ToUpper();
-            
-            am_emailVerifications am_Email = new am_emailVerifications
+            catch(Exception ex)
             {
-
-                Email_id = Guid.CreateVersion7(),
-                email = email,
-                verificationType = "EmailVerification",
-                token = token,
-                tokenExpiryTime = tokenExpiryTime,
-                isExpired = "F",
-                verified = "F",
-                userType="co-admin"
-            };
-
-            _context.am_emailVerifications.Add(am_Email);
-           
-
-            var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
-
-
-            string subject = "Verify Your Email Address";
-            string body = $"<p>Hello,</p><p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">Verify Your Email</a></p><p>Thank you!</p>";
-
-            var emailService = new EmailService(_configuration);
-            await emailService.SendEmailAsync(email, subject, body);
-
+                _logger.LogError(ex, "Error occurred during email verification for {Email}", email);
+                return new ServiceResult<am_emailVerifications>
+                {
+                    Success = false,
+                    Message = "An error occurred during email verification.",
+                    Status = -2
+                };
+            }
             
-            await _context.SaveChangesAsync();
-            return new ServiceResult<am_emailVerifications>
-            {
-                Success = true,
-                Message = "Email send successfully",
-                Status=1,
-                Data = am_Email
-                
-            };
         }
         /// <summary>
         /// User Email verification
@@ -391,67 +439,83 @@ namespace Faahi.Service.Auth
         {
             if (email is null)
             {
+                _logger.LogWarning("Attempt to verify user email with null email address.");
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
                     Message = "NO data found",
                 };
             }
-            var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "User");
-            var existing_user = await _context.am_users.FirstOrDefaultAsync(a => a.email == email);
-            if (existing != null && existing_user != null)
+            try
             {
-                return new ServiceResult<am_emailVerifications> { Success = false, Message = "Email already exists.", Status = -1 };
+                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "User");
+                var existing_user = await _context.am_users.FirstOrDefaultAsync(a => a.email == email);
+                if (existing != null && existing_user != null)
+                {
+                    return new ServiceResult<am_emailVerifications> { Success = false, Message = "Email already exists.", Status = -1 };
+                }
+
+
+                string token = CreateToken_email(email, 5);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
+                DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
+                string emailPart = email.Substring(0, 3).ToUpper();
+
+                am_emailVerifications am_Email = new am_emailVerifications
+                {
+
+                    Email_id = Guid.CreateVersion7(),
+                    email = email,
+                    verificationType = "EmailVerification",
+                    token = token,
+                    tokenExpiryTime = tokenExpiryTime,
+                    isExpired = "F",
+                    verified = "F",
+                    userType = "User"
+                };
+
+                _context.am_emailVerifications.Add(am_Email);
+
+
+                var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+
+
+                string subject = "Verify Your Email Address";
+                string body = $"<p>Hello,</p><p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">Verify Your Email</a></p><p>Thank you!</p>";
+
+                var emailService = new EmailService(_configuration);
+                await emailService.SendEmailAsync(email, subject, body);
+
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<am_emailVerifications>
+                {
+                    Success = true,
+                    Message = "Email send successfully",
+                    Status = 1,
+                    Data = am_Email
+
+                };
             }
-
-
-            string token = CreateToken_email(email, 5);
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
-            DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
-            string emailPart = email.Substring(0, 3).ToUpper();
-          
-            am_emailVerifications am_Email = new am_emailVerifications
+            catch(Exception ex)
             {
-
-                Email_id = Guid.CreateVersion7(),
-                email = email,
-                verificationType = "EmailVerification",
-                token = token,
-                tokenExpiryTime = tokenExpiryTime,
-                isExpired = "F",
-                verified = "F",
-                userType="User"
-            };
-
-            _context.am_emailVerifications.Add(am_Email);
-
-
-            var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
-
-
-            string subject = "Verify Your Email Address";
-            string body = $"<p>Hello,</p><p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">Verify Your Email</a></p><p>Thank you!</p>";
-
-            var emailService = new EmailService(_configuration);
-            await emailService.SendEmailAsync(email, subject, body);
-
-           
-            await _context.SaveChangesAsync();
-            return new ServiceResult<am_emailVerifications>
-            {
-                Success = true,
-                Message = "Email send successfully",
-                Status = 1,
-                Data = am_Email
-
-            };
+                _logger.LogError(ex, "Error occurred during user email verification for {Email}", email);
+                return new ServiceResult<am_emailVerifications>
+                {
+                    Success = false,
+                    Message = "An error occurred during email verification.",
+                    Status = -2
+                };
+            }
+            
         }
         public async Task<ServiceResult<am_emailVerifications>> Resend_verification(string email)
         {
             if (email is null)
             {
+                _logger.LogWarning("Attempt to resend verification with null email address.");
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -459,70 +523,84 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            if (email == null)
+            try
             {
-                return new ServiceResult<am_emailVerifications> { Success = false, Message = "Not found", Status = -2 };
-            }
-            var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType== "EmailVerification" && a.userType== "co-admin");
+                if (email == null)
+                {
+                    return new ServiceResult<am_emailVerifications> { Success = false, Message = "Not found", Status = -2 };
+                }
+                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
 
-            if (existing.verified == "T")
+                if (existing.verified == "T")
+                {
+                    return new ServiceResult<am_emailVerifications>
+                    {
+                        Success = false,
+                        Message = "You have already verifyed",
+                        Status = -4
+                    };
+                }
+
+                string token = CreateToken_email(email, 5);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
+                DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
+                string emailPart = email.Substring(0, 3).ToUpper();
+                if (existing != null)
+                {
+                    existing.token = token;
+                    existing.tokenExpiryTime = tokenExpiryTime;
+                    existing.isExpired = "F";
+                    existing.verified = "F";
+                    _context.am_emailVerifications.Update(existing);
+                }
+
+
+                //// Load from appsettings.json (optional)
+                //var baseUrl = _configuration["AppSettings:BaseUrl"];            // e.g., "http://localhost:5173"
+                //var verifyPath = "verify-success"; // Hardcode or config
+
+                //// Your values
+                //string token = /* your token */;
+                //string email = /* your email */;
+
+                //// URL encode parameters to be safe
+                //string encodedToken = Uri.EscapeDataString(token);
+                //string encodedEmail = Uri.EscapeDataString(email);
+
+                //// Construct the full URL
+                //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
+
+                var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+
+
+                string subject = "Verify Your Email Address";
+                string body = $"<p>Hello,</p><p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">Verify Your Email</a></p><p>Thank you!</p>";
+
+                var emailService = new EmailService(_configuration);
+                await emailService.SendEmailAsync(email, subject, body);
+
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<am_emailVerifications>
+                {
+                    Success = true,
+                    Message = "Email send successfully",
+                    Status = 1
+                };
+            }
+            catch(Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while attempting to resend verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = false,
-                    Message = "You have already verifyed",
-                    Status = -4
+                    Message = "An error occurred while resending verification.",
+                    Status = -2
                 };
             }
-
-            string token = CreateToken_email(email, 5);
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
-            DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
-            string emailPart = email.Substring(0, 3).ToUpper();
-            if (existing != null)
-            {
-                existing.token = token;
-                existing.tokenExpiryTime = tokenExpiryTime;
-                existing.isExpired = "F";
-                existing.verified = "F";
-                _context.am_emailVerifications.Update(existing);
-            }
-
-
-            //// Load from appsettings.json (optional)
-            //var baseUrl = _configuration["AppSettings:BaseUrl"];            // e.g., "http://localhost:5173"
-            //var verifyPath = "verify-success"; // Hardcode or config
-
-            //// Your values
-            //string token = /* your token */;
-            //string email = /* your email */;
-
-            //// URL encode parameters to be safe
-            //string encodedToken = Uri.EscapeDataString(token);
-            //string encodedEmail = Uri.EscapeDataString(email);
-
-            //// Construct the full URL
-            //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
-
-            var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
-
-
-            string subject = "Verify Your Email Address";
-            string body = $"<p>Hello,</p><p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">Verify Your Email</a></p><p>Thank you!</p>";
-
-            var emailService = new EmailService(_configuration);
-            await emailService.SendEmailAsync(email, subject, body);
-
-
-            await _context.SaveChangesAsync();
-            return new ServiceResult<am_emailVerifications>
-            {
-                Success = true,
-                Message = "Email send successfully",
-                Status = 1
-            };
+            
         }
         /// <summary>
         /// User resend verification
@@ -533,6 +611,7 @@ namespace Faahi.Service.Auth
         {
             if (email is null)
             {
+                _logger.LogWarning("Attempt to resend user verification with null email address.");
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -540,70 +619,84 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            if (email == null)
+            try
             {
-                return new ServiceResult<am_emailVerifications> { Success = false, Message = "Not found", Status = -2 };
-            }
-            var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType=="User");
+                if (email == null)
+                {
+                    return new ServiceResult<am_emailVerifications> { Success = false, Message = "Not found", Status = -2 };
+                }
+                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "User");
 
-            if (existing.verified == "T")
+                if (existing.verified == "T")
+                {
+                    return new ServiceResult<am_emailVerifications>
+                    {
+                        Success = false,
+                        Message = "You have already verifyed",
+                        Status = -4
+                    };
+                }
+
+                string token = CreateToken_email(email, 5);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
+                DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
+                string emailPart = email.Substring(0, 3).ToUpper();
+                if (existing != null)
+                {
+                    existing.token = token;
+                    existing.tokenExpiryTime = tokenExpiryTime;
+                    existing.isExpired = "F";
+                    existing.verified = "F";
+                    _context.am_emailVerifications.Update(existing);
+                }
+
+
+                //// Load from appsettings.json (optional)
+                //var baseUrl = _configuration["AppSettings:BaseUrl"];            // e.g., "http://localhost:5173"
+                //var verifyPath = "verify-success"; // Hardcode or config
+
+                //// Your values
+                //string token = /* your token */;
+                //string email = /* your email */;
+
+                //// URL encode parameters to be safe
+                //string encodedToken = Uri.EscapeDataString(token);
+                //string encodedEmail = Uri.EscapeDataString(email);
+
+                //// Construct the full URL
+                //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
+
+                var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+
+
+                string subject = "Verify Your Email Address";
+                string body = $"<p>Hello,</p><p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">Verify Your Email</a></p><p>Thank you!</p>";
+
+                var emailService = new EmailService(_configuration);
+                await emailService.SendEmailAsync(email, subject, body);
+
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<am_emailVerifications>
+                {
+                    Success = true,
+                    Message = "Email send successfully",
+                    Status = 1
+                };
+            }
+            catch(Exception ex)
             {
+                _logger.LogError(ex, "Error occurred while attempting to resend user verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = false,
-                    Message = "You have already verifyed",
-                    Status = -4
+                    Message = "An error occurred while resending verification.",
+                    Status = -2
                 };
             }
-
-            string token = CreateToken_email(email, 5);
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
-            DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
-            string emailPart = email.Substring(0, 3).ToUpper();
-            if (existing != null)
-            {
-                existing.token = token;
-                existing.tokenExpiryTime = tokenExpiryTime;
-                existing.isExpired = "F";
-                existing.verified = "F";
-                _context.am_emailVerifications.Update(existing);
-            }
-
-
-            //// Load from appsettings.json (optional)
-            //var baseUrl = _configuration["AppSettings:BaseUrl"];            // e.g., "http://localhost:5173"
-            //var verifyPath = "verify-success"; // Hardcode or config
-
-            //// Your values
-            //string token = /* your token */;
-            //string email = /* your email */;
-
-            //// URL encode parameters to be safe
-            //string encodedToken = Uri.EscapeDataString(token);
-            //string encodedEmail = Uri.EscapeDataString(email);
-
-            //// Construct the full URL
-            //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
-
-            var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
-
-
-            string subject = "Verify Your Email Address";
-            string body = $"<p>Hello,</p><p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">Verify Your Email</a></p><p>Thank you!</p>";
-
-            var emailService = new EmailService(_configuration);
-            await emailService.SendEmailAsync(email, subject, body);
-
-
-            await _context.SaveChangesAsync();
-            return new ServiceResult<am_emailVerifications>
-            {
-                Success = true,
-                Message = "Email send successfully",
-                Status = 1
-            };
+            
         }
         /// <summary>
         /// Verify user using email token
@@ -615,65 +708,80 @@ namespace Faahi.Service.Auth
         {
             if (email is null)
             {
+                _logger.LogWarning("Attempt to verify email with null email address.");
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
                     Message = "NO data found",
                 };
             }
-            var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType=="User");
+            try
+            {
+                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "User");
 
-            if (am_email.token != token)
-            {
-                return new ServiceResult<am_emailVerifications>
+                if (am_email.token != token)
                 {
-                    Success = false,
-                    Message = "Invalid token",
-                    Status=-1
-                };
-            }
-            if (am_email.verified =="T")
-            {
-                return new ServiceResult<am_emailVerifications>
+                    return new ServiceResult<am_emailVerifications>
+                    {
+                        Success = false,
+                        Message = "Invalid token",
+                        Status = -1
+                    };
+                }
+                if (am_email.verified == "T")
                 {
-                    Success = false,
-                    Message = "You have already verifyed",
-                    Status = -4
-                };
-            }
-            var handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtToken;
-            jwtToken = handler.ReadToken(token) as JwtSecurityToken;
-            
-            
-            DateTime tokenExpiryFromJwt = jwtToken.ValidTo;
-            DateTime? tokenExpiryFromDb = am_email.tokenExpiryTime;
-            if (tokenExpiryFromJwt < DateTime.UtcNow || tokenExpiryFromJwt != tokenExpiryFromDb)
-            {
-                am_email.isExpired = "T";
+                    return new ServiceResult<am_emailVerifications>
+                    {
+                        Success = false,
+                        Message = "You have already verifyed",
+                        Status = -4
+                    };
+                }
+                var handler = new JwtSecurityTokenHandler();
+                JwtSecurityToken jwtToken;
+                jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+
+
+                DateTime tokenExpiryFromJwt = jwtToken.ValidTo;
+                DateTime? tokenExpiryFromDb = am_email.tokenExpiryTime;
+                if (tokenExpiryFromJwt < DateTime.UtcNow || tokenExpiryFromJwt != tokenExpiryFromDb)
+                {
+                    am_email.isExpired = "T";
+                    _context.am_emailVerifications.Update(am_email);
+                    await _context.SaveChangesAsync();
+
+                    return new ServiceResult<am_emailVerifications>
+                    {
+                        Success = false,
+                        Message = "Invalid or expired token",
+                        Status = -3
+                    };
+                }
+                am_email.verified = "T";
+                am_email.isExpired = "F";
+
                 _context.am_emailVerifications.Update(am_email);
                 await _context.SaveChangesAsync();
 
                 return new ServiceResult<am_emailVerifications>
                 {
-                    Success = false,
-                    Message = "Invalid or expired token",
-                    Status=-3
+                    Success = true,
+                    Message = "Email verified successfully",
+                    Status = 1,
+                    Data = am_email
                 };
             }
-            am_email.verified = "T";
-            am_email.isExpired = "F";
-
-            _context.am_emailVerifications.Update(am_email);
-            await _context.SaveChangesAsync();
-
-            return new ServiceResult<am_emailVerifications>
+            catch(Exception ex)
             {
-                Success = true,
-                Message = "Email verified successfully",
-                Status=1,
-                Data = am_email
-            };
+                _logger.LogError(ex, "Error occurred during email verification for {Email}", email);
+                return new ServiceResult<am_emailVerifications>
+                {
+                    Success = false,
+                    Message = "An error occurred during email verification.",
+                    Status = -2
+                };
+            }
+            
         }
         public async Task<ServiceResult<List<am_users>>> Users_list()
         {
@@ -691,24 +799,38 @@ namespace Faahi.Service.Auth
 
             if (am_users == null)
             {
+                _logger.LogWarning("Attempt to update profile with null user data.");
                 return new ServiceResult<am_users> { Success = false, Message = "NO data found to insert" };
             }
-            Guid guidUserId = Guid.Parse(userId); // use Guid.TryParse if it's not guaranteed to be valid
-
-            var user = await _context.am_users.FirstOrDefaultAsync(a => a.userId == guidUserId);
-            user.firstName = am_users.firstName;
-            user.lastName = am_users.lastName;
-            user.fullName = am_users.firstName + am_users.lastName;
-            user.email = am_users.email;
-            user.phoneNumber = am_users.phoneNumber;
-            _context.am_users.Update(user);
-            await _context.SaveChangesAsync();
-            return new ServiceResult<am_users>
+            try
             {
-                Success = true,
-                Message = "User created successfully",
-                Data = user
-            };
+                Guid guidUserId = Guid.Parse(userId); // use Guid.TryParse if it's not guaranteed to be valid
+
+                var user = await _context.am_users.FirstOrDefaultAsync(a => a.userId == guidUserId);
+                user.firstName = am_users.firstName;
+                user.lastName = am_users.lastName;
+                user.fullName = am_users.firstName + am_users.lastName;
+                user.email = am_users.email;
+                user.phoneNumber = am_users.phoneNumber;
+                _context.am_users.Update(user);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<am_users>
+                {
+                    Success = true,
+                    Message = "User created successfully",
+                    Data = user
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating profile for user ID {UserId}", userId);
+                return new ServiceResult<am_users>
+                {
+                    Success = false,
+                    Message = "An error occurred while updating the profile."
+                };
+            }
+            
         }
         /// <summary>
         /// user reset_password
@@ -719,6 +841,7 @@ namespace Faahi.Service.Auth
         {
             if (email == null)
             {
+                _logger.LogWarning("Attempt to send reset password with null email address.");
                 return new ServiceResult<string>
                 {
                     Success = false,
@@ -726,66 +849,67 @@ namespace Faahi.Service.Auth
                     Status = -1
                 };
             }
-
-            var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType=="User");
-
-
-
-            string token = CreateToken_email(email, 5);
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
-            DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
-            string emailPart = email.Substring(0, 3).ToUpper();
-           
-
-            if (existing != null)
+            try
             {
-                existing.token = token;
-                existing.tokenExpiryTime = tokenExpiryTime;
-                existing.isExpired = "F";
-                existing.verified = "F";
-                _context.am_emailVerifications.Update(existing);
-            }
-            else
-            {
-                am_emailVerifications am_Email = new am_emailVerifications
+                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType == "User");
+
+
+
+                string token = CreateToken_email(email, 5);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
+                DateTime tokenExpiryTime = jwtToken?.ValidTo ?? DateTime.UtcNow;
+                string emailPart = email.Substring(0, 3).ToUpper();
+
+
+                if (existing != null)
                 {
+                    existing.token = token;
+                    existing.tokenExpiryTime = tokenExpiryTime;
+                    existing.isExpired = "F";
+                    existing.verified = "F";
+                    _context.am_emailVerifications.Update(existing);
+                }
+                else
+                {
+                    am_emailVerifications am_Email = new am_emailVerifications
+                    {
 
-                    Email_id = Guid.CreateVersion7(),
-                    email = email,
-                    verificationType = "ResetPassword",
-                    token = token,
-                    tokenExpiryTime = tokenExpiryTime,
-                    isExpired = "F",
-                    verified = "F",
-                    userType="User"
-                };
-                _context.am_emailVerifications.Add(am_Email);
+                        Email_id = Guid.CreateVersion7(),
+                        email = email,
+                        verificationType = "ResetPassword",
+                        token = token,
+                        tokenExpiryTime = tokenExpiryTime,
+                        isExpired = "F",
+                        verified = "F",
+                        userType = "User"
+                    };
+                    _context.am_emailVerifications.Add(am_Email);
 
-            }
-
-
-            //// Load from appsettings.json (optional)
-            //var baseUrl = _configuration["AppSettings:BaseUrl"];            // e.g., "http://localhost:5173"
-            //var verifyPath = "verify-success"; // Hardcode or config
-
-            //// Your values
-            //string token = /* your token */;
-            //string email = /* your email */;
-
-            //// URL encode parameters to be safe
-            //string encodedToken = Uri.EscapeDataString(token);
-            //string encodedEmail = Uri.EscapeDataString(email);
-
-            //// Construct the full URL
-            //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
+                }
 
 
-            var resetUrl = $"{_configuration["MailSettings:BaseUrl"]}/reset-password?token={token}&email={email}";
+                //// Load from appsettings.json (optional)
+                //var baseUrl = _configuration["AppSettings:BaseUrl"];            // e.g., "http://localhost:5173"
+                //var verifyPath = "verify-success"; // Hardcode or config
 
-            string subject = "Reset Your Password";
-            string body = $@"
+                //// Your values
+                //string token = /* your token */;
+                //string email = /* your email */;
+
+                //// URL encode parameters to be safe
+                //string encodedToken = Uri.EscapeDataString(token);
+                //string encodedEmail = Uri.EscapeDataString(email);
+
+                //// Construct the full URL
+                //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
+
+
+                var resetUrl = $"{_configuration["MailSettings:BaseUrl"]}/reset-password?token={token}&email={email}";
+
+                string subject = "Reset Your Password";
+                string body = $@"
                     <p>Hello,</p>
                     <p>We received a request to reset your password.</p>
                     <p>Please click the link below to reset your password:</p>
@@ -793,18 +917,31 @@ namespace Faahi.Service.Auth
                     <p>If you did not request a password reset, please ignore this email.</p>
                     <p>Thank you!</p>";
 
-            var emailService = new EmailService(_configuration);
-            await emailService.SendEmailAsync(email, subject, body);
+                var emailService = new EmailService(_configuration);
+                await emailService.SendEmailAsync(email, subject, body);
 
-          
-            await _context.SaveChangesAsync();
-            return new ServiceResult<string>
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<string>
+                {
+                    Success = true,
+                    Message = "Email send successfully",
+                    Status = 1,
+                    Data = null
+                };
+
+            }
+            catch(Exception ex)
             {
-                Success = true,
-                Message = "Email send successfully",
-                Status = 1,
-                Data = null
-            };
+                _logger.LogError(ex, "Error occurred while attempting to send reset password for {Email}", email);
+                return new ServiceResult<string>
+                {
+                    Success = false,
+                    Message = "An error occurred while sending reset password email.",
+                    Status = -2
+                };
+            }
+            
 
         }
         /// <summary>
@@ -817,70 +954,86 @@ namespace Faahi.Service.Auth
         {
             if (email is null)
             {
+                _logger.LogWarning("Attempt to verify user email with null email address.");
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
                     Message = "NO data found",
                 };
             }
-            var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType == "User");
-
-            if (am_email.token != token)
+            try
             {
-                return new ServiceResult<am_emailVerifications>
+                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType == "User");
+
+                if (am_email.token != token)
                 {
-                    Success = false,
-                    Message = "Invalid token",
-                    Status = -1
-                };
-            }
-            if (am_email.verified == "T")
-            {
-                return new ServiceResult<am_emailVerifications>
+                    return new ServiceResult<am_emailVerifications>
+                    {
+                        Success = false,
+                        Message = "Invalid token",
+                        Status = -1
+                    };
+                }
+                if (am_email.verified == "T")
                 {
-                    Success = false,
-                    Message = "You have already verifyed",
-                    Status = -4
-                };
-            }
-            var handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtToken;
-            jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+                    return new ServiceResult<am_emailVerifications>
+                    {
+                        Success = false,
+                        Message = "You have already verifyed",
+                        Status = -4
+                    };
+                }
+                var handler = new JwtSecurityTokenHandler();
+                JwtSecurityToken jwtToken;
+                jwtToken = handler.ReadToken(token) as JwtSecurityToken;
 
 
-            DateTime tokenExpiryFromJwt = jwtToken.ValidTo;
-            DateTime? tokenExpiryFromDb = am_email.tokenExpiryTime;
-            if (tokenExpiryFromJwt < DateTime.UtcNow || tokenExpiryFromJwt != tokenExpiryFromDb)
-            {
-                am_email.isExpired = "T";
+                DateTime tokenExpiryFromJwt = jwtToken.ValidTo;
+                DateTime? tokenExpiryFromDb = am_email.tokenExpiryTime;
+                if (tokenExpiryFromJwt < DateTime.UtcNow || tokenExpiryFromJwt != tokenExpiryFromDb)
+                {
+                    am_email.isExpired = "T";
+                    _context.am_emailVerifications.Update(am_email);
+                    await _context.SaveChangesAsync();
+
+                    return new ServiceResult<am_emailVerifications>
+                    {
+                        Success = false,
+                        Message = "Invalid or expired token",
+                        Status = -3
+                    };
+                }
+                am_email.verified = "T";
+                am_email.isExpired = "F";
+
                 _context.am_emailVerifications.Update(am_email);
                 await _context.SaveChangesAsync();
 
                 return new ServiceResult<am_emailVerifications>
                 {
-                    Success = false,
-                    Message = "Invalid or expired token",
-                    Status = -3
+                    Success = true,
+                    Message = "Email verified successfully",
+                    Status = 1,
+                    Data = am_email
                 };
             }
-            am_email.verified = "T";
-            am_email.isExpired = "F";
-
-            _context.am_emailVerifications.Update(am_email);
-            await _context.SaveChangesAsync();
-
-            return new ServiceResult<am_emailVerifications>
+            catch(Exception ex)
             {
-                Success = true,
-                Message = "Email verified successfully",
-                Status = 1,
-                Data = am_email
-            };
+                _logger.LogError(ex, "Error occurred during user email verification for {Email}", email);
+                return new ServiceResult<am_emailVerifications>
+                {
+                    Success = false,
+                    Message = "An error occurred during email verification.",
+                    Status = -2
+                };
+            }
+            
         }
         public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
         {
             if (email == null)
             {
+                _logger.LogWarning("Attempt to reset password with null email address.");
                 return new ServiceResult<string>
                 {
                     Success = false,
@@ -889,71 +1042,85 @@ namespace Faahi.Service.Auth
 
                 };
             }
-            var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType == "User");
-            if (am_email.verified == "F")
+            try
             {
+                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType == "User");
+                if (am_email.verified == "F")
+                {
+                    return new ServiceResult<string>
+                    {
+                        Success = false,
+                        Message = "Not verified ",
+                        Status = -2
+                    };
+                }
+                if (am_email.token != token)
+                {
+                    return new ServiceResult<string>
+                    {
+                        Success = false,
+                        Message = "Invalid token",
+                        Status = -3
+                    };
+                }
+                if (am_email.isExpired == "T")
+                {
+                    return new ServiceResult<string>
+                    {
+                        Success = false,
+                        Message = "Token Expired",
+                        Status = -4
+                    };
+                }
+                var handler = new JwtSecurityTokenHandler();
+                JwtSecurityToken jwtToken;
+                jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+
+
+                DateTime tokenExpiryFromJwt = jwtToken.ValidTo;
+                DateTime? tokenExpiryFromDb = am_email.tokenExpiryTime;
+                if (tokenExpiryFromJwt < DateTime.UtcNow || tokenExpiryFromJwt != tokenExpiryFromDb)
+                {
+                    am_email.isExpired = "T";
+                    _context.am_emailVerifications.Update(am_email);
+                    await _context.SaveChangesAsync();
+
+                    return new ServiceResult<string>
+                    {
+                        Success = false,
+                        Message = "Token Expired ",
+                        Status = -5
+                    };
+                }
+                var am_User = await _context.am_users.FirstOrDefaultAsync(a => a.email == email);
+                if (am_User != null)
+                {
+                    am_User.password = PasswordHelper.HashPassword(password);
+                    am_email.verified = "T";
+                    am_email.isExpired = "F";
+                    _context.am_emailVerifications.Update(am_email);
+                }
+                _context.am_users.Update(am_User);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<string>
+                {
+                    Success = true,
+                    Message = "Password Updated",
+                    Status = 1
+
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while attempting to reset password for {Email}", email);
                 return new ServiceResult<string>
                 {
                     Success = false,
-                    Message = "Not verified ",
+                    Message = "An error occurred while resetting the password.",
                     Status = -2
                 };
             }
-            if (am_email.token != token)
-            {
-                return new ServiceResult<string>
-                {
-                    Success = false,
-                    Message = "Invalid token",
-                    Status = -3
-                };
-            }
-            if (am_email.isExpired == "T")
-            {
-                return new ServiceResult<string>
-                {
-                    Success = false,
-                    Message = "Token Expired",
-                    Status = -4
-                };
-            }
-            var handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtToken;
-            jwtToken = handler.ReadToken(token) as JwtSecurityToken;
-
-
-            DateTime tokenExpiryFromJwt = jwtToken.ValidTo;
-            DateTime? tokenExpiryFromDb = am_email.tokenExpiryTime;
-            if (tokenExpiryFromJwt < DateTime.UtcNow || tokenExpiryFromJwt != tokenExpiryFromDb)
-            {
-                am_email.isExpired = "T";
-                _context.am_emailVerifications.Update(am_email);
-                await _context.SaveChangesAsync();
-
-                return new ServiceResult<string>
-                {
-                    Success = false,
-                    Message = "Token Expired ",
-                    Status = -5
-                };
-            }
-            var am_User = await _context.am_users.FirstOrDefaultAsync(a => a.email == email);
-            if (am_User != null)
-            {
-                am_User.password = PasswordHelper.HashPassword(password);
-                am_email.verified = "T";
-                am_email.isExpired = "F";
-                _context.am_emailVerifications.Update(am_email);
-            }
-            _context.am_users.Update(am_User);
-            await _context.SaveChangesAsync();
-            return new ServiceResult<string>
-            {
-                Success = true,
-                Message = "Password Updated",
-                Status = 1
-
-            };
+            
         }
     }
 }

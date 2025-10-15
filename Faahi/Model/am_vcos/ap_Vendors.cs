@@ -10,6 +10,11 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "uniqueidentifier")]
         public Guid? vendor_id { get; set; } = Guid.CreateVersion7();
 
+        [ForeignKey("company_id")]
+        [Display(Name = "co_business")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? company_id { get; set; }
+
         [Column(TypeName ="varchar(30)")]
         public string? vendor_code { get; set; }
 
@@ -34,6 +39,11 @@ namespace Faahi.Model.am_vcos
 
         [Column(TypeName = "datetime")]
         public DateTime? updated_at { get; set; } = null;
+
+        [StringLength(1)]
+        [DefaultValue("T")]
+        [Column(TypeName = "char(1)")]
+        public string? status { get; set; } = string.Empty;
 
     }
 }

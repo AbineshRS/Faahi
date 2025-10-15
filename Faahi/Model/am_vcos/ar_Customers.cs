@@ -15,6 +15,11 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "uniqueidentifier")]
         public Guid? price_tier_id { get; set; }
 
+        [ForeignKey("company_id")]
+        [Display(Name = "co_business")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? company_id { get; set; }
+
         [Column(TypeName ="varchar(30)")]
         public string? customer_code { get; set; }
 
@@ -55,5 +60,9 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "char(1)")]
         public string? tax_exempt { get; set; } = string.Empty;
 
+        [StringLength(1)]
+        [DefaultValue("T")]
+        [Column(TypeName = "char(1)")]
+        public string? status { get; set; } = string.Empty;
     }
 }

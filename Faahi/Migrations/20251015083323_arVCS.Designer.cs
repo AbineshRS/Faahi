@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251015083323_arVCS")]
+    partial class arVCS
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -305,9 +308,6 @@ namespace Faahi.Migrations
                     b.Property<string>("ap_control_account")
                         .HasColumnType("varchar(40)");
 
-                    b.Property<Guid?>("company_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
@@ -320,9 +320,8 @@ namespace Faahi.Migrations
                     b.Property<string>("preferred_payment_method")
                         .HasColumnType("varchar(20)");
 
-                    b.Property<string>("status")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
+                    b.Property<Guid?>("site_id")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("updated_at")
                         .HasColumnType("datetime");
@@ -342,9 +341,6 @@ namespace Faahi.Migrations
                 {
                     b.Property<Guid>("customer_id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("created_at")
@@ -381,9 +377,8 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("price_tier_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("status")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
+                    b.Property<Guid?>("site_id")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("tax_exempt")
                         .HasMaxLength(1)
