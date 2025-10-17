@@ -14,9 +14,21 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using Serilog;
 using System.Text;
 
+// Configure Serilog
 var builder = WebApplication.CreateBuilder(args);
+
+var logPath = Path.Combine(builder.Environment.ContentRootPath, "Logs", "log-.txt");
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug() // Optional: change to Information in production
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+builder.Host.UseSerilog();
 
 var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
 

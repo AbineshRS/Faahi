@@ -294,6 +294,8 @@ namespace Faahi.Service.CoBusiness
             }
             try
             {
+                _logger.LogWarning("Username or password is null", username);
+
                 var user = _context.co_business.FirstOrDefault(a => a.name == username || a.email == username);
                 if (user is null)
                 {
