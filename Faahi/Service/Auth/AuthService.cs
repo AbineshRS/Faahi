@@ -19,11 +19,13 @@ namespace Faahi.Service.Auth
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
-        public AuthService(ApplicationDbContext context, IConfiguration configuration, ILogger<AuthService> logger)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public AuthService(ApplicationDbContext context, IConfiguration configuration, ILogger<AuthService> logger, IHttpContextAccessor httpContextAccessor    )
         {
             _context = context;
             _configuration = configuration;
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
         public async Task<AuthResponse> LoginAsyn(string username, string password)
         {
@@ -396,9 +398,15 @@ namespace Faahi.Service.Auth
                 };
 
                 _context.am_emailVerifications.Add(am_Email);
+                var baseUrl = _httpContextAccessor.HttpContext?.Items["BaseUrl"]?.ToString();
 
+                // Fallback if baseUrl is not set (optional)
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    baseUrl = _configuration["MailSettings:BaseUrl"];
+                }
 
-                var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+                var verifyUrl = $"{baseUrl}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
 
 
                 string subject = "Verify Your Email Address";
@@ -477,9 +485,15 @@ namespace Faahi.Service.Auth
                 };
 
                 _context.am_emailVerifications.Add(am_Email);
+                var baseUrl = _httpContextAccessor.HttpContext?.Items["BaseUrl"]?.ToString();
 
+                // Fallback if baseUrl is not set (optional)
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    baseUrl = _configuration["MailSettings:BaseUrl"];
+                }
 
-                var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+                var verifyUrl = $"{baseUrl}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
 
 
                 string subject = "Verify Your Email Address";
@@ -571,8 +585,14 @@ namespace Faahi.Service.Auth
 
                 //// Construct the full URL
                 //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
+                var baseUrl = _httpContextAccessor.HttpContext?.Items["BaseUrl"]?.ToString();
 
-                var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+                // Fallback if baseUrl is not set (optional)
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    baseUrl = _configuration["MailSettings:BaseUrl"];
+                }
+                var verifyUrl = $"{baseUrl}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
 
 
                 string subject = "Verify Your Email Address";
@@ -667,8 +687,14 @@ namespace Faahi.Service.Auth
 
                 //// Construct the full URL
                 //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
+                var baseUrl = _httpContextAccessor.HttpContext?.Items["BaseUrl"]?.ToString();
 
-                var verifyUrl = $"{_configuration["MailSettings:BaseUrl"]}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+                // Fallback if baseUrl is not set (optional)
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    baseUrl = _configuration["MailSettings:BaseUrl"];
+                }
+                var verifyUrl = $"{baseUrl}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
 
 
                 string subject = "Verify Your Email Address";
@@ -905,8 +931,14 @@ namespace Faahi.Service.Auth
                 //// Construct the full URL
                 //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
 
+                var baseUrl = _httpContextAccessor.HttpContext?.Items["BaseUrl"]?.ToString();
 
-                var resetUrl = $"{_configuration["MailSettings:BaseUrl"]}/reset-password?token={token}&email={email}";
+                // Fallback if baseUrl is not set (optional)
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    baseUrl = _configuration["MailSettings:BaseUrl"];
+                }
+                var resetUrl = $"{baseUrl}/reset-password?token={token}&email={email}";
 
                 string subject = "Reset Your Password";
                 string body = $@"

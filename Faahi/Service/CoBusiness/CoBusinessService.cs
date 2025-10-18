@@ -32,13 +32,14 @@ namespace Faahi.Service.CoBusiness
         private readonly IConfiguration _configuration;
         public static IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<CoBusinessService> _logger;
-
-        public CoBusinessService(ApplicationDbContext context, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, ILogger<CoBusinessService> logger)
+        private readonly IHttpContextAccessor _contextAccessor;
+        public CoBusinessService(ApplicationDbContext context, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, ILogger<CoBusinessService> logger, IHttpContextAccessor contextAccessor)
         {
             _context = context;
             _configuration = configuration;
             _webHostEnvironment = webHostEnvironment;
             _logger = logger;
+            _contextAccessor = contextAccessor;
         }
 
         public async Task<ServiceResult<co_business>> Create_account(co_business business)
@@ -452,8 +453,14 @@ namespace Faahi.Service.CoBusiness
                 //// Construct the full URL
                 //var verificationLink = $"{baseUrl}/{verifyPath}/token/{encodedToken}/email/{encodedEmail}";
 
+                var baseUrl = _contextAccessor.HttpContext?.Items["BaseUrl"]?.ToString();
 
-                var resetUrl = $"{_configuration["MailSettings:BaseUrl"]}/password-verify-success?token={token}&email={email}";
+                // Fallback if baseUrl is not set (optional)
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    baseUrl = _configuration["MailSettings:BaseUrl"];
+                }
+                var resetUrl = $"{baseUrl}/password-verify-success?token={token}&email={email}";
 
                 string subject = "Reset Your Password";
                 string body = $@"

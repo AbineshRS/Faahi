@@ -35,6 +35,7 @@ var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
@@ -107,7 +108,19 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("/openapi/v1.json", "Faahi v1");
     });
 }
+app.Use(async (context, next) =>
+{
+    // Try to get base URL from custom header or Origin
+    var baseUrl = context.Request.Headers["X-Client-BaseUrl"].FirstOrDefault()
+               ?? context.Request.Headers["Origin"].FirstOrDefault();
 
+    if (!string.IsNullOrEmpty(baseUrl))
+    {
+        context.Items["BaseUrl"] = baseUrl;
+    }
+
+    await next();
+});
 app.UseHttpsRedirection();
 
 // ? CORS must be before authentication/authorization
