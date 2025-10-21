@@ -219,7 +219,7 @@ namespace Faahi.Service.CoBusiness
         {
             if (formFile == null || formFile.Length == 0)
             {
-                _logger.LogWarning("No data found in file",formFile);
+                _logger.LogWarning("No data found in file", formFile);
                 return new ServiceResult<string>
                 {
                     Success = false,
@@ -273,7 +273,7 @@ namespace Faahi.Service.CoBusiness
                     Data = relativePath
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while logo");
                 return new ServiceResult<string>
@@ -283,12 +283,12 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-            
+
         }
 
         public async Task<AuthResponse> LoginAsyn(string username, string password)
         {
-            if(username == null || password == null)
+            if (username == null || password == null)
             {
                 _logger.LogWarning("Username or password is null", username);
                 return null;
@@ -331,12 +331,12 @@ namespace Faahi.Service.CoBusiness
                     RefreshToken = refreshToken
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while login");
                 return null;
             }
-            
+
         }
         private string CreatToken(co_business user, int minutes)
         {
@@ -344,7 +344,9 @@ namespace Faahi.Service.CoBusiness
             {
                  new Claim(ClaimTypes.NameIdentifier, user.company_id.ToString() ?? ""), // important for RefreshToken
                  new Claim(ClaimTypes.Name, user.company_id.ToString() ?? ""),
-                 new Claim("userRole", "co-admin" ?? "")
+                 new Claim("userRole", "co-admin" ?? ""),
+                 new Claim("FullName", user.name.ToString() ?? "")
+
             };
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:key")!));
@@ -369,7 +371,8 @@ namespace Faahi.Service.CoBusiness
                  new Claim("userId", user.userId.ToString() ?? ""),
                  new Claim("site_id", user.site_id.ToString() ?? ""),
                  new Claim("company_id", user.company_id.ToString() ?? ""),
-                 new Claim("userRole", user.userRole.ToString() ?? "")
+                 new Claim("userRole", user.userRole.ToString() ?? ""),
+                 new Claim("FullName", user.fullName.ToString() ?? "")
             };
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:key")!));
@@ -484,7 +487,7 @@ namespace Faahi.Service.CoBusiness
                     Data = null
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while send reset password");
                 return new ServiceResult<string>
@@ -495,7 +498,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
 
-            
+
 
         }
         public async Task<ServiceResult<am_emailVerifications>> verify(string email, string token)
@@ -565,7 +568,7 @@ namespace Faahi.Service.CoBusiness
                     Data = am_email
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while email verify");
                 return new ServiceResult<am_emailVerifications>
@@ -575,7 +578,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-            
+
         }
         public async Task<ServiceResult<am_emailVerifications>> Password_Verify(string email, string token)
         {
@@ -644,7 +647,7 @@ namespace Faahi.Service.CoBusiness
                     Data = am_email
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while password verify");
                 return new ServiceResult<am_emailVerifications>
@@ -654,7 +657,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-           
+
         }
         public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
         {
@@ -740,7 +743,7 @@ namespace Faahi.Service.CoBusiness
                 };
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while reset password");
                 return new ServiceResult<string>
@@ -750,7 +753,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-            
+
         }
         public string CreateToken_email(string email, int minutes)
         {
@@ -840,7 +843,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-            
+
         }
         public async Task<ServiceResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries)
         {
@@ -910,7 +913,7 @@ namespace Faahi.Service.CoBusiness
                     Data = co_Avl_Countries
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while creating available country");
                 return new ServiceResult<co_avl_countries>
@@ -921,7 +924,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
 
-            
+
         }
         public async Task<CountryInfo_Dto?> GetCountryInfoByNameAsync(string countryName)
         {
@@ -1094,7 +1097,7 @@ namespace Faahi.Service.CoBusiness
                     Data = im_site
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "error occurred adding im_site");
                 return new ServiceResult<im_site>
@@ -1104,7 +1107,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-            
+
 
 
         }
@@ -1265,7 +1268,7 @@ namespace Faahi.Service.CoBusiness
                     Data = imsite
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while updating im_site");
                 return new ServiceResult<im_site>
@@ -1275,7 +1278,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-            
+
         }
         public async Task<ServiceResult<im_site_users>> Add_site_users(im_site_users im_Site_Users)
         {
@@ -1350,7 +1353,7 @@ namespace Faahi.Service.CoBusiness
                     Data = im_Site_Users
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while adding site user");
                 return new ServiceResult<im_site_users>
@@ -1360,7 +1363,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-            
+
         }
         public async Task<ServiceResult<im_site_users>> site_user(Guid user_id)
         {
@@ -1457,7 +1460,7 @@ namespace Faahi.Service.CoBusiness
                     Data = site_user
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while updating site user");
                 return new ServiceResult<im_site_users>
@@ -1467,7 +1470,7 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-            
+
         }
         public async Task<ServiceResult<List<co_business>>> Dekiru(string searchTerm)
         {
