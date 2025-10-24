@@ -1,6 +1,7 @@
 ﻿using Faahi.Model.Email_verify;
 using Faahi.Model.st_sellers;
 using Faahi.Service.Store;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ namespace Faahi.Controllers.Store
         {
             _istore = store;
         }
-
+        [Authorize]
         [HttpPost]
         [Route("add_sellers")]
         public async Task<ActionResult<st_sellers>> Create_sellers(st_sellers st_Sellers)
@@ -28,7 +29,7 @@ namespace Faahi.Controllers.Store
             var result = await _istore.Create_sellers(st_Sellers);
             return Ok(result);
         }
-
+        [Authorize]
         [HttpPost]
         [Route("add_stores")]
         public async Task<ActionResult<st_stores>> Create_stores(st_stores st_Stores)
@@ -40,6 +41,7 @@ namespace Faahi.Controllers.Store
             var result = await _istore.Create_stores(st_Stores);
             return Ok(result);
         }
+        [Authorize]
         [HttpGet]
         [Route("get_store/{company_id}")]
         public async Task<ActionResult> Get_store(Guid company_id)
@@ -51,6 +53,7 @@ namespace Faahi.Controllers.Store
             var result = await _istore.Get_store(company_id);
             return Ok(result);
         }
+        [Authorize]
         [HttpGet]
         [Route("get_seller/{company_id}")]
         public async Task<ActionResult> Get_seller(Guid company_id)
