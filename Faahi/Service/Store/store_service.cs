@@ -45,8 +45,16 @@ namespace Faahi.Service.Store
             {
                 var existingSeller = await _context.st_sellers.Where(s => s.company_id == st_sellers.company_id).ToListAsync();
                 var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == st_sellers.company_id);
-
-                if (existingSeller.Count>= co_business.createdSites)
+                if(existingSeller.Count >=1 )
+                {
+                    return new ServiceResult<st_sellers>
+                    {
+                        Success = false,
+                        Status = -1,
+                        Message = "Email Already exists"
+                    };
+                }
+                if (existingSeller.Count>= co_business.sites_users_allowed)
                 {
                     return new ServiceResult<st_sellers>
                     {
@@ -76,11 +84,7 @@ namespace Faahi.Service.Store
                 await _context.st_sellers.AddAsync(st_sellers);
                 await _context.SaveChangesAsync();
 
-                if(co_business != null)
-                {
-                    co_business.createdSites_users += 1;
-                    _context.co_business.Update(co_business);
-                }
+                
 
                 var email_auth =await _authService.email_verification(st_sellers.email, "st-seller");
 
@@ -146,6 +150,7 @@ namespace Faahi.Service.Store
                 {
                     co_business.createdSites += 1;
                     _context.co_business.Update(co_business);
+                    _context.SaveChanges();
                 }
 
                 return new ServiceResult<st_stores>
@@ -249,6 +254,12 @@ namespace Faahi.Service.Store
                     };
                 }
                 var seller = await _context.st_sellers.FirstOrDefaultAsync(s => s.email == email);
+                var co_business = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == seller.company_id);
+                if (co_business != null)
+                {
+                    co_business.createdSites_users += 1;
+                    _context.co_business.Update(co_business);
+                }
                 if (seller == null)
                 {
                     return new ServiceResult<st_sellers>
