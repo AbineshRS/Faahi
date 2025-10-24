@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251022173249_st_store_2")]
+    partial class st_store_2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -508,9 +511,6 @@ namespace Faahi.Migrations
                     b.Property<int?>("createdSites")
                         .HasColumnType("int");
 
-                    b.Property<int?>("createdSites_users")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
@@ -542,9 +542,6 @@ namespace Faahi.Migrations
                         .HasColumnType("varchar(50)");
 
                     b.Property<int?>("sites_allowed")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("sites_users_allowed")
                         .HasColumnType("int");
 
                     b.Property<string>("tin_number")
@@ -1385,6 +1382,9 @@ namespace Faahi.Migrations
 
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
+
+                    b.Property<Guid?>("seller_id")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("status")
                         .HasMaxLength(1)

@@ -76,6 +76,8 @@ namespace Faahi.Service.CoBusiness
                 business.created_at = DateTime.Now;
                 business.edit_date_time = DateTime.Now;
                 business.email = business.email;
+                business.sites_allowed = 2;
+                business.sites_users_allowed = 2;
 
                 foreach (var address in business.co_addresses)
                 {
@@ -295,7 +297,6 @@ namespace Faahi.Service.CoBusiness
             }
             try
             {
-                _logger.LogWarning("Username or password is null", username);
 
                 var user = _context.co_business.FirstOrDefault(a => a.name == username || a.email == username);
                 if (user is null)
@@ -501,7 +502,7 @@ namespace Faahi.Service.CoBusiness
 
 
         }
-        public async Task<ServiceResult<am_emailVerifications>> verify(string email, string token)
+        public async Task<ServiceResult<am_emailVerifications>> verify(string email, string token, string userType)
         {
             if (email is null)
             {
@@ -514,7 +515,7 @@ namespace Faahi.Service.CoBusiness
             }
             try
             {
-                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
+                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == userType);
 
                 if (am_email.token != token)
                 {
@@ -531,7 +532,9 @@ namespace Faahi.Service.CoBusiness
                     {
                         Success = false,
                         Message = "You have already verifyed",
-                        Status = -4
+                        Status = -4,
+                        Data=am_email
+
                     };
                 }
                 var handler = new JwtSecurityTokenHandler();
@@ -551,7 +554,8 @@ namespace Faahi.Service.CoBusiness
                     {
                         Success = false,
                         Message = "Invalid or expired token",
-                        Status = -3
+                        Status = -3,
+                        Data=am_email
                     };
                 }
                 am_email.verified = "T";

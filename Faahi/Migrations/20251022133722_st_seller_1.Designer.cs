@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251022133722_st_seller_1")]
+    partial class st_seller_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -508,9 +511,6 @@ namespace Faahi.Migrations
                     b.Property<int?>("createdSites")
                         .HasColumnType("int");
 
-                    b.Property<int?>("createdSites_users")
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
@@ -542,9 +542,6 @@ namespace Faahi.Migrations
                         .HasColumnType("varchar(50)");
 
                     b.Property<int?>("sites_allowed")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("sites_users_allowed")
                         .HasColumnType("int");
 
                     b.Property<string>("tin_number")
@@ -1372,36 +1369,6 @@ namespace Faahi.Migrations
                     b.HasKey("seller_id");
 
                     b.ToTable("st_sellers");
-                });
-
-            modelBuilder.Entity("Faahi.Model.st_sellers.st_stores", b =>
-                {
-                    b.Property<Guid>("store_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("company_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("status")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<string>("store_location")
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<string>("store_name")
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<string>("store_type")
-                        .HasColumnType("varchar(100)");
-
-                    b.HasKey("store_id");
-
-                    b.ToTable("st_stores");
                 });
 
             modelBuilder.Entity("Faahi.Model.table_key.am_table_next_key", b =>

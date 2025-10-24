@@ -356,7 +356,7 @@ namespace Faahi.Service.Auth
         /// </summary>
         /// <param name="email"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<am_emailVerifications>> email_verification(string email)
+        public async Task<ServiceResult<am_emailVerifications>> email_verification(string email, string userType)
         {
             if (email is null)
             {
@@ -369,9 +369,22 @@ namespace Faahi.Service.Auth
             }
             try
             {
-                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
-                var co_existing = await _context.co_business.FirstOrDefaultAsync(a => a.email == email);
-                if (existing != null || co_existing != null)
+                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == userType);
+                if (existing != null)
+                {
+                    if (existing.verified == "T" && existing.userType == "st_seller")
+                    {
+                        return new ServiceResult<am_emailVerifications>
+                        {
+                            Success = false,
+                            Status = -2,
+                            Message = "You have Verified"
+                        };
+                    }
+                }
+                
+                //var co_existing = await _context.co_business.FirstOrDefaultAsync(a => a.email == email);
+                if (existing != null )
                 {
                     return new ServiceResult<am_emailVerifications> { Success = false, Message = "Email already exists.", Status = -1 };
                 }
@@ -394,7 +407,7 @@ namespace Faahi.Service.Auth
                     tokenExpiryTime = tokenExpiryTime,
                     isExpired = "F",
                     verified = "F",
-                    userType = "co-admin"
+                    userType = userType
                 };
 
                 _context.am_emailVerifications.Add(am_Email);
@@ -406,7 +419,7 @@ namespace Faahi.Service.Auth
                     baseUrl = _configuration["MailSettings:BaseUrl"];
                 }
 
-                var verifyUrl = $"{baseUrl}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+                var verifyUrl = $"{baseUrl}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}&userType={userType}";
 
 
                 string subject = "Verify Your Email Address";
@@ -525,11 +538,11 @@ namespace Faahi.Service.Auth
             }
             
         }
-        public async Task<ServiceResult<am_emailVerifications>> Resend_verification(string email)
+        public async Task<ServiceResult<am_emailVerifications>> Resend_verification(string email, string userType)
         {
             if (email is null)
             {
-                _logger.LogWarning("Attempt to resend verification with null email address.");
+                _logger.LogWarning("Attempt to re  send verification with null email address.");
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -543,7 +556,7 @@ namespace Faahi.Service.Auth
                 {
                     return new ServiceResult<am_emailVerifications> { Success = false, Message = "Not found", Status = -2 };
                 }
-                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
+                var existing = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "EmailVerification" && a.userType == userType);
 
                 if (existing.verified == "T")
                 {
@@ -592,7 +605,7 @@ namespace Faahi.Service.Auth
                 {
                     baseUrl = _configuration["MailSettings:BaseUrl"];
                 }
-                var verifyUrl = $"{baseUrl}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}";
+                var verifyUrl = $"{baseUrl}/{_configuration["MailSettings:VerifyEmailPath"]}?token={token}&email={email}&userType={userType}";
 
 
                 string subject = "Verify Your Email Address";

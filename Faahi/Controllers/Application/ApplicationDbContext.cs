@@ -4,6 +4,7 @@ using Faahi.Model.co_business;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
 using Faahi.Model.Shared_tables;
+using Faahi.Model.st_sellers;
 using Faahi.Model.table_key;
 using Microsoft.EntityFrameworkCore;
 
@@ -69,6 +70,9 @@ namespace Faahi.Controllers.Application
 
         public DbSet<im_site_users> im_site_users { get; set; }
 
+        public DbSet<st_sellers> st_sellers { get; set; }
+
+        public DbSet<st_stores> st_stores { get; set; }
 
     }
 

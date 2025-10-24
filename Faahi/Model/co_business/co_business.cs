@@ -48,6 +48,13 @@ namespace Faahi.Model.co_business
         [Column(TypeName = "int")]
         public Int32? createdSites { get; set; } = null;
 
+
+        [Column(TypeName = "int")]
+        public Int32? sites_users_allowed { get; set; } = null;
+
+        [Column(TypeName = "int")]
+        public Int32? createdSites_users { get; set; } = null;
+
         [Column(TypeName = "datetime")]
         public DateTime? edit_date_time { get; set; } = null;
 

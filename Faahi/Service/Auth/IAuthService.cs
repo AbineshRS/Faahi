@@ -17,11 +17,11 @@ namespace Faahi.Service.Auth
 
         Task<ServiceResult<List<am_users>>> Users_list();
 
-        Task<ServiceResult<am_emailVerifications>> email_verification(string email);
+        Task<ServiceResult<am_emailVerifications>> email_verification(string email,string userType);
 
         Task<ServiceResult<am_emailVerifications>> User_Email_verify(string email);
 
-        Task<ServiceResult<am_emailVerifications>> Resend_verification(string email);
+        Task<ServiceResult<am_emailVerifications>> Resend_verification(string email,string userType);
 
         Task<ServiceResult<am_emailVerifications>> _User_Resend_verification(string email);
 

@@ -63,14 +63,14 @@ namespace Faahi.Controllers.Authentication
 
         }
         [HttpPost]
-        [Route("email_verify/{email}")]
-        public async Task<ActionResult<am_emailVerifications>> Email_verify(string email)
+        [Route("email_verify/{email}/{userType}")]
+        public async Task<ActionResult<am_emailVerifications>> Email_verify(string email,string userType)
         {
             if (email == null)
             {
                 return Ok("No email found");
             }
-            var verified_email = await _authService.email_verification(email);
+            var verified_email = await _authService.email_verification(email, userType);
 
             return Ok(verified_email);
         }
@@ -87,14 +87,14 @@ namespace Faahi.Controllers.Authentication
             return Ok(verified_email);
         }
         [HttpPost]
-        [Route("resend_verification/{email}")]
-        public async Task<ActionResult<am_emailVerifications>> Resend_verification(string email)
+        [Route("resend_verification/{email}/{userType}")]
+        public async Task<ActionResult<am_emailVerifications>> Resend_verification(string email,string userType)
         {
             if (email == null)
             {
                 return Ok("No email found");
             }
-            var verified_email = await _authService.Resend_verification(email);
+            var verified_email = await _authService.Resend_verification(email, userType);
 
             return Ok(verified_email);
         }

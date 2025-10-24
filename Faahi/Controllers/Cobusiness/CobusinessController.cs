@@ -69,14 +69,14 @@ namespace Faahi.Controllers.Cobusiness
             return Ok(reset);
         }
         [HttpPost]
-        [Route("verify/{email}/{token}")]
-        public async Task<ActionResult<am_emailVerifications>> Verify(string email, string token)
+        [Route("verify/{email}/{token}/{userType}")]
+        public async Task<ActionResult<am_emailVerifications>> Verify(string email, string token,string userType)
         {
             if (email == null)
             {
                 return Ok("No email found");
             }
-            var verify_satus = await _co_businessService.verify(email, token);
+            var verify_satus = await _co_businessService.verify(email, token, userType);
             return Ok(verify_satus);
         }
         [HttpPost]

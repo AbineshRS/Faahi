@@ -16,7 +16,7 @@ namespace Faahi.Service.CoBusiness
 
         Task<ServiceResult<string>> send_reset_password(string email);
 
-        Task<ServiceResult<am_emailVerifications>> verify(string email, string token);
+        Task<ServiceResult<am_emailVerifications>> verify(string email, string token,string userType);
 
         Task<ServiceResult<am_emailVerifications>> Password_Verify(string email, string token);
 
