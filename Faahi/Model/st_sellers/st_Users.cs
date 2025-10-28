@@ -4,11 +4,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.st_sellers
 {
-    public class st_sellers
+    public class st_Users
     {
         [Key]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? seller_id { get; set; }
+        public Guid? user_id { get; set; }
 
         [ForeignKey("company_id")]
         [Display(Name = "co_business")]

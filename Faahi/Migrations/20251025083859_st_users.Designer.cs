@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251025083859_st_users")]
+    partial class st_users
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -226,53 +229,6 @@ namespace Faahi.Migrations
                     b.HasIndex("st_Partiesparty_id");
 
                     b.ToTable("st_PartyRoles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.Stores.st_UserRoles", b =>
-                {
-                    b.Property<Guid>("role_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("company_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("description")
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<string>("role_name")
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("role_id");
-
-                    b.ToTable("st_UserRoles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.Stores.st_UserStoreAccess", b =>
-                {
-                    b.Property<Guid>("store_access_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<Guid?>("role_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("status")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("user_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("store_access_id");
-
-                    b.ToTable("st_UserStoreAccess");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users", b =>

@@ -1,5 +1,6 @@
 ﻿using Faahi.Model.Email_verify;
 using Faahi.Model.st_sellers;
+using Faahi.Model.Stores;
 using Faahi.Service.Store;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -19,8 +20,8 @@ namespace Faahi.Controllers.Store
         }
         [Authorize]
         [HttpPost]
-        [Route("add_sellers")]
-        public async Task<ActionResult<st_sellers>> Create_sellers(st_sellers st_Sellers)
+        [Route("add_store_users")]
+        public async Task<ActionResult<st_Users>> Create_sellers(st_Users st_Sellers)
         {
             if (st_Sellers == null)
             {
@@ -67,13 +68,49 @@ namespace Faahi.Controllers.Store
         }
         [HttpPost]
         [Route("seller_update_password/{token}/{email}/{password}")]
-        public async Task<ActionResult<st_sellers>> seller_update_password(string token,string email,string password)
+        public async Task<ActionResult<st_Users>> seller_update_password(string token, string email, string password)
         {
             if (email == null)
             {
                 return Ok("No email found");
             }
-            var result = await _istore.Seller_update_password(token,email,password);
+            var result = await _istore.Seller_update_password(token, email, password);
+            return Ok(result);
+        }
+        [HttpPost]
+        [Route("add_roles")]
+        public async Task<ActionResult<st_UserRoles>> Create_roles(st_UserRoles st_UserRoles)
+        {
+            if (st_UserRoles == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _istore.Create_roles(st_UserRoles);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_roles_by_company_id/{company_id}")]
+        public async Task<ActionResult> Get_roles_by_company_id(Guid company_id)
+        {
+            if (company_id == Guid.Empty)
+            {
+                return Ok("No data found");
+            }
+            var result = await _istore.Get_roles_by_company_id(company_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("add_st_UserStoreAccess")]
+        public async Task<ActionResult<st_UserStoreAccess>> Create_st_UserStoreAccess(st_UserStoreAccess st_UserStoreAccess)
+        {
+            if (st_UserStoreAccess == null)
+            {
+                return Ok("No data found");
+            }
+            // Assuming you have a method in Istore to handle this
+            var result = await _istore.Create_store_access(st_UserStoreAccess);
             return Ok(result);
         }
     }
