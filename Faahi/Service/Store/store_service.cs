@@ -46,15 +46,15 @@ namespace Faahi.Service.Store
             {
                 var existingSeller = await _context.st_Users.Where(s => s.company_id == st_sellers.company_id).ToListAsync();
                 var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == st_sellers.company_id);
-                if (existingSeller.Count >= 1)
-                {
-                    return new ServiceResult<st_Users>
-                    {
-                        Success = false,
-                        Status = -1,
-                        Message = "Email Already exists"
-                    };
-                }
+                //if (existingSeller.Count >= 1)
+                //{
+                //    return new ServiceResult<st_Users>
+                //    {
+                //        Success = false,
+                //        Status = -1,
+                //        Message = "Email Already exists"
+                //    };
+                //}
                 if (existingSeller.Count>= co_business.sites_users_allowed)
                 {
                     return new ServiceResult<st_Users>
@@ -86,7 +86,7 @@ namespace Faahi.Service.Store
                 await _context.SaveChangesAsync();
 
                 var email_exist = await _context.st_Users.FirstOrDefaultAsync(a => a.email == st_sellers.email);
-                if (email_exist == null)
+                if (email_exist != null)
                 {
                     var email_auth = await _authService.email_verification(st_sellers.email, "st-seller");
 

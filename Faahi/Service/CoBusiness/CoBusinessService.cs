@@ -7,6 +7,7 @@ using Faahi.Model;
 using Faahi.Model.co_business;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
+using Faahi.Model.st_sellers;
 using Faahi.Service.Auth;
 using Faahi.Service.Email;
 using Microsoft.AspNetCore.Hosting;
@@ -301,17 +302,17 @@ namespace Faahi.Service.CoBusiness
                 var user = _context.co_business.FirstOrDefault(a => a.name == username || a.email == username);
                 if (user is null)
                 {
-                    var site_user = await _context.im_site_users.FirstOrDefaultAsync(a => a.site_user_code == username);
-                    if (site_user is null)
+                    var store_user = await _context.st_Users.FirstOrDefaultAsync(a => a.email == username);
+                    if (store_user is null)
                     {
                         return null;
                     }
-                    if (!BCrypt.Net.BCrypt.Verify(password, site_user.password))
+                    if (!BCrypt.Net.BCrypt.Verify(password, store_user.password))
                     {
                         return null;
                     }
-                    var accessToken_site_users = CreatTokensite_user(site_user, 10);   // 10 minutes
-                    var refreshToken_site_users = CreatTokensite_user(site_user, 10080); // 7 days (in minutes)
+                    var accessToken_site_users = CreatTokensite_user(store_user, 10);   // 10 minutes
+                    var refreshToken_site_users = CreatTokensite_user(store_user, 10080); // 7 days (in minutes)
                     return new AuthResponse
                     {
                         AccessToken = accessToken_site_users,
@@ -363,17 +364,19 @@ namespace Faahi.Service.CoBusiness
                 );
             return new JwtSecurityTokenHandler().WriteToken(tokendescription);
         }
-        private string CreatTokensite_user(im_site_users user, int minutes)
+        private string CreatTokensite_user(st_Users user, int minutes)
         {
+            var user_role = _context.st_UserStoreAccess.FirstOrDefault(a => a.user_id == user.user_id);
+            var roles = _context.st_UserRoles.FirstOrDefault(a => a.role_id == user_role.role_id);
+
             var claims = new List<Claim>
             {
                  new Claim(ClaimTypes.NameIdentifier, user.company_id.ToString() ?? ""), // important for RefreshToken
                  new Claim(ClaimTypes.Name, user.company_id.ToString() ?? ""),
-                 new Claim("userId", user.userId.ToString() ?? ""),
-                 new Claim("site_id", user.site_id.ToString() ?? ""),
+                 new Claim("userId", user.user_id.ToString() ?? ""),
                  new Claim("company_id", user.company_id.ToString() ?? ""),
-                 new Claim("userRole", user.userRole.ToString() ?? ""),
-                 new Claim("FullName", user.fullName.ToString() ?? "")
+                 new Claim("userRole", roles.role_name.ToString() ?? ""),
+                 new Claim("FullName", user.Full_name.ToString() ?? "")
             };
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:key")!));
