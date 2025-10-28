@@ -30,12 +30,12 @@ namespace Faahi.Service.Store
             _authService = authService;
         }
 
-        public async Task<ServiceResult<st_Users>> Create_sellers(st_Users st_sellers)
+        public async Task<ServiceResult<Store_users>> Create_sellers(Store_users Store_users)
         {
-            if (st_sellers == null)
+            if (Store_users == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_sellers: st_sellers is null");
-                return new ServiceResult<st_Users>
+                return new ServiceResult<Store_users>
                 {
                     Success = false,
                     Status = -1,
@@ -44,8 +44,8 @@ namespace Faahi.Service.Store
             }
             try
             {
-                var existingSeller = await _context.st_Users.Where(s => s.company_id == st_sellers.company_id).ToListAsync();
-                var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == st_sellers.company_id);
+                var existingSeller = await _context.st_Users.Where(s => s.company_id == Store_users.company_id).ToListAsync();
+                var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == Store_users.company_id);
                 //if (existingSeller.Count >= 1)
                 //{
                 //    return new ServiceResult<st_Users>
@@ -57,54 +57,64 @@ namespace Faahi.Service.Store
                 //}
                 if (existingSeller.Count>= co_business.sites_users_allowed)
                 {
-                    return new ServiceResult<st_Users>
+                    return new ServiceResult<Store_users>
                     {
                         Success = false,
                         Status = 0,
                         Message = "Seller limit exists",
                     };
                 }
-
-                st_sellers.user_id = Guid.CreateVersion7();
-                st_sellers.company_id = st_sellers.company_id;
-                st_sellers.Full_name = st_sellers.Full_name;
-                st_sellers.email = st_sellers.email;
-                st_sellers.phone = st_sellers.phone;
-                if (st_sellers.password == null)
+                st_Users st_Users = new st_Users();
+                st_Users.user_id = Guid.CreateVersion7();
+                st_Users.company_id = Store_users.company_id;
+                st_Users.Full_name = Store_users.Full_name;
+                st_Users.email = Store_users.email;
+                st_Users.phone = Store_users.phone;
+                if (st_Users.password == null)
                 {
-                    st_sellers.password = null;
+                    st_Users.password = null;
                 }
                 else
                 {
-                    st_sellers.password = PasswordHelper.HashPassword(st_sellers.password);
+                    st_Users.password = PasswordHelper.HashPassword(st_Users.password);
 
                 }
-                st_sellers.account_type = st_sellers.account_type;
-                st_sellers.registration_date = DateTime.Now;
-                st_sellers.status = st_sellers.status;
-                await _context.st_Users.AddAsync(st_sellers);
+                st_Users.account_type = Store_users.account_type;
+                st_Users.registration_date = DateTime.Now;
+                st_Users.status = Store_users.status;
+
+                await _context.st_Users.AddAsync(st_Users);
+
+                st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
+                st_UserStoreAccess.store_access_id = Guid.CreateVersion7();
+                st_UserStoreAccess.user_id = st_Users.user_id;
+                st_UserStoreAccess.store_id = Store_users.store_id;
+                st_UserStoreAccess.role_id = Store_users.role_id;
+                st_UserStoreAccess.created_at = DateTime.Now;
+                await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
+
                 await _context.SaveChangesAsync();
 
-                var email_exist = await _context.st_Users.FirstOrDefaultAsync(a => a.email == st_sellers.email);
+                var email_exist = await _context.st_Users.FirstOrDefaultAsync(a => a.email == st_Users.email);
                 if (email_exist != null)
                 {
-                    var email_auth = await _authService.email_verification(st_sellers.email, "st-seller");
+                    var email_auth = await _authService.email_verification(st_Users.email, "st-seller");
 
                 }
 
 
-                return new ServiceResult<st_Users>
+                return new ServiceResult<Store_users>
                 {
                     Success = true,
                     Status = 1,
                     Message = "Seller created successfully",
-                    Data = st_sellers
+                    Data = Store_users
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Create_sellers: Exception occurred while creating seller");
-                return new ServiceResult<st_Users>
+                return new ServiceResult<Store_users>
                 {
                     Success = false,
                     Status = -1,

@@ -21,7 +21,7 @@ namespace Faahi.Controllers.Store
         [Authorize]
         [HttpPost]
         [Route("add_store_users")]
-        public async Task<ActionResult<st_Users>> Create_sellers(st_Users st_Sellers)
+        public async Task<ActionResult<Store_users>> Create_sellers(Store_users st_Sellers)
         {
             if (st_Sellers == null)
             {

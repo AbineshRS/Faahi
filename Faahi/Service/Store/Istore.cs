@@ -7,7 +7,7 @@ namespace Faahi.Service.Store
 {
     public interface Istore
     {
-        Task<ServiceResult<st_Users>> Create_sellers(st_Users st_sellers);
+        Task<ServiceResult<Store_users>> Create_sellers(Store_users st_sellers);
 
         Task<ServiceResult<st_stores>> Create_stores(st_stores st_Stores);
 
