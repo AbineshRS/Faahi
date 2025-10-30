@@ -30,7 +30,7 @@ namespace Faahi.Model.co_business
         [Column(TypeName = "varchar(max)")]
         public string? address { get; set; } = null;
 
-        [Column(TypeName = "varchar(100)")]
+        [Column(TypeName = "varchar(max)")]
         public string? logo_fileName { get; set; } = null;
 
         [Column(TypeName ="varchar(20)")]

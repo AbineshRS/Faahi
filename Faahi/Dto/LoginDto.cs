@@ -9,6 +9,7 @@
     {
         public string AccessToken { get; set; }
         public string RefreshToken { get; set; }
+        public Int16? status { get; set; }
     }
 
     public class TokenRequest

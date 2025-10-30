@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251029080612_countries")]
+    partial class countries
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -571,7 +574,7 @@ namespace Faahi.Migrations
                         .HasColumnType("varchar(50)");
 
                     b.Property<string>("logo_fileName")
-                        .HasColumnType("varchar(max)");
+                        .HasColumnType("varchar(100)");
 
                     b.Property<string>("name")
                         .HasColumnType("varchar(50)");
@@ -680,6 +683,9 @@ namespace Faahi.Migrations
                     b.Property<string>("category_name")
                         .HasColumnType("varchar(30)");
 
+                    b.Property<Guid?>("company_id")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime?>("edit_date_time")
                         .HasColumnType("datetime");
 
@@ -693,8 +699,8 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<Guid?>("parent_id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("parent_id")
+                        .HasColumnType("varchar(30)");
 
                     b.HasKey("category_id");
 

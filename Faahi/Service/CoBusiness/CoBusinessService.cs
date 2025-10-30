@@ -1,4 +1,8 @@
-﻿using Azure.Core;
+﻿using Amazon.Runtime.Internal.Util;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Transfer;
+using Azure.Core;
 using Dekiru.QueryFilter.Extensions;
 using Dekiru.QueryFilter.Macros;
 using Faahi.Controllers.Application;
@@ -14,6 +18,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
@@ -34,13 +39,15 @@ namespace Faahi.Service.CoBusiness
         public static IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<CoBusinessService> _logger;
         private readonly IHttpContextAccessor _contextAccessor;
-        public CoBusinessService(ApplicationDbContext context, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, ILogger<CoBusinessService> logger, IHttpContextAccessor contextAccessor)
+        private readonly IMemoryCache _cache;
+        public CoBusinessService(ApplicationDbContext context, IConfiguration configuration, IWebHostEnvironment webHostEnvironment, ILogger<CoBusinessService> logger, IHttpContextAccessor contextAccessor, IMemoryCache cache)
         {
             _context = context;
             _configuration = configuration;
             _webHostEnvironment = webHostEnvironment;
             _logger = logger;
             _contextAccessor = contextAccessor;
+            _cache = cache;
         }
 
         public async Task<ServiceResult<co_business>> Create_account(co_business business)
@@ -54,6 +61,10 @@ namespace Faahi.Service.CoBusiness
             try
             {
                 var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == business.email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
+                if (email_verify == null)
+                {
+                    return new ServiceResult<co_business> { Success = false, Message = "No Email found account", Status = -1 };
+                }
                 if (email_verify.verified == "F")
                 {
 
@@ -201,6 +212,7 @@ namespace Faahi.Service.CoBusiness
 
                 return new ServiceResult<co_business>
                 {
+                    Status=1,
                     Success = true,
                     Message = "User created successfully",
                     Data = business
@@ -218,11 +230,11 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
-        public async Task<ActionResult<ServiceResult<string>>> Upload_logo(IFormFile formFile, string company_id)
+        public async Task<ActionResult<ServiceResult<string>>> Upload_logo(IFormFile formFile, Guid company_id)
         {
             if (formFile == null || formFile.Length == 0)
             {
-                _logger.LogWarning("No data found in file", formFile);
+                _logger.LogWarning("No file uploaded");
                 return new ServiceResult<string>
                 {
                     Success = false,
@@ -230,31 +242,68 @@ namespace Faahi.Service.CoBusiness
                     Data = null
                 };
             }
+
             try
             {
+                // Prepare file name and relative path
+                var fileInfo = new FileInfo(formFile.FileName);
+                var newItemFile = $"sub_{company_id}_1{fileInfo.Extension}";
+                var relativePath = $"Images/Company/{company_id}/Companylogo/{newItemFile}";
 
-                FileInfo fileInfo = new FileInfo(formFile.FileName);
-                var newItemFile = "sub_" + company_id + "_1" + fileInfo.Extension;
+                // Load Wasabi configuration
+                var wasabiConfig = _configuration.GetSection("Wasabi");
+                string accessKey = wasabiConfig["AccessKey"];
+                string secretKey = wasabiConfig["SecretKey"];
+                string bucketName = wasabiConfig["BucketName"];
+                string serviceUrl = wasabiConfig["ServiceUrl"];
 
-                string relativeFolder = Path.Combine("Images", "Company", company_id, "Companylogo");
-                string fullFolderPath = Path.Combine(_webHostEnvironment.WebRootPath, relativeFolder);
-
-                if (!Directory.Exists(fullFolderPath))
+                // Configure Wasabi S3 client
+                var s3Config = new AmazonS3Config
                 {
-                    Directory.CreateDirectory(fullFolderPath);
+                    ServiceURL = serviceUrl,
+                    ForcePathStyle = true, // Required for Wasabi
+                    UseHttp = false
+                };
+
+                using var s3Client = new AmazonS3Client(accessKey, secretKey, s3Config);
+
+                // ✅ Delete old logo if exists
+                var co_buss = await _context.co_business.FirstOrDefaultAsync(a=>a.company_id==company_id);
+                if (co_buss != null && !string.IsNullOrEmpty(co_buss.logo_fileName))
+                {
+                    try
+                    {
+                        // Extract key from URL
+                        var oldKey = co_buss.logo_fileName.Substring(co_buss.logo_fileName.IndexOf(bucketName) + bucketName.Length + 1);
+                        await s3Client.DeleteObjectAsync(bucketName, oldKey.Replace("\\", "/"));
+                    }
+                    catch (Exception delEx)
+                    {
+                        _logger.LogWarning(delEx, "Failed to delete old Wasabi logo");
+                    }
                 }
 
-                string fullPath = Path.Combine(fullFolderPath, newItemFile);
-
-                using (var stream = new FileStream(fullPath, FileMode.Create))
+                // Upload new logo
+                using (var stream = formFile.OpenReadStream())
                 {
-                    await formFile.CopyToAsync(stream);
-                    await stream.FlushAsync();
+                    stream.Position = 0; // Ensure stream starts at beginning
+
+                    var putRequest = new PutObjectRequest
+                    {
+                        BucketName = bucketName,
+                        Key = relativePath,
+                        InputStream = stream,
+                        ContentType = formFile.ContentType,
+                        CannedACL = S3CannedACL.PublicRead // Or Private if needed
+                    };
+
+                    await s3Client.PutObjectAsync(putRequest);
                 }
 
-                string relativePath = Path.Combine(relativeFolder, newItemFile).Replace("\\", "/");
+                // Build public URL
+                string fileUrl = $"{serviceUrl}/{bucketName}/{relativePath}".Replace("\\", "/");
 
-                var co_buss = await _context.co_business.FindAsync(company_id);
+                // Save URL in database
                 if (co_buss == null)
                 {
                     return new ServiceResult<string>
@@ -272,21 +321,103 @@ namespace Faahi.Service.CoBusiness
                 return new ServiceResult<string>
                 {
                     Success = true,
-                    Message = "File uploaded",
-                    Data = relativePath
+                    Message = "File uploaded to Wasabi successfully",
+                    Data = fileUrl
+                };
+            }
+            catch (AmazonS3Exception s3Ex)
+            {
+                _logger.LogError(s3Ex, "Wasabi S3 error: {Message}", s3Ex.Message);
+                return new ServiceResult<string>
+                {
+                    Success = false,
+                    Message = $"Wasabi S3 Error: {s3Ex.Message}",
+                    Status = -500
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while logo");
+                _logger.LogError(ex, "Unexpected error while uploading to Wasabi");
                 return new ServiceResult<string>
                 {
                     Success = false,
-                    Message = "An unexpected error occurred",
+                    Message = $"An unexpected error occurred: {ex.Message}",
                     Status = -500
                 };
             }
+        }
+        public async Task<ServiceResult<co_business>> Get_company(Guid companyId)
+        {
+            if (companyId == Guid.Empty)
+            {
+                _logger.LogWarning("No company ID provided", companyId);
+                return new ServiceResult<co_business>
+                {
+                    Status = -1,
+                    Success = false,
+                    Message = "No data found"
+                };
+            }
 
+            var company = await _context.co_business
+                .Include(a => a.co_addresses)
+                .FirstOrDefaultAsync(a => a.company_id == companyId);
+
+            if (company == null)
+            {
+                return new ServiceResult<co_business>
+                {
+                    Status = -2,
+                    Success = false,
+                    Message = "Company not found"
+                };
+            }
+
+            string key = company.logo_fileName;
+            if (!string.IsNullOrEmpty(key))
+            {
+                // Try to get cached URL first
+                if (!_cache.TryGetValue(key, out string cachedUrl))
+                {
+                    var wasabiConfig = _configuration.GetSection("Wasabi");
+                    string accessKey = wasabiConfig["AccessKey"];
+                    string secretKey = wasabiConfig["SecretKey"];
+                    string bucketName = wasabiConfig["BucketName"];
+                    string serviceUrl = wasabiConfig["ServiceUrl"]; // could be nearest server endpoint
+
+                    using var s3Client = new AmazonS3Client(
+                        accessKey,
+                        secretKey,
+                        new AmazonS3Config
+                        {
+                            ServiceURL = serviceUrl,
+                            ForcePathStyle = true
+                        });
+
+                    // Generate pre-signed URL valid for 1 hour
+                    var request = new GetPreSignedUrlRequest
+                    {
+                        BucketName = bucketName,
+                        Key = key,
+                        Expires = DateTime.UtcNow.AddMinutes(60)
+                    };
+
+                    cachedUrl = s3Client.GetPreSignedURL(request);
+
+                    // Cache the URL for 30 minutes to reduce Wasabi calls
+                    _cache.Set(key, cachedUrl, TimeSpan.FromMinutes(30));
+                }
+
+                company.logo_fileName = cachedUrl;
+            }
+
+            return new ServiceResult<co_business>
+            {
+                Status = 1,
+                Success = true,
+                Message = "Company retrieved successfully",
+                Data = company
+            };
         }
 
         public async Task<AuthResponse> LoginAsyn(string username, string password)
@@ -302,7 +433,20 @@ namespace Faahi.Service.CoBusiness
                 var user = _context.co_business.FirstOrDefault(a => a.name == username || a.email == username);
                 if (user is null)
                 {
+                    
                     var store_user = await _context.st_Users.FirstOrDefaultAsync(a => a.email == username);
+                    var accessToken_site_users = CreatTokensite_user(store_user, 10);   // 10 minutes
+                    var refreshToken_site_users = CreatTokensite_user(store_user, 10080); // 7 days (in minutes)
+                    var sore_userList = _context.st_Users.Where(a => a.email == username).ToList();
+                    if (sore_userList.Count >= 1)
+                    {
+                        return new AuthResponse
+                        {
+                            status=2,
+                            AccessToken = accessToken_site_users,
+                            RefreshToken = refreshToken_site_users
+                        };
+                    }
                     if (store_user is null)
                     {
                         return null;
@@ -311,10 +455,10 @@ namespace Faahi.Service.CoBusiness
                     {
                         return null;
                     }
-                    var accessToken_site_users = CreatTokensite_user(store_user, 10);   // 10 minutes
-                    var refreshToken_site_users = CreatTokensite_user(store_user, 10080); // 7 days (in minutes)
+                   
                     return new AuthResponse
                     {
+                        status=0,
                         AccessToken = accessToken_site_users,
                         RefreshToken = refreshToken_site_users
                     };
@@ -329,6 +473,7 @@ namespace Faahi.Service.CoBusiness
 
                 return new AuthResponse
                 {
+                    status=1,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken
                 };

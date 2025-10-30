@@ -22,7 +22,9 @@ namespace Faahi.Service.CoBusiness
 
         Task<ServiceResult<string>> reset_password(string token, string email,string password);
 
-        Task<ActionResult<ServiceResult<string>>> Upload_logo(IFormFile formFile, string company_id);
+        Task<ActionResult<ServiceResult<string>>> Upload_logo(IFormFile formFile, Guid company_id);
+
+        Task<ServiceResult<co_business>> Get_company(Guid company_id);
 
         Task<ServiceResult<co_business>> Update_profile(co_business co_business,string company_id);
 
@@ -50,5 +52,6 @@ namespace Faahi.Service.CoBusiness
 
         Task<ServiceResult<List<co_business>>> Dekiru(string searchTerm);
 
+        
     }
 }

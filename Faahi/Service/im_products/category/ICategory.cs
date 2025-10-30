@@ -17,5 +17,11 @@ namespace Faahi.Service.im_products.category
 
         Task<ServiceResult<im_item_Category>> Delete(string item_class_id);
 
+        ///From im_ProductCategories Tables
+        ///
+        Task<ServiceResult<im_ProductCategories>> Create_product_category(im_ProductCategories im_ProductCategories);
+
+        Task<ServiceResult<List<im_ProductCategories>>> Get_all_product_category();
+
     }
 }

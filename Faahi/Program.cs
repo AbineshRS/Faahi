@@ -1,6 +1,7 @@
 using Faahi.Controllers.Application;
 using Faahi.Service.Auth;
 using Faahi.Service.CoBusiness;
+using Faahi.Service.countries;
 using Faahi.Service.Email;
 using Faahi.Service.im_products;
 using Faahi.Service.im_products.category;
@@ -98,6 +99,9 @@ builder.Services.AddScoped<IUser,User_service>();
 builder.Services.AddScoped<Iim_purchase,im_purchase_service>();
 builder.Services.AddScoped<Istore,store_service>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<Iavl_countries,avl_countries_service>();
+builder.Services.AddMemoryCache();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -134,4 +138,4 @@ app.UseStaticFiles();
 
 app.MapControllers();
 
-app.Run();
+app.Run();  

@@ -90,14 +90,11 @@ namespace Faahi.Controllers.Store
         }
         [Authorize]
         [HttpGet]
-        [Route("get_roles_by_company_id/{company_id}")]
-        public async Task<ActionResult> Get_roles_by_company_id(Guid company_id)
+        [Route("get_roles_by_company_id")]
+        public async Task<ActionResult> Get_roles_by_company_id()
         {
-            if (company_id == Guid.Empty)
-            {
-                return Ok("No data found");
-            }
-            var result = await _istore.Get_roles_by_company_id(company_id);
+            
+            var result = await _istore.Get_roles_by_company_id();
             return Ok(result);
         }
         [Authorize]
@@ -113,6 +110,31 @@ namespace Faahi.Controllers.Store
             var result = await _istore.Create_store_access(st_UserStoreAccess);
             return Ok(result);
         }
+        [Authorize]
+        [HttpGet]
+        [Route("get_store_by_email/{email}")]
+        public async Task<ActionResult> Get_store_by_email(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                return Ok("No email found");
+            }
+            var result = await _istore.Get_store_by_email(email);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_userrole/{user_id}/{store_id}")]
+        public async Task<ActionResult> Get_userrole(Guid user_id, Guid store_id)
+        {
+            if (user_id == Guid.Empty || store_id == Guid.Empty)
+            {
+                return Ok("No data found");
+            }
+            var result = await _istore.Get_userrole(user_id, store_id);
+            return Ok(result);
+        }
+
     }
 
 }

@@ -1,4 +1,6 @@
-﻿using Faahi.Dto;
+﻿using Amazon.S3;
+using Amazon.S3.Model;
+using Faahi.Dto;
 using Faahi.Model.co_business;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
@@ -7,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 
 namespace Faahi.Controllers.Cobusiness
@@ -16,6 +19,7 @@ namespace Faahi.Controllers.Cobusiness
     public class CobusinessController : ControllerBase
     {
         private readonly ICoBusinessservice _co_businessService;
+
         public CobusinessController(ICoBusinessservice co_businessService)
         {
             _co_businessService = co_businessService;
@@ -34,7 +38,7 @@ namespace Faahi.Controllers.Cobusiness
         }
         [HttpPost]
         [Route("upload_logo/{company_id}")]
-        public async Task<ActionResult<string>> Upload(IFormFile formFil, string company_id)
+        public async Task<ActionResult<string>> Upload(IFormFile formFil, Guid company_id)
         {
             if (formFil is null)
             {
@@ -42,6 +46,18 @@ namespace Faahi.Controllers.Cobusiness
             }
             var upload = await _co_businessService.Upload_logo(formFil, company_id);
             return Ok(upload);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_company/{company_id}")]
+        public async Task<IActionResult> Get_company(Guid company_id)
+        {
+            if (company_id == null)
+            {
+                return Ok("No data found");
+            }
+            var company = await _co_businessService.Get_company(company_id);
+            return Ok(company);
         }
         [HttpPost]
         [Route("login/{username}/{password}")]
@@ -54,7 +70,7 @@ namespace Faahi.Controllers.Cobusiness
                 return Ok(new { status = -1, message = "Username / Password invalid" });
             }
 
-            return Ok(new { status = 1, token });
+            return Ok( token );
 
         }
         [HttpPost]
@@ -248,6 +264,6 @@ namespace Faahi.Controllers.Cobusiness
             var data = await _co_businessService.Dekiru(searchTerm);
             return Ok(data);
         }
-
+        
     }
 }

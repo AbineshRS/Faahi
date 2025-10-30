@@ -27,6 +27,7 @@ namespace Faahi.Service.Auth
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
+
         public async Task<AuthResponse> LoginAsyn(string username, string password)
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
@@ -1074,6 +1075,7 @@ namespace Faahi.Service.Auth
             }
             
         }
+
         public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
         {
             if (email == null)

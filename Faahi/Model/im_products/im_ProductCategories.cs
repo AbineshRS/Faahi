@@ -10,15 +10,15 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? category_id { get; set; }
 
-        [ForeignKey("company_id")]
-        [Column(TypeName = "uniqueidentifier")]
-        public Guid? company_id { get; set; }
+        //[ForeignKey("company_id")]
+        //[Column(TypeName = "uniqueidentifier")]
+        //public Guid? company_id { get; set; }
 
         [Column(TypeName ="varchar(30)")]
         public string? category_name { get; set; }=null;
 
-        [Column (TypeName ="varchar(30)")]
-        public string? parent_id { get; set; }=null ;
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? parent_id { get; set; } = null;
 
         [Column(TypeName ="varchar(200)")]
         public string? image_url { get; set; }=null ;

@@ -1,6 +1,7 @@
 ﻿using Faahi.Model;
 using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
+using Faahi.Model.countries;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
 using Faahi.Model.Shared_tables;
@@ -78,6 +79,8 @@ namespace Faahi.Controllers.Application
         public DbSet<st_UserRoles> st_UserRoles { get; set; }
 
         public DbSet<st_UserStoreAccess> st_UserStoreAccess { get; set; }
+
+        public DbSet<avl_countries> avl_countries { get; set; }
 
     }
 
