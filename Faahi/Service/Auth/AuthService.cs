@@ -20,7 +20,7 @@ namespace Faahi.Service.Auth
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        public AuthService(ApplicationDbContext context, IConfiguration configuration, ILogger<AuthService> logger, IHttpContextAccessor httpContextAccessor    )
+        public AuthService(ApplicationDbContext context, IConfiguration configuration, ILogger<AuthService> logger, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
             _configuration = configuration;
@@ -84,13 +84,10 @@ namespace Faahi.Service.Auth
                 );
             return new JwtSecurityTokenHandler().WriteToken(tokendescription);
         }
-        public AuthResponse RefreshToken(string request)
+        public AuthResponse RefreshToken(string refreshToken)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request))
-            {
-                // Refresh token was not provided
-                throw new ArgumentException("Refresh token is required", nameof(request));
-            }
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                throw new ArgumentException("Refresh token is required", nameof(refreshToken));
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(_configuration["AppSettings:Key"]);
@@ -98,37 +95,43 @@ namespace Faahi.Service.Auth
             try
             {
                 // Validate refresh token
-                var principal = tokenHandler.ValidateToken(request,
-                    new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidIssuer = _configuration["AppSettings:Issuer"],
-                        ValidAudience = _configuration["AppSettings:Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(key),
-                        ValidateLifetime = true, // check expiry
-                        ClockSkew = TimeSpan.Zero
-                    }, out SecurityToken validatedToken);
+                var principal = tokenHandler.ValidateToken(refreshToken, new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidIssuer = _configuration["AppSettings:Issuer"],
+                    ValidAudience = _configuration["AppSettings:Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateLifetime = true, // check expiry
+                    ClockSkew = TimeSpan.Zero
+                }, out SecurityToken validatedToken);
 
-                // Extract user claims
+                // Extract claims
                 var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userRole = principal.FindFirst("userRole")?.Value;
+                var companyId = principal.FindFirst("company_id")?.Value;
 
                 if (string.IsNullOrEmpty(userId))
-                {
-                    // Invalid token claims
                     return null;
-                }
-                var parsedId = Guid.Parse(userId);
-                // Issue new tokens
-                var newAccessToken = CreatToken(new am_users
-                {
-                    userId = parsedId,
-                }, 10); // 15 minutes
 
-                var newRefreshToken = CreatToken(new am_users
-                {
-                    userId = parsedId
+                var parsedUserId = Guid.Parse(userId);
 
+                // Create new access token with all necessary claims
+                var newAccessToken = CreateToken(new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, parsedUserId.ToString()),
+                    new Claim("userRole", userRole ?? ""),
+                    new Claim("company_id", companyId ?? ""),
+                    new Claim("userId", userId ?? ""),
+                }, 15); // 15 minutes
+
+                // Create new refresh token with the same claims
+                var newRefreshToken = CreateToken(new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, parsedUserId.ToString()),
+                    new Claim("userRole", userRole ?? ""),
+                    new Claim("company_id", companyId ?? ""),
+                    new Claim("userId", userId ?? "")
                 }, 10080); // 7 days
 
                 return new AuthResponse
@@ -139,15 +142,30 @@ namespace Faahi.Service.Auth
             }
             catch (SecurityTokenExpiredException)
             {
-                // Token expired
-                return null;
+                return null; // token expired
             }
-            catch (Exception ex)
+            catch
             {
-                // Invalid token
-                return null;
+                return null; // invalid token
             }
         }
+        private string CreateToken(List<Claim> claims, int expiresInMinutes)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["AppSettings:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["AppSettings:Issuer"],
+                audience: _configuration["AppSettings:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(expiresInMinutes),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+
 
         public async Task<ServiceResult<am_users>> Create_account(am_users user)
         {
@@ -383,9 +401,9 @@ namespace Faahi.Service.Auth
                         };
                     }
                 }
-                
+
                 //var co_existing = await _context.co_business.FirstOrDefaultAsync(a => a.email == email);
-                if (existing != null )
+                if (existing != null)
                 {
                     return new ServiceResult<am_emailVerifications> { Success = false, Message = "Email already exists.", Status = -1 };
                 }
@@ -440,7 +458,7 @@ namespace Faahi.Service.Auth
 
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred during email verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
@@ -450,7 +468,7 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            
+
         }
         /// <summary>
         /// User Email verification
@@ -527,7 +545,7 @@ namespace Faahi.Service.Auth
 
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred during user email verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
@@ -537,7 +555,7 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            
+
         }
         public async Task<ServiceResult<am_emailVerifications>> Resend_verification(string email, string userType)
         {
@@ -624,7 +642,7 @@ namespace Faahi.Service.Auth
                     Status = 1
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while attempting to resend verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
@@ -634,7 +652,7 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            
+
         }
         /// <summary>
         /// User resend verification
@@ -726,7 +744,7 @@ namespace Faahi.Service.Auth
                     Status = 1
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while attempting to resend user verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
@@ -736,7 +754,7 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            
+
         }
         /// <summary>
         /// Verify user using email token
@@ -811,7 +829,7 @@ namespace Faahi.Service.Auth
                     Data = am_email
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred during email verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
@@ -821,7 +839,7 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            
+
         }
         public async Task<ServiceResult<List<am_users>>> Users_list()
         {
@@ -861,7 +879,7 @@ namespace Faahi.Service.Auth
                     Data = user
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while updating profile for user ID {UserId}", userId);
                 return new ServiceResult<am_users>
@@ -870,7 +888,7 @@ namespace Faahi.Service.Auth
                     Message = "An error occurred while updating the profile."
                 };
             }
-            
+
         }
         /// <summary>
         /// user reset_password
@@ -977,7 +995,7 @@ namespace Faahi.Service.Auth
                 };
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while attempting to send reset password for {Email}", email);
                 return new ServiceResult<string>
@@ -987,7 +1005,7 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            
+
 
         }
         /// <summary>
@@ -1063,7 +1081,7 @@ namespace Faahi.Service.Auth
                     Data = am_email
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred during user email verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
@@ -1073,7 +1091,7 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            
+
         }
 
         public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
@@ -1157,7 +1175,7 @@ namespace Faahi.Service.Auth
 
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while attempting to reset password for {Email}", email);
                 return new ServiceResult<string>
@@ -1167,7 +1185,7 @@ namespace Faahi.Service.Auth
                     Status = -2
                 };
             }
-            
+
         }
     }
 }

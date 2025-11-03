@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Faahi.Controllers.Application
 {
-    public class ApplicationDbContext:DbContext
+    public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -81,6 +81,10 @@ namespace Faahi.Controllers.Application
         public DbSet<st_UserStoreAccess> st_UserStoreAccess { get; set; }
 
         public DbSet<avl_countries> avl_countries { get; set; }
+
+        public DbSet<st_StoreCategories> st_StoreCategories { get; set; }
+
+        public DbSet<st_StoreCategoryTemplates> st_StoreCategoryTemplates { get; set; }
 
     }
 

@@ -1,9 +1,14 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.im_products
 {
+    [Index(nameof(category_name),IsUnique =false)]
+    [Index(nameof(parent_id))]
+    [Index(nameof(is_active))]
+    [Index(nameof(Level))]
     public class im_ProductCategories
     {
         [Key]
@@ -14,7 +19,7 @@ namespace Faahi.Model.im_products
         //[Column(TypeName = "uniqueidentifier")]
         //public Guid? company_id { get; set; }
 
-        [Column(TypeName ="varchar(30)")]
+        [Column(TypeName ="nvarchar(30)")]
         public string? category_name { get; set; }=null;
 
         [Column(TypeName = "uniqueidentifier")]

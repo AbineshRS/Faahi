@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251103114925_store_related")]
+    partial class store_related
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -226,54 +229,6 @@ namespace Faahi.Migrations
                     b.HasIndex("st_Partiesparty_id");
 
                     b.ToTable("st_PartyRoles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.Stores.st_StoreCategories", b =>
-                {
-                    b.Property<Guid>("store_category_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("category_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("is_selected")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("store_category_id");
-
-                    b.HasIndex("category_id");
-
-                    b.HasIndex("is_selected");
-
-                    b.HasIndex("store_id");
-
-                    b.ToTable("st_StoreCategories");
-                });
-
-            modelBuilder.Entity("Faahi.Model.Stores.st_StoreCategoryTemplates", b =>
-                {
-                    b.Property<Guid>("store_category_template_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("category_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("store_type")
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("store_category_template_id");
-
-                    b.HasIndex("category_id");
-
-                    b.HasIndex("store_type");
-
-                    b.ToTable("st_StoreCategoryTemplates");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_UserRoles", b =>

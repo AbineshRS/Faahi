@@ -435,7 +435,7 @@ namespace Faahi.Service.CoBusiness
                 {
                     
                     var store_user = await _context.st_Users.FirstOrDefaultAsync(a => a.email == username);
-                    var accessToken_site_users = CreatTokensite_user(store_user, 10);   // 10 minutes
+                    var accessToken_site_users = CreatTokensite_user(store_user, 15);   // 15 minutes
                     var refreshToken_site_users = CreatTokensite_user(store_user, 10080); // 7 days (in minutes)
                     var sore_userList = _context.st_Users.Where(a => a.email == username).ToList();
                     if (sore_userList.Count >= 1)
@@ -468,7 +468,7 @@ namespace Faahi.Service.CoBusiness
                 {
                     return null;
                 }
-                var accessToken = CreatToken(user, 10);   // 10 minutes
+                var accessToken = CreatToken(user, 15);   // 15 minutes
                 var refreshToken = CreatToken(user, 10080); // 7 days (in minutes)
 
                 return new AuthResponse
@@ -492,7 +492,8 @@ namespace Faahi.Service.CoBusiness
                  new Claim(ClaimTypes.NameIdentifier, user.company_id.ToString() ?? ""), // important for RefreshToken
                  new Claim(ClaimTypes.Name, user.company_id.ToString() ?? ""),
                  new Claim("userRole", "co-admin" ?? ""),
-                 new Claim("FullName", user.name.ToString() ?? "")
+                 new Claim("FullName", user.name.ToString() ?? ""),
+                 new Claim("company_id", user.company_id.ToString() ?? ""),
 
             };
             var key = new SymmetricSecurityKey(

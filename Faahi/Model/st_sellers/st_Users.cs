@@ -1,9 +1,17 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.st_sellers
 {
+    [Index(nameof(email))]
+    [Index(nameof(company_id))]
+    [Index(nameof(status))]
+    [Index(nameof(account_type))]
+    [Index(nameof(registration_date))]
+    [Index(nameof(Full_name))]
+    [Index(nameof(phone))]
     public class st_Users
     {
         [Key]

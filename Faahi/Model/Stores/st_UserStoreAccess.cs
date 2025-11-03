@@ -1,9 +1,16 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.Stores
 {
+    [Index(nameof(user_id))]
+    [Index(nameof(store_id))]
+    [Index(nameof(role_id))]
+    [Index(nameof(created_at))]
+    [Index(nameof(status))]
+    
     public class st_UserStoreAccess
     {
         [Key]

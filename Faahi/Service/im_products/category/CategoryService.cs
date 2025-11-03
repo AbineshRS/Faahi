@@ -319,17 +319,17 @@ namespace Faahi.Service.im_products.category
             }
             try
             {
-                var im_ProductCategoriesExist = await _context.im_ProductCategories
-                    .FirstOrDefaultAsync(c => c.category_name.ToLower() == im_ProductCategories.category_name.ToLower());
-                if (im_ProductCategoriesExist != null)
-                {
-                    return new ServiceResult<im_ProductCategories>
-                    {
-                        Success = false,
-                        Message = "Category already exists",
-                        Status = -2
-                    };
-                }
+                //var im_ProductCategoriesExist = await _context.im_ProductCategories
+                //    .FirstOrDefaultAsync(c => c.category_name.ToLower() == im_ProductCategories.category_name.ToLower());
+                //if (im_ProductCategoriesExist != null)
+                //{
+                //    return new ServiceResult<im_ProductCategories>
+                //    {
+                //        Success = false,
+                //        Message = "Category already exists",
+                //        Status = -2
+                //    };
+                //}
 
                 im_ProductCategories.category_id = Guid.CreateVersion7();
                 im_ProductCategories.category_name = im_ProductCategories.category_name;

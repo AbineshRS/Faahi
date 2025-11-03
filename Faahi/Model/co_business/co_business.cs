@@ -1,8 +1,25 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.co_business
 {
+    [Index(nameof(business_name))]
+    [Index(nameof(tin_number))]
+    [Index(nameof(email))]
+    [Index(nameof(reg_no))]
+    [Index(nameof(phoneNumber))]
+    [Index(nameof(plan_type))]
+    [Index(nameof(created_at))]
+    [Index(nameof(country))]
+    [Index(nameof(edit_user_id))]
+    [Index(nameof(created_at))]
+    [Index(nameof(sites_allowed))]
+    [Index(nameof(createdSites))]
+    [Index(nameof(sites_users_allowed))]
+    [Index(nameof(createdSites_users))]
+    [Index(nameof(createdSites))]
+    [Index(nameof(edit_date_time))]
     public class co_business
     {
         [Key]
