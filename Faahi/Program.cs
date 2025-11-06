@@ -1,4 +1,5 @@
 using Faahi.Controllers.Application;
+using Faahi.Mapper;
 using Faahi.Service.Auth;
 using Faahi.Service.CoBusiness;
 using Faahi.Service.countries;
@@ -84,6 +85,9 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.MaxDepth = 200; // Increase max depth if you have deeply nested objects
         options.JsonSerializerOptions.WriteIndented = true; // Optional: makes the JSON output easier to read
     });
+
+//Mapper
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 
 //Services

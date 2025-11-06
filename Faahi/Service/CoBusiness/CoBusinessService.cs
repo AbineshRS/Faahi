@@ -60,6 +60,7 @@ namespace Faahi.Service.CoBusiness
             }
             try
             {
+
                 var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == business.email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
                 if (email_verify == null)
                 {

@@ -1,5 +1,6 @@
 ﻿using Faahi.Dto;
 using Faahi.Model.im_products;
+using Faahi.Model.Stores;
 
 namespace Faahi.Service.im_products.category
 {
@@ -22,6 +23,8 @@ namespace Faahi.Service.im_products.category
         Task<ServiceResult<im_ProductCategories>> Create_product_category(im_ProductCategories im_ProductCategories);
 
         Task<ServiceResult<List<im_ProductCategories>>> Get_all_product_category();
+
+        Task<ServiceResult<List<st_StoreCategories>>> Create_StoreCategories(List<st_StoreCategories> st_StoreCategories);
 
     }
 }

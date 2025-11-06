@@ -1,7 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Faahi.Model.im_products;
+using Faahi.Model.st_sellers;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Faahi.Model.Stores
 {
@@ -29,5 +32,16 @@ namespace Faahi.Model.Stores
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]
         public string? is_selected { get; set; } = null;
+
+        [ForeignKey(nameof(store_id))]
+        [JsonIgnore]
+        public virtual st_stores? Stores { get; set; }
+
+
+        //[ForeignKey(nameof(category_id))]
+        //[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        //public virtual  im_ProductCategories? im_ProductCategories { get; set; } = null;
+
+       
     }
 }

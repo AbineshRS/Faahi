@@ -1,10 +1,12 @@
-﻿using Faahi.Controllers.Application;
+﻿using AutoMapper;
+using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Model.Email_verify;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
 using Faahi.Service.Auth;
 using Faahi.Service.Email;
+using Faahi.View_Model.store;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -21,13 +23,15 @@ namespace Faahi.Service.Store
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AuthService _authService;
-        public store_service(ApplicationDbContext context, ILogger<store_service> logger, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, AuthService authService)
+        private readonly IMapper _mapper;
+        public store_service(ApplicationDbContext context, ILogger<store_service> logger, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, AuthService authService,IMapper mapper)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
             _httpContextAccessor = httpContextAccessor;
             _authService = authService;
+            _mapper = mapper;
         }
 
         public async Task<ServiceResult<Store_users>> Create_sellers(Store_users Store_users)
@@ -53,15 +57,15 @@ namespace Faahi.Service.Store
 
                 List<st_UserStoreAccess> existing_users = new List<st_UserStoreAccess>();
                 var existingSeller = await _context.st_Users.FirstOrDefaultAsync(s => s.email == Store_users.email);
-                if(existingSeller != null)
+                if (existingSeller != null)
                 {
                     existing_users = await _context.st_UserStoreAccess.Where(a => a.user_id == existingSeller.user_id).ToListAsync();
 
                 }
-               
 
 
-                    var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == Store_users.company_id);
+
+                var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == Store_users.company_id);
                 //if (existingSeller.Count >= 1)
                 //{
                 //    return new ServiceResult<st_Users>
@@ -97,7 +101,7 @@ namespace Faahi.Service.Store
                         Message = "Seller with this role already exists for the store",
                     };
                 }
-                
+
                 if (existing_users.Count >= 1)
                 {
                     st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
@@ -155,6 +159,7 @@ namespace Faahi.Service.Store
                     }
                 }
 
+
                 await _context.SaveChangesAsync();
 
                 return new ServiceResult<Store_users>
@@ -179,12 +184,12 @@ namespace Faahi.Service.Store
 
         }
 
-        public async Task<ServiceResult<st_stores>> Create_stores(st_stores st_stores)
+        public async Task<ServiceResult<st_store_add>> Create_stores(st_store_add store_Add)
         {
-            if (st_stores == null)
+            if (store_Add == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_stores: st_stores is null");
-                return new ServiceResult<st_stores>
+                return new ServiceResult<st_store_add>
                 {
                     Success = false,
                     Status = -1,
@@ -193,26 +198,29 @@ namespace Faahi.Service.Store
             }
             try
             {
-                var existingStore = await _context.st_stores.Where(s => s.company_id == st_stores.company_id).ToListAsync();
-                var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == st_stores.company_id);
+                var existingStore = await _context.st_stores.Where(s => s.company_id == store_Add.company_id).ToListAsync();
+                var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == store_Add.company_id);
                 if (existingStore.Count >= co_business.sites_allowed)
                 {
-                    return new ServiceResult<st_stores>
+                    return new ServiceResult<st_store_add>
                     {
                         Success = false,
                         Status = -1,
                         Message = "Store limit reached for this company",
                     };
                 }
+                st_stores st_Stores = new st_stores();
+                st_Stores.store_id = Guid.CreateVersion7();
+                st_Stores.company_id = store_Add.company_id;
+                st_Stores.store_name = store_Add.store_name;
+                st_Stores.store_location = store_Add.store_location;
+                st_Stores.store_type = store_Add.store_type;
+                st_Stores.created_at = DateTime.Now;
+                st_Stores.status = store_Add.status;
 
-                st_stores.store_id = Guid.CreateVersion7();
-                st_stores.company_id = st_stores.company_id;
-                st_stores.store_name = st_stores.store_name;
-                st_stores.store_location = st_stores.store_location;
-                st_stores.store_type = st_stores.store_type;
-                st_stores.created_at = DateTime.Now;
-                st_stores.status = st_stores.status;
-                await _context.st_stores.AddAsync(st_stores);
+                store_Add.store_id = st_Stores.store_id;
+                store_Add.created_at = st_Stores.created_at;
+                await _context.st_stores.AddAsync(st_Stores);
                 await _context.SaveChangesAsync();
 
                 if (co_business != null)
@@ -222,18 +230,18 @@ namespace Faahi.Service.Store
                     _context.SaveChanges();
                 }
 
-                return new ServiceResult<st_stores>
+                return new ServiceResult<st_store_add>
                 {
                     Success = true,
                     Status = 1,
                     Message = "Store created successfully",
-                    Data = st_stores
+                    Data = store_Add
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Create_stores: Exception occurred while creating store");
-                return new ServiceResult<st_stores>
+                return new ServiceResult<st_store_add>
                 {
                     Success = false,
                     Status = -1,
@@ -241,32 +249,70 @@ namespace Faahi.Service.Store
                 };
             }
         }
-        public async Task<ServiceResult<List<st_stores>>> Get_store(Guid company_id)
+        public async Task<ServiceResult<List<st_store_view>>> Get_store(Guid company_id)
         {
+            if(company_id==null)
+            {
+                _logger.LogWarning("Get_store called with null company_id");
+                return new ServiceResult<List<st_store_view>>
+                {
+                    Success = false,
+                    Message = "company_id cannot be null",
+                    Status = -1,
+                };
+            }
             try
             {
-                var stores = await _context.st_stores.Where(s => s.company_id == company_id).ToListAsync();
-                if (stores == null || stores.Count == 0)
+               
+                var st_Stores = await _context.st_stores.Where(s => s.company_id == company_id).ToListAsync();
+
+                List<st_store_view> storeViews_list = new List<st_store_view>();
+                foreach (var store in st_Stores)
                 {
-                    return new ServiceResult<List<st_stores>>
+                    var store_view = _mapper.Map<st_store_view>(store);
+                    store_view.st_StoreCategories= new List<st_StoreCategories_view>();
+
+                    var storecategories = await _context.st_StoreCategories.Where(c=>c.store_id==store.store_id).ToListAsync();
+
+                    foreach(var category in storecategories)
+                    {
+                        var category_view = _mapper.Map<st_StoreCategories_view>(category);
+                        category_view.im_ProductCategories_view= new List<im_ProductCategories_view>();
+
+                        var category_details = await _context.im_ProductCategories.Where(p=>p.category_id==category.category_id).ToListAsync();
+
+                        foreach(var detail in category_details)
+                        {
+                            var detail_view  = _mapper.Map<im_ProductCategories_view>(detail);
+                            category_view.im_ProductCategories_view.Add(detail_view);
+                        }
+                        store_view.st_StoreCategories.Add(category_view);
+                    }
+                    storeViews_list.Add(store_view);
+                }
+
+
+                if (storeViews_list == null || storeViews_list.Count == 0)
+                {
+                    return new ServiceResult<List<st_store_view>>
                     {
                         Success = false,
                         Status = 0,
                         Message = "No stores found for the given company_id",
                     };
                 }
-                return new ServiceResult<List<st_stores>>
+                return new ServiceResult<List<st_store_view>>
                 {
                     Success = true,
                     Status = 1,
                     Message = "Stores retrieved successfully",
-                    Data = stores
+                    Data = storeViews_list
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Get_store: Exception occurred while retrieving stores");
-                return new ServiceResult<List<st_stores>>
+                return new ServiceResult<List<st_store_view>>
                 {
                     Success = false,
                     Status = -1,
@@ -279,9 +325,9 @@ namespace Faahi.Service.Store
             try
             {
                 var stores = await _context.st_stores.Where(s => s.company_id == company_id).ToListAsync();
-                var st_store_acces=  _context.st_UserStoreAccess.AsEnumerable().Where(a => stores.Select(s => s.store_id).Contains(a.store_id)).ToList();
+                var st_store_acces = _context.st_UserStoreAccess.AsEnumerable().Where(a => stores.Select(s => s.store_id).Contains(a.store_id)).ToList();
                 var user_ids = st_store_acces.Select(s => s.user_id).ToList();
-                var sellers =  _context.st_Users.AsEnumerable().Where(a=>a.user_id != null && user_ids.Contains(a.user_id.Value)).ToList();
+                var sellers = _context.st_Users.AsEnumerable().Where(a => a.user_id != null && user_ids.Contains(a.user_id.Value)).ToList();
 
                 //var sellers = await _context.st_Users.Where(s => s.user_id == company_id).ToListAsync();
                 if (sellers == null || sellers.Count == 0)
@@ -443,6 +489,61 @@ namespace Faahi.Service.Store
                 };
             }
         }
+        public async Task<ServiceResult<List<st_StoreCategories>>> Create_StoreCategories(List<st_StoreCategories> st_StoreCategories)
+        {
+            if (st_StoreCategories == null)
+            {
+                _logger.LogWarning("Create_StoreCategories called with null st_StoreCategories");
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = false,
+                    Message = "NO data found to insert",
+                    Status = -1,
+                };
+            }
+            try
+            {
+                var existingcategories = await _context.st_StoreCategories.Where(a => a.store_id == st_StoreCategories.First().store_id && a.category_id == st_StoreCategories.First().category_id).ToListAsync();
+                if (existingcategories.Any())
+                {
+                    return new ServiceResult<List<st_StoreCategories>>
+                    {
+                        Success = false,
+                        Message = "Some categories are already assigned to this store.",
+                        Status = -2
+                    };
+                }
+
+                foreach (var category in st_StoreCategories)
+                {
+                    category.store_category_id = Guid.CreateVersion7();
+                    category.store_id = category.store_id;
+                    category.category_id = category.category_id;
+                    category.is_selected = category.is_selected;
+                    _context.st_StoreCategories.Add(category);
+
+                }
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = true,
+                    Message = "Success",
+                    Status = 1,
+                    Data = st_StoreCategories
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while creating store category");
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = -1,
+                };
+            }
+        }
         public async Task<ServiceResult<st_UserRoles>> Create_roles(st_UserRoles st_UserRoles)
         {
             if (st_UserRoles == null)
@@ -578,11 +679,11 @@ namespace Faahi.Service.Store
                     var st_store = await _context.st_UserStoreAccess.Where(s => s.user_id == storeAccessList.FirstOrDefault().user_id).ToListAsync();
                     var storeIds = st_store.Select(s => s.store_id).ToList();
 
-                     storeList =  _context.st_stores.AsEnumerable()
-                           .Where(a => storeIds.Contains(a.store_id))
-                           .ToList();
+                    storeList = _context.st_stores.AsEnumerable()
+                          .Where(a => storeIds.Contains(a.store_id))
+                          .ToList();
                 }
-                
+
                 return new ServiceResult<List<st_stores>>
                 {
                     Success = true,

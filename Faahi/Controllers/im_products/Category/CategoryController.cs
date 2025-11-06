@@ -1,4 +1,5 @@
 ﻿using Faahi.Model.im_products;
+using Faahi.Model.Stores;
 using Faahi.Service.im_products.category;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -100,6 +101,18 @@ namespace Faahi.Controllers.im_products.Category
         {
             var result = await _category.Get_all_product_category();
             return Ok(result);
+        }
+        //[Authorize]
+        [HttpPost]
+        [Route("add_StoreCategories")]
+        public async Task<ActionResult<List<st_StoreCategories>>> Add_StoreCategories(List<st_StoreCategories> im_StoreCategories)
+        {
+            if (im_StoreCategories == null)
+            {
+                return Ok("no data found");
+            }
+            var created = await _category.Create_StoreCategories(im_StoreCategories);
+            return Ok(created);
         }
     }
 }

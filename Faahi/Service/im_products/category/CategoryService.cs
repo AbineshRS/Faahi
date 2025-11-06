@@ -1,6 +1,7 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Model.im_products;
+using Faahi.Model.Stores;
 using Microsoft.EntityFrameworkCore;
 
 namespace Faahi.Service.im_products.category
@@ -370,14 +371,84 @@ namespace Faahi.Service.im_products.category
                     Status = -1
                 };
             }
-            var Category = await _context.im_ProductCategories.ToListAsync();
-            return new ServiceResult<List<im_ProductCategories>>
+            try
             {
-                Success = true,
-                Message = "Success",
-                Status = 1,
-                Data = Category
-            };
+                var Category = await _context.im_ProductCategories.ToListAsync();
+
+                return new ServiceResult<List<im_ProductCategories>>
+                {
+                    Success = true,
+                    Message = "Success",
+                    Status = 1,
+                    Data = Category
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving product categories");
+                return new ServiceResult<List<im_ProductCategories>>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = -1,
+                };
+            }
+            
+        }
+        public async Task<ServiceResult<List<st_StoreCategories>>> Create_StoreCategories(List<st_StoreCategories> st_StoreCategories)
+        {
+            if (st_StoreCategories == null)
+            {
+                _logger.LogWarning("Create_StoreCategories called with null st_StoreCategories");
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = false,
+                    Message = "NO data found to insert",
+                    Status = -1,
+                };
+            }
+            try
+            {
+                var existingcategories = await _context.st_StoreCategories.Where(a=>a.store_id==st_StoreCategories.First().store_id && a.category_id==st_StoreCategories.First().category_id).ToListAsync();
+                if(existingcategories.Any())
+                {
+                    return new ServiceResult<List<st_StoreCategories>>
+                    {
+                        Success = false,
+                        Message = "Some categories are already assigned to this store.",
+                        Status = -2
+                    };
+                }
+
+                foreach (var category in st_StoreCategories)
+                {
+                    category.store_category_id = Guid.CreateVersion7();
+                    category.store_id = category.store_id;
+                    category.category_id = category.category_id;
+                    category.is_selected = category.is_selected;
+                    _context.st_StoreCategories.Add(category);
+
+                }
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = true,
+                    Message = "Success",
+                    Status = 1,
+                    Data = st_StoreCategories
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while creating store category");
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = -1,
+                };
+            }
         }
     }
 }

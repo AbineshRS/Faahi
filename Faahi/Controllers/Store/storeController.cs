@@ -2,6 +2,7 @@
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
 using Faahi.Service.Store;
+using Faahi.View_Model.store;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -33,14 +34,32 @@ namespace Faahi.Controllers.Store
         [Authorize]
         [HttpPost]
         [Route("add_stores")]
-        public async Task<ActionResult<st_stores>> Create_stores(st_stores st_Stores)
+        public async Task<ActionResult<st_store_add>> Create_stores(StoreUserRequest storeUserRequest)
         {
-            if (st_Stores == null)
+            if (storeUserRequest == null)
             {
                 return Ok("No data found");
             }
-            var result = await _istore.Create_stores(st_Stores);
-            return Ok(result);
+            var result = await _istore.Create_stores(storeUserRequest.st_stores);
+            if (result.Status != 1)
+            {
+                return Ok(result);
+            }
+            if (result.Status ==1)
+            {
+                var storeId = result.Data.store_id;
+                foreach (var category in storeUserRequest.StoreCategories)
+                {
+                    category.store_id = storeId;
+                }
+            }
+           
+            var storeCategoriesResult = await _istore.Create_StoreCategories(storeUserRequest.StoreCategories);
+            return Ok(new
+            {
+                SellerResult = result,
+                StoreCategoriesResult = storeCategoriesResult
+            });
         }
         [Authorize]
         [HttpGet]

@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Faahi.Model.Stores;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Faahi.Model.st_sellers
 {
@@ -41,6 +43,11 @@ namespace Faahi.Model.st_sellers
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]
         public string? status { get; set; } = string.Empty;
+
+        
+
+        //[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] // Ignore for POST
+        //public virtual ICollection<st_StoreCategories>? st_StoreCategories { get; set; }
 
     }
 }
