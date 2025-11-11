@@ -44,7 +44,7 @@ namespace Faahi.Model.st_sellers
         [Column(TypeName = "char(1)")]
         public string? status { get; set; } = string.Empty;
 
-        
+        public ICollection<st_StoresAddres>? st_StoresAddres { get; set; } = null;
 
         //[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] // Ignore for POST
         //public virtual ICollection<st_StoreCategories>? st_StoreCategories { get; set; }

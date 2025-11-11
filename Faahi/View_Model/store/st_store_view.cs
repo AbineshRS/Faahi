@@ -26,6 +26,8 @@ namespace Faahi.View_Model.store
 
         public string? status { get; set; } = string.Empty;
 
+        public ICollection<st_StoresAddres_view>? st_StoresAddres { get; set; }
+
         public ICollection<st_StoreCategories_view>? st_StoreCategories { get; set; }
 
     }

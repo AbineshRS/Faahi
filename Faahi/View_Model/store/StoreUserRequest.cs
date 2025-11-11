@@ -5,7 +5,7 @@ namespace Faahi.View_Model.store
 {
     public class StoreUserRequest
     {
-        public st_store_add st_stores { get; set; } = new();
+        public st_stores st_stores { get; set; } = new();
         public List<st_StoreCategories> StoreCategories { get; set; } = new();
     }
     public class StoreCategoryViewModel

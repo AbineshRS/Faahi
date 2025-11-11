@@ -10,7 +10,7 @@ namespace Faahi.Service.Store
     {
         Task<ServiceResult<Store_users>> Create_sellers(Store_users st_sellers);
 
-        Task<ServiceResult<st_store_add>> Create_stores(st_store_add store_Add);
+        Task<ServiceResult<st_stores>> Create_stores(st_stores store_Add);
 
         Task<ServiceResult<List<st_store_view>>> Get_store(Guid company_id);
 
@@ -29,6 +29,18 @@ namespace Faahi.Service.Store
         Task<ServiceResult<st_UserRoles>> Get_userrole(Guid user_id,Guid store_id);
 
         Task<ServiceResult<List<st_StoreCategories>>> Create_StoreCategories(List<st_StoreCategories> st_StoreCategories);
+
+        Task<ServiceResult<st_stores>> Update_store(Guid store_id, st_stores st_Stores);
+
+        Task<ServiceResult<st_store_view>> Get_store_by_storeid(Guid store_id);
+
+        Task<ServiceResult<List<st_StoreCategories>>> update_category(List<st_StoreCategories> st_StoreCategories);
+
+        Task<ServiceResult<st_StoresAddres>> add_sub_address(Guid store_id,st_StoresAddres st_StoresAddres);
+
+        Task<ServiceResult<st_stores>> Delete_store(Guid store_id);
+
+
 
     }
 }

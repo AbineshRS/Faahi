@@ -34,7 +34,7 @@ namespace Faahi.Controllers.Store
         [Authorize]
         [HttpPost]
         [Route("add_stores")]
-        public async Task<ActionResult<st_store_add>> Create_stores(StoreUserRequest storeUserRequest)
+        public async Task<ActionResult<st_stores>> Create_stores(StoreUserRequest storeUserRequest)
         {
             if (storeUserRequest == null)
             {
@@ -152,6 +152,74 @@ namespace Faahi.Controllers.Store
             }
             var result = await _istore.Get_userrole(user_id, store_id);
             return Ok(result);
+        }
+        //[Authorize]
+        [HttpGet]
+        [Route("get_store_by_storeid/{store_id}")]
+        public async Task<ActionResult> Get_store_by_storeid(Guid store_id)
+        {
+            if (store_id == Guid.Empty)
+            {
+                return Ok("No data found");
+            }
+            var result = await _istore.Get_store_by_storeid(store_id);
+            return Ok(result);
+        }
+
+
+        [Authorize]
+        [HttpPost]
+        [Route("update_store/{store_id}")]
+        public async Task<ActionResult> Update_store(Guid store_id, StoreUserRequest  storeUserRequest)
+        {
+            if (store_id == Guid.Empty)
+            {
+                return Ok("No data found");
+            }
+            var result = await _istore.Update_store(store_id, storeUserRequest.st_stores);
+            if (result.Status != 1)
+            {
+                return Ok(result);
+            }
+            if (result.Status == 1)
+            {
+                var storeId = result.Data.store_id;
+                foreach (var category in storeUserRequest.StoreCategories)
+                {
+                    category.store_id = store_id;
+                }
+            }
+            var storeCategoriesResult = await _istore.update_category(storeUserRequest.StoreCategories);
+            return Ok(new
+            {
+                SellerResult = result,
+                StoreCategoriesResult = storeCategoriesResult
+            });
+        }
+        //[Authorize]
+        [HttpPost]
+        [Route("add_sub_address/{store_id}")]
+        public async Task<ActionResult> add_sub_address(Guid store_id,st_StoresAddres st_StoresAddres)
+        {
+            if(store_id == Guid.Empty)
+            {
+                return Ok("No data found");
+            }
+            var resut = await _istore.add_sub_address(store_id, st_StoresAddres);
+            return Ok(resut);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("delete_store/{store_id}")]
+        public async Task<IActionResult> Delete_store(Guid store_id)
+        {
+            if(store_id == Guid.Empty)
+            {
+                return Ok("not found");
+            }
+            var resut = await _istore.Delete_store(store_id);
+
+            return Ok(resut);
         }
 
     }

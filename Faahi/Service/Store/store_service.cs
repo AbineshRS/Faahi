@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Migrations;
 using Faahi.Model.Email_verify;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
@@ -24,7 +25,7 @@ namespace Faahi.Service.Store
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly AuthService _authService;
         private readonly IMapper _mapper;
-        public store_service(ApplicationDbContext context, ILogger<store_service> logger, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, AuthService authService,IMapper mapper)
+        public store_service(ApplicationDbContext context, ILogger<store_service> logger, IConfiguration configuration, IHttpContextAccessor httpContextAccessor, AuthService authService, IMapper mapper)
         {
             _context = context;
             _logger = logger;
@@ -184,12 +185,12 @@ namespace Faahi.Service.Store
 
         }
 
-        public async Task<ServiceResult<st_store_add>> Create_stores(st_store_add store_Add)
+        public async Task<ServiceResult<st_stores>> Create_stores(st_stores store_Add)
         {
             if (store_Add == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_stores: st_stores is null");
-                return new ServiceResult<st_store_add>
+                return new ServiceResult<st_stores>
                 {
                     Success = false,
                     Status = -1,
@@ -202,7 +203,7 @@ namespace Faahi.Service.Store
                 var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == store_Add.company_id);
                 if (existingStore.Count >= co_business.sites_allowed)
                 {
-                    return new ServiceResult<st_store_add>
+                    return new ServiceResult<st_stores>
                     {
                         Success = false,
                         Status = -1,
@@ -220,6 +221,28 @@ namespace Faahi.Service.Store
 
                 store_Add.store_id = st_Stores.store_id;
                 store_Add.created_at = st_Stores.created_at;
+
+                st_Stores.st_StoresAddres = new List<st_StoresAddres>();
+                foreach (var st_address in store_Add.st_StoresAddres)
+                {
+                    st_StoresAddres _StoresAddres = new st_StoresAddres();
+
+                    _StoresAddres.store_address_id = Guid.CreateVersion7();
+                    _StoresAddres.store_id = st_Stores.store_id;
+                    _StoresAddres.line1 = st_address.line1;
+                    _StoresAddres.line2 = st_address.line2;
+                    _StoresAddres.city = st_address.city;
+                    _StoresAddres.region = st_address.region;
+                    _StoresAddres.postal_code = st_address.postal_code;
+                    _StoresAddres.country = st_address.country;
+                    _StoresAddres.address_type = st_address.address_type;
+                    _StoresAddres.valid_from = DateTime.Now;
+                    _StoresAddres.created_at = DateTime.Now;
+                    _StoresAddres.is_current = "T";
+                    st_Stores.st_StoresAddres.Add(_StoresAddres);
+
+                }
+
                 await _context.st_stores.AddAsync(st_Stores);
                 await _context.SaveChangesAsync();
 
@@ -230,7 +253,7 @@ namespace Faahi.Service.Store
                     _context.SaveChanges();
                 }
 
-                return new ServiceResult<st_store_add>
+                return new ServiceResult<st_stores>
                 {
                     Success = true,
                     Status = 1,
@@ -241,7 +264,7 @@ namespace Faahi.Service.Store
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Create_stores: Exception occurred while creating store");
-                return new ServiceResult<st_store_add>
+                return new ServiceResult<st_stores>
                 {
                     Success = false,
                     Status = -1,
@@ -251,7 +274,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<List<st_store_view>>> Get_store(Guid company_id)
         {
-            if(company_id==null)
+            if (company_id == null)
             {
                 _logger.LogWarning("Get_store called with null company_id");
                 return new ServiceResult<List<st_store_view>>
@@ -263,27 +286,27 @@ namespace Faahi.Service.Store
             }
             try
             {
-               
-                var st_Stores = await _context.st_stores.Where(s => s.company_id == company_id).ToListAsync();
+
+                var st_Stores = await _context.st_stores.Where(s => s.company_id == company_id && s.status == "T").ToListAsync();
 
                 List<st_store_view> storeViews_list = new List<st_store_view>();
                 foreach (var store in st_Stores)
                 {
                     var store_view = _mapper.Map<st_store_view>(store);
-                    store_view.st_StoreCategories= new List<st_StoreCategories_view>();
+                    store_view.st_StoreCategories = new List<st_StoreCategories_view>();
 
-                    var storecategories = await _context.st_StoreCategories.Where(c=>c.store_id==store.store_id).ToListAsync();
+                    var storecategories = await _context.st_StoreCategories.Where(c => c.store_id == store.store_id).ToListAsync();
 
-                    foreach(var category in storecategories)
+                    foreach (var category in storecategories)
                     {
                         var category_view = _mapper.Map<st_StoreCategories_view>(category);
-                        category_view.im_ProductCategories_view= new List<im_ProductCategories_view>();
+                        category_view.im_ProductCategories_view = new List<im_ProductCategories_view>();
 
-                        var category_details = await _context.im_ProductCategories.Where(p=>p.category_id==category.category_id).ToListAsync();
+                        var category_details = await _context.im_ProductCategories.Where(p => p.category_id == category.category_id).ToListAsync();
 
-                        foreach(var detail in category_details)
+                        foreach (var detail in category_details)
                         {
-                            var detail_view  = _mapper.Map<im_ProductCategories_view>(detail);
+                            var detail_view = _mapper.Map<im_ProductCategories_view>(detail);
                             category_view.im_ProductCategories_view.Add(detail_view);
                         }
                         store_view.st_StoreCategories.Add(category_view);
@@ -737,6 +760,345 @@ namespace Faahi.Service.Store
                     Message = "An error occurred while retrieving the store access",
                 };
             }
+        }
+        public async Task<ServiceResult<st_store_view>> Get_store_by_storeid(Guid store_id)
+        {
+            try
+            {
+                var store = await _context.st_stores.Include(a => a.st_StoresAddres.Where(a=>a.is_current=="T")).FirstOrDefaultAsync(s => s.store_id == store_id);
+                if (store == null)
+                {
+                    return new ServiceResult<st_store_view>
+                    {
+                        Success = false,
+                        Status = 0,
+                        Message = "No store found for the given store_id",
+                    };
+                }
+                st_store_view storeViews_list = new st_store_view();
+                List<st_store_view> storeViews = new List<st_store_view>();
+                var store_view = _mapper.Map<st_store_view>(store);
+                store_view.st_StoreCategories = new List<st_StoreCategories_view>();
+                var storecategories = await _context.st_StoreCategories.Where(c => c.store_id == store.store_id).ToListAsync();
+                foreach (var store_cat in storecategories)
+                {
+                    var store_category_view = _mapper.Map<st_StoreCategories_view>(store_cat);
+                    store_category_view.im_ProductCategories_view = new List<im_ProductCategories_view>();
+
+                    var category_details = await _context.im_ProductCategories.Where(p => p.category_id == store_cat.category_id).ToListAsync();
+                    foreach (var detail in category_details)
+                    {
+                        var detail_view = _mapper.Map<im_ProductCategories_view>(detail);
+                        store_category_view.im_ProductCategories_view.Add(detail_view);
+                    }
+                    store_view.st_StoreCategories.Add(store_category_view);
+
+                }
+
+
+
+                return new ServiceResult<st_store_view>
+                {
+                    Success = true,
+                    Status = 1,
+                    Message = "Store retrieved successfully",
+                    Data = store_view
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Get_store_by_storeid: Exception occurred while retrieving store");
+                return new ServiceResult<st_store_view>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "An error occurred while retrieving the store",
+                };
+            }
+        }
+        public async Task<ServiceResult<st_stores>> Update_store(Guid store_id, st_stores st_Stores)
+        {
+            if (st_Stores == null || store_id == null)
+            {
+                _logger.LogWarning(_logger.ToString(), "Update_store: st_Stores is null,store_id is null");
+                return new ServiceResult<st_stores>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "st_Stores cannot be null",
+                };
+            }
+
+            var existingStore = await _context.st_stores.Include(a => a.st_StoresAddres).FirstOrDefaultAsync(s => s.store_id == store_id);
+            if (existingStore == null)
+            {
+                return new ServiceResult<st_stores>
+                {
+                    Success = false,
+                    Status = 0,
+                    Message = "Store not found",
+                };
+            }
+            try
+            {
+                st_stores st_Stores1 = new st_stores();
+                st_Stores1 = existingStore;
+                existingStore.store_name = st_Stores.store_name;
+                existingStore.store_location = st_Stores.store_location;
+                existingStore.store_type = st_Stores.store_type;
+                existingStore.status = st_Stores.status;
+                //existingStore.st_StoresAddres = new List<st_StoresAddres>();
+                foreach (var st_address in st_Stores.st_StoresAddres)
+                {
+                    var existingAddress = existingStore.st_StoresAddres.FirstOrDefault(a => a.store_address_id == st_address.store_address_id);
+                    if (existingAddress != null)
+                    {
+                        existingAddress.line1 = st_address.line1;
+                        existingAddress.line2 = st_address.line2;
+                        existingAddress.city = st_address.city;
+                        existingAddress.region = st_address.region;
+                        existingAddress.postal_code = st_address.postal_code;
+                        existingAddress.country = st_address.country;
+                        existingAddress.address_type = st_address.address_type;
+                        _context.st_StoresAddres.Update(existingAddress);
+                    }
+                    else
+                    {
+                        st_StoresAddres st_StoresAddres = new st_StoresAddres();
+                        st_StoresAddres.store_address_id = Guid.CreateVersion7();
+                        st_StoresAddres.store_id = existingStore.store_id;
+                        st_StoresAddres.address_type = st_address.address_type;
+                        st_StoresAddres.line1 = st_address.line1;
+                        st_StoresAddres.line2 = st_address.line2;
+                        st_StoresAddres.city = st_address.city;
+                        st_StoresAddres.region = st_address.region;
+                        st_StoresAddres.country = st_address.country;
+                        st_StoresAddres.postal_code = st_address.postal_code;
+                        st_StoresAddres.valid_from = DateTime.Now;
+                        st_StoresAddres.created_at = DateTime.Now;
+                        st_StoresAddres.is_current = "T";
+                        _context.st_StoresAddres.Add(st_StoresAddres);
+                        st_Stores1.st_StoresAddres.Add(st_StoresAddres);
+                    }
+
+                }
+                existingStore.st_StoresAddres = st_Stores1.st_StoresAddres;
+
+                _context.st_stores.Update(existingStore);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<st_stores>
+                {
+                    Success = true,
+                    Status = 1,
+                    Message = "Store updated successfully",
+                    Data = st_Stores
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Update_store: Exception occurred while updating store");
+                return new ServiceResult<st_stores>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "An error occurred while updating the store",
+                };
+            }
+        }
+        public async Task<ServiceResult<List<st_StoreCategories>>> update_category(List<st_StoreCategories> st_StoreCategories)
+        {
+            if (st_StoreCategories == null)
+            {
+                _logger.LogWarning("update_category called with null st_StoreCategories");
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = false,
+                    Message = "NO data found to update",
+                    Status = -1,
+                };
+            }
+            try
+            {
+                //Delete removed categories
+                var storeId = st_StoreCategories.First().store_id;
+                var existingcategories = await _context.st_StoreCategories.Where(a => a.store_id == storeId).ToListAsync();
+                var newCategoryIds = st_StoreCategories.Select(c => c.category_id).ToList();
+                var deletedCategories = existingcategories.Where(c => !newCategoryIds.Contains(c.category_id)).ToList();
+                if (deletedCategories.Any())
+                {
+                    foreach (var category in deletedCategories)
+                    {
+                        _context.st_StoreCategories.Remove(category);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+
+                foreach (var category in st_StoreCategories)
+                {
+                    var existingCategory = await _context.st_StoreCategories.FirstOrDefaultAsync(c => c.store_category_id == category.store_category_id);
+                    if (existingCategory == null)
+                    {
+                        //Add new category
+                        category.store_category_id = Guid.CreateVersion7();
+                        category.category_id = category.category_id;
+                        category.store_id = category.store_id;
+                        category.is_selected = "T";
+                        _context.st_StoreCategories.Add(category);
+                        await _context.SaveChangesAsync();
+
+
+                    }
+                    if (existingCategory != null)
+                    {
+                        //Update existing category
+                        existingCategory.category_id = category.category_id;
+                        _context.st_StoreCategories.Update(existingCategory);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = true,
+                    Message = "Success",
+                    Status = 1,
+                    Data = st_StoreCategories
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating store category");
+                return new ServiceResult<List<st_StoreCategories>>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = -1,
+                };
+            }
+        }
+        public async Task<ServiceResult<st_StoresAddres>> add_sub_address(Guid store_id, st_StoresAddres st_StoresAddres)
+        {
+            if (store_id == null)
+            {
+                return new ServiceResult<st_StoresAddres>
+                {
+                    Status = -1,
+                    Success = false,
+                    Message = "NO data found",
+                };
+            }
+            try
+            {
+                var exising_data = await _context.st_stores.Include(a => a.st_StoresAddres).FirstOrDefaultAsync(a => a.store_id == store_id);
+                if (exising_data == null)
+                {
+                    return new ServiceResult<st_StoresAddres>
+                    {
+                        Status = -2,
+                        Success = false
+                    };
+
+                }
+
+                foreach (var st_address in exising_data.st_StoresAddres)
+                {
+                    var exising_address = exising_data.st_StoresAddres.FirstOrDefault(a => a.store_address_id == st_address.store_address_id);
+                    if (exising_address != null)
+                    {
+                        exising_address.valid_to = DateTime.Now;
+                        exising_address.is_current = "F";
+                        _context.st_StoresAddres.Update(exising_address);
+                        await _context.SaveChangesAsync();
+
+                    }
+
+                }
+
+                st_stores st_Stores1 = new st_stores();
+                st_Stores1 = exising_data;
+                st_StoresAddres st_StoresAddress = new st_StoresAddres();
+                st_StoresAddress.store_address_id = Guid.CreateVersion7();
+                st_StoresAddress.store_id = exising_data.store_id;
+                st_StoresAddress.address_type = st_StoresAddres.address_type;
+                st_StoresAddress.line1 = st_StoresAddres.line1;
+                st_StoresAddress.line2 = st_StoresAddres.line2;
+                st_StoresAddress.city = st_StoresAddres.city;
+                st_StoresAddress.region = st_StoresAddres.region;
+                st_StoresAddress.country = st_StoresAddres.country;
+                st_StoresAddress.postal_code = st_StoresAddres.postal_code;
+                st_StoresAddress.valid_from = DateTime.Now;
+                st_StoresAddress.created_at = DateTime.Now;
+                st_StoresAddress.is_current = "T";
+                _context.st_StoresAddres.Add(st_StoresAddress);
+
+                st_Stores1.st_StoresAddres.Add(st_StoresAddress);
+
+                exising_data.st_StoresAddres = st_Stores1.st_StoresAddres;
+
+                _context.st_stores.Update(exising_data);
+                await _context.SaveChangesAsync();
+
+                return new ServiceResult<st_StoresAddres>
+                {
+                    Status = 1,
+                    Success = true,
+                    Message = "Addede",
+                    Data = st_StoresAddres
+                };
+
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating store ");
+                return new ServiceResult<st_StoresAddres>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = -1,
+                };
+            }
+            
+
+
+        }
+        public async Task<ServiceResult<st_stores>> Delete_store(Guid store_id)
+        {
+            if (store_id == null)
+            {
+                _logger.LogWarning("Store Id was Null");
+
+                return new ServiceResult<st_stores>
+                {
+                    Status = -1,
+                    Message = "not found",
+
+                };
+            }
+            try
+            {
+                var existing = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == store_id);
+                existing.status = "F";
+                _context.st_stores.Update(existing);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<st_stores>
+                {
+                    Status = 1,
+                    Success = true,
+                    Message = "Success Deleted",
+                    Data = existing,
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while Deleteing store ");
+                return new ServiceResult<st_stores>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = -1,
+                };
+            }
+
         }
     }
 

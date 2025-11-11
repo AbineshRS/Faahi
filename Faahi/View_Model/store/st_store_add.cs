@@ -1,4 +1,6 @@
 ﻿
+using Faahi.Model.Stores;
+
 namespace Faahi.View_Model.store
 {
     public class st_store_add
@@ -20,6 +22,7 @@ namespace Faahi.View_Model.store
 
         public string? status { get; set; } = string.Empty;
 
+        public ICollection<st_StoresAddress_add>? st_StoresAddres { get; set; }
 
     }
 }

@@ -86,6 +86,8 @@ namespace Faahi.Controllers.Application
 
         public DbSet<st_StoreCategoryTemplates> st_StoreCategoryTemplates { get; set; }
 
+        public DbSet<st_StoresAddres> st_StoresAddres { get; set; }
+
     }
 
 }
