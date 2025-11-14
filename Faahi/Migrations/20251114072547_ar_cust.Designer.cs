@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251114072547_ar_cust")]
+    partial class ar_cust
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -513,21 +516,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("contact_email")
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("contact_name")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("contact_phone1")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("contact_phone2")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("contact_website")
-                        .HasColumnType("nvarchar(255)");
-
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
@@ -543,9 +531,6 @@ namespace Faahi.Migrations
                     b.Property<string>("status")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
-
-                    b.Property<string>("tex_identification_number")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("updated_at")
                         .HasColumnType("datetime");

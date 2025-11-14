@@ -52,6 +52,12 @@ namespace Faahi.Service.Users
                 vendors.updated_at = DateTime.Now;
                 vendors.company_id = vendors.company_id;
                 vendors.status = vendors.status;
+                vendors.contact_name = vendors.contact_name;
+                vendors.contact_phone1= vendors.contact_phone1;
+                vendors.contact_phone2 = vendors.contact_phone2;
+                vendors.contact_email = vendors.contact_email;
+                vendors.contact_website = vendors.contact_website;
+                vendors.tex_identification_number = vendors.tex_identification_number;
                 _context.ap_Vendors.Add(vendors);
 
 
@@ -120,6 +126,11 @@ namespace Faahi.Service.Users
                 ar_Customers.tax_exempt = ar_Customers.tax_exempt;
                 ar_Customers.company_id = ar_Customers.company_id;
                 ar_Customers.status = ar_Customers.status;
+                ar_Customers.contact_name = ar_Customers.contact_name;
+                ar_Customers.contact_email=ar_Customers.contact_email;
+                ar_Customers.contact_phone1=ar_Customers.contact_phone1;
+                ar_Customers.contact_phone2=ar_Customers.contact_phone2;
+                ar_Customers.tex_identification_number = ar_Customers.tex_identification_number;
                 _context.ar_Customers.Add(ar_Customers);
 
 
@@ -158,8 +169,8 @@ namespace Faahi.Service.Users
                     Status = -1
                 };
             }
-            var im_site = await _context.im_site.FirstOrDefaultAsync(s => s.site_id == company_id || s.company_id == company_id);
-            var customers = await _context.ar_Customers.Where(c => c.company_id == im_site.company_id).OrderByDescending(d => d.created_at ?? DateTime.MinValue).ToListAsync();
+            //var im_site = await _context.im_site.FirstOrDefaultAsync(s => s.site_id == company_id || s.company_id == company_id);
+            var customers = await _context.ar_Customers.Where(c => c.company_id == company_id).ToListAsync();
             if (customers == null || customers.Count == 0)
             {
                 return new ServiceResult<List<ar_Customers>>
@@ -167,7 +178,7 @@ namespace Faahi.Service.Users
                     Success = false,
                     Message = "No customers found for the given site_id",
                     Status = 0,
-                    Data = new List<ar_Customers>()
+                    Data = customers
                 };
             }
             return new ServiceResult<List<ar_Customers>>
@@ -189,8 +200,7 @@ namespace Faahi.Service.Users
                     Status = -1
                 };
             }
-            var im_site = await _context.im_site.FirstOrDefaultAsync(s => s.site_id == company_id || s.company_id == company_id);
-            var vendors = await _context.ap_Vendors.Where(v => v.company_id == im_site.company_id).OrderByDescending(d=>d.created_at ?? DateTime.MinValue).ToListAsync();
+            var vendors = await _context.ap_Vendors.Where(v => v.company_id == company_id).ToListAsync();
             if (vendors == null || vendors.Count == 0)
             {
                 return new ServiceResult<List<ap_Vendors>>
@@ -198,7 +208,7 @@ namespace Faahi.Service.Users
                     Success = false,
                     Message = "No vendors found for the given site_id",
                     Status = 0,
-                    Data = new List<ap_Vendors>()
+                    Data = vendors
                 };
             }
             return new ServiceResult<List<ap_Vendors>>

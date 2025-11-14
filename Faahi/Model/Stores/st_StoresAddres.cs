@@ -55,6 +55,6 @@ namespace Faahi.Model.Stores
         [StringLength(1)]
         public string? is_current { get; set; }=null;
 
-
+        public ICollection<st_store_currencies>? st_store_currencies { get; set; } = null;
     }
 }

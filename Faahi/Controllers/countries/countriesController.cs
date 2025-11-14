@@ -1,6 +1,7 @@
 ﻿using Faahi.Migrations;
 using Faahi.Model.countries;
 using Faahi.Service.countries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,6 +33,22 @@ namespace Faahi.Controllers.countries
         public async Task<IActionResult> countries_list()
         {
             var result = await _iavl_Countries.GetAllCountries();
+            return Ok(result);
+        }
+        [HttpPost]
+        [Route("add_currency")]
+        public async Task<ActionResult> Create_currency()
+        {
+            
+            var result = await _iavl_Countries.ImportAllCountriesAsync();
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_all_Countries")]
+        public async Task<IActionResult> get_all_Countries()
+        {
+            var result = await _iavl_Countries.get_all_Countries();
             return Ok(result);
         }
     }

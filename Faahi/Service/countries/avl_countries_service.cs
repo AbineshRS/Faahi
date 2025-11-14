@@ -194,5 +194,125 @@ namespace Faahi.Service.countries
                 Data = countries
             };
         }
+        public async Task<ServiceResult<string>> ImportAllCountriesAsync()
+        {
+            var result = new ServiceResult<string>();
+
+            try
+            {
+                using var httpClient = new HttpClient();
+                var response = await httpClient.GetAsync("https://restcountries.com/v3.1/all?fields=name,cca2,currencies,timezones");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    result.Success = false;
+                    result.Message = "Failed to fetch countries from API.";
+                    return result;
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                var countries = JsonSerializer.Deserialize<List<CountryApiModel>>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                foreach (var country in countries)
+                {
+                    if (country.currencies == null || country.currencies.Count == 0)
+                        continue;
+
+                    // Usually first currency is primary
+                    var firstCurrency = country.currencies.First().Value;
+
+                    // Check if country already exists (avoid duplicates)
+                    var existing = await _context.fx_Currencies
+                        .FirstOrDefaultAsync(x => x.country_code == country.cca2);
+
+                    if (existing != null)
+                        continue;
+                    fx_Currencies fx_Currencies = new fx_Currencies();
+
+                    fx_Currencies.currency_id = Guid.CreateVersion7();
+                    fx_Currencies.country_name = country.name.common;
+                    fx_Currencies.country_code = country.cca2;
+                    fx_Currencies.currency_name = firstCurrency.name;
+                    fx_Currencies.currency_symbol = firstCurrency.symbol;
+
+                    // ✅ Initialize the timezones list before looping
+                    fx_Currencies.fx_timezones = new List<fx_timezones>();
+
+                    // ✅ Loop through each timezone from API response
+                    if (country.timezones != null)
+                    {
+                        foreach (var tz in country.timezones)
+                        {
+                            fx_timezones fx_Timezone = new fx_timezones();
+                            fx_Timezone.timezone_id = Guid.CreateVersion7();
+                            fx_Timezone.currency_id = fx_Currencies.currency_id;
+                            fx_Timezone.timezone = tz;
+                            fx_Timezone.timezone_name = ExtractTimezoneName(tz); // optional, for readable name
+
+                            fx_Currencies.fx_timezones.Add(fx_Timezone); // add to list
+                        }
+                    }
+
+                    // ✅ Add the parent (and EF will insert child automatically)
+                    _context.fx_Currencies.Add(fx_Currencies);
+                    await _context.SaveChangesAsync();
+
+
+                    //var fxCurrency = new fx_Currencies
+                    //{
+                    //    currency_id = Guid.NewGuid(),
+                    //    country_name = country.name.common,
+                    //    country_code = country.cca2,
+                    //    currency_name = firstCurrency.name,
+                    //    currency_symbol = firstCurrency.symbol,
+                    //    fx_timezones = country.timezones.Select(tz => new fx_timezones
+                    //    {
+                    //        timezone_id = Guid.NewGuid(),
+                    //        timezone = tz,
+                    //        timezone_name = ExtractTimezoneName(tz)
+                    //    }).ToList()
+                    //};
+
+                }
+
+
+                result.Success = true;
+                result.Message = "All countries, currencies, and timezones saved successfully.";
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Message = $"Error: {ex.Message}";
+            }
+
+            return result;
+        }
+        private string ExtractTimezoneName(string tz)
+        {
+            if (string.IsNullOrWhiteSpace(tz))
+                return "Unknown";
+
+            if (tz.Contains('/'))
+                return tz.Split('/').Last().Replace("_", " ");
+
+            return tz;
+        }
+        public async Task<ServiceResult<List<fx_Currencies>>> get_all_Countries()
+        {
+            var countrys = await _context.fx_Currencies.Include(a=>a.fx_timezones).ToListAsync();
+            if (countrys == null)
+            {
+                return new ServiceResult<List<fx_Currencies>> { Success = false };
+            }
+            return new ServiceResult<List<fx_Currencies>>
+            {
+                Status = 1,
+                Success = true,
+                Data = countrys
+            };
+        }
     }
 }

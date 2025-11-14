@@ -33,6 +33,8 @@ namespace Faahi.View_Model.store
 
 
         public string? is_current { get; set; } = null;
-        public ICollection<st_StoreCategories_view>? st_StoreCategories { get; set; }
+
+        public ICollection<st_store_currencies_view> st_store_currencies { get; set; }
+        //public ICollection<st_StoreCategories_view>? st_StoreCategories { get; set; }
     }
 }

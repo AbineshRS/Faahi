@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251112173228_currencys_3")]
+    partial class currencys_3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -400,39 +403,6 @@ namespace Faahi.Migrations
                     b.ToTable("st_UserStoreAccess");
                 });
 
-            modelBuilder.Entity("Faahi.Model.Stores.st_store_currencies", b =>
-                {
-                    b.Property<Guid>("store_currency_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("currency_code")
-                        .HasMaxLength(3)
-                        .HasColumnType("char(3)");
-
-                    b.Property<string>("is_default")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<Guid?>("st_StoresAddresstore_address_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("store_currency_id");
-
-                    b.HasIndex("currency_code");
-
-                    b.HasIndex("st_StoresAddresstore_address_id");
-
-                    b.HasIndex("store_currency_id");
-
-                    b.HasIndex("store_id");
-
-                    b.ToTable("st_store_currencies");
-                });
-
             modelBuilder.Entity("Faahi.Model.am_users", b =>
                 {
                     b.Property<Guid>("userId")
@@ -513,21 +483,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("contact_email")
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("contact_name")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("contact_phone1")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("contact_phone2")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("contact_website")
-                        .HasColumnType("nvarchar(255)");
-
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
@@ -543,9 +498,6 @@ namespace Faahi.Migrations
                     b.Property<string>("status")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
-
-                    b.Property<string>("tex_identification_number")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("updated_at")
                         .HasColumnType("datetime");
@@ -569,18 +521,6 @@ namespace Faahi.Migrations
 
                     b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("contact_email")
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("contact_name")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("contact_phone1")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("contact_phone2")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
@@ -623,9 +563,6 @@ namespace Faahi.Migrations
                     b.Property<string>("tax_exempt")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
-
-                    b.Property<string>("tex_identification_number")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime?>("updated_at")
                         .HasColumnType("datetime");
@@ -1767,7 +1704,7 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
-                    b.Property<TimeOnly?>("default_close_time")
+                    b.Property<TimeOnly>("default_close_time")
                         .HasColumnType("time");
 
                     b.Property<string>("default_currency")
@@ -1910,13 +1847,6 @@ namespace Faahi.Migrations
                         .HasForeignKey("st_storesstore_id");
                 });
 
-            modelBuilder.Entity("Faahi.Model.Stores.st_store_currencies", b =>
-                {
-                    b.HasOne("Faahi.Model.Stores.st_StoresAddres", null)
-                        .WithMany("st_store_currencies")
-                        .HasForeignKey("st_StoresAddresstore_address_id");
-                });
-
             modelBuilder.Entity("Faahi.Model.co_business.co_address", b =>
                 {
                     b.HasOne("Faahi.Model.co_business.co_business", null)
@@ -1993,11 +1923,6 @@ namespace Faahi.Migrations
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyRoles", b =>
                 {
                     b.Navigation("st_PartyAddresses");
-                });
-
-            modelBuilder.Entity("Faahi.Model.Stores.st_StoresAddres", b =>
-                {
-                    b.Navigation("st_store_currencies");
                 });
 
             modelBuilder.Entity("Faahi.Model.co_business.co_business", b =>

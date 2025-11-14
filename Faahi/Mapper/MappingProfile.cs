@@ -13,6 +13,7 @@ namespace Faahi.Mapper
             // Map st_store → st_store_view automatically
             CreateMap<st_stores, st_store_view>();
             CreateMap<st_StoresAddres, st_StoresAddres_view>();
+            CreateMap<st_store_currencies,st_store_currencies_view>();
             CreateMap<st_StoreCategories, st_StoreCategories_view>();
             CreateMap<im_ProductCategories, im_ProductCategories_view>();
         }

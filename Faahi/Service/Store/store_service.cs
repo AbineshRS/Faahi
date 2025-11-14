@@ -199,7 +199,7 @@ namespace Faahi.Service.Store
             }
             try
             {
-                var existingStore = await _context.st_stores.Where(s => s.company_id == store_Add.company_id).ToListAsync();
+                var existingStore = await _context.st_stores.Where(s => s.company_id == store_Add.company_id && s.status=="T").ToListAsync();
                 var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == store_Add.company_id);
                 if (existingStore.Count >= co_business.sites_allowed)
                 {
@@ -218,8 +218,28 @@ namespace Faahi.Service.Store
                 st_Stores.store_type = store_Add.store_type;
                 st_Stores.created_at = DateTime.Now;
                 st_Stores.status = store_Add.status;
+                st_Stores.default_close_time= store_Add.default_close_time;
+                st_Stores.phone1= store_Add.phone1;
+                st_Stores.phone2= store_Add.phone2;
+                st_Stores.email= store_Add.email;
+                st_Stores.tax_identification_number = store_Add.tax_identification_number;
+                st_Stores.default_invoice_init= store_Add.default_invoice_init;
+                st_Stores.default_quote_init= store_Add.default_quote_init;
+                st_Stores.default_invoice_template=store_Add.default_invoice_template;
+                st_Stores.default_receipt_template=store_Add.default_receipt_template;
+                st_Stores.last_transaction_date = DateOnly.FromDateTime(DateTime.Now);
+                st_Stores.default_currency=store_Add.default_currency;
+                st_Stores.service_charge= store_Add.service_charge;
+                st_Stores.tax_inclusive_price= store_Add.tax_inclusive_price;
+                st_Stores.tax_activity_no= store_Add.tax_activity_no;
+                st_Stores.tax_payer_name = store_Add.tax_payer_name;
+                st_Stores.low_stock_alert_email = store_Add.low_stock_alert_email;
+                st_Stores.plastic_bag_tax_amount = store_Add.plastic_bag_tax_amount;
+                st_Stores.message_on_receipt = store_Add.message_on_receipt;
+                st_Stores.message_on_invoice = store_Add.message_on_invoice;
 
-                store_Add.store_id = st_Stores.store_id;
+
+               store_Add.store_id = st_Stores.store_id;
                 store_Add.created_at = st_Stores.created_at;
 
                 st_Stores.st_StoresAddres = new List<st_StoresAddres>();
@@ -241,6 +261,7 @@ namespace Faahi.Service.Store
                     _StoresAddres.is_current = "T";
                     st_Stores.st_StoresAddres.Add(_StoresAddres);
 
+                    
                 }
 
                 await _context.st_stores.AddAsync(st_Stores);
@@ -703,7 +724,7 @@ namespace Faahi.Service.Store
                     var storeIds = st_store.Select(s => s.store_id).ToList();
 
                     storeList = _context.st_stores.AsEnumerable()
-                          .Where(a => storeIds.Contains(a.store_id))
+                          .Where(a => storeIds.Contains(a.store_id) && a.status=="T")
                           .ToList();
                 }
 
@@ -765,7 +786,8 @@ namespace Faahi.Service.Store
         {
             try
             {
-                var store = await _context.st_stores.Include(a => a.st_StoresAddres.Where(a=>a.is_current=="T")).FirstOrDefaultAsync(s => s.store_id == store_id);
+                var store = await _context.st_stores.Include(a => a.st_StoresAddres.Where(a=>a.is_current=="T")).ThenInclude(a=>a.st_store_currencies).FirstOrDefaultAsync(s => s.store_id == store_id);
+
                 if (store == null)
                 {
                     return new ServiceResult<st_store_view>
@@ -847,7 +869,28 @@ namespace Faahi.Service.Store
                 existingStore.store_location = st_Stores.store_location;
                 existingStore.store_type = st_Stores.store_type;
                 existingStore.status = st_Stores.status;
+                existingStore.default_close_time = st_Stores.default_close_time;
+                existingStore.phone1 = st_Stores.phone1;
+                existingStore.phone2 = st_Stores.phone2;
+                existingStore.email = st_Stores.email;
+                existingStore.tax_identification_number = st_Stores.tax_identification_number;
+                existingStore.default_invoice_init = st_Stores.default_invoice_init;
+                existingStore.default_quote_init = st_Stores.default_quote_init;
+                existingStore.default_invoice_template = st_Stores.default_invoice_template;
+                existingStore.default_receipt_template = st_Stores.default_receipt_template;
+                existingStore.last_transaction_date = DateOnly.FromDateTime(DateTime.Now);
+                existingStore.default_currency = st_Stores.default_currency;
+                existingStore.service_charge = st_Stores.service_charge;
+                existingStore.tax_inclusive_price = st_Stores.tax_inclusive_price;
+                existingStore.tax_activity_no = st_Stores.tax_activity_no;
+                existingStore.tax_payer_name = st_Stores.tax_payer_name;
+                existingStore.low_stock_alert_email = st_Stores.low_stock_alert_email;
+                existingStore.plastic_bag_tax_amount = st_Stores.plastic_bag_tax_amount;
+                existingStore.message_on_receipt = st_Stores.message_on_receipt;
+                existingStore.message_on_invoice = st_Stores.message_on_invoice;
                 //existingStore.st_StoresAddres = new List<st_StoresAddres>();
+
+                
                 foreach (var st_address in st_Stores.st_StoresAddres)
                 {
                     var existingAddress = existingStore.st_StoresAddres.FirstOrDefault(a => a.store_address_id == st_address.store_address_id);
@@ -861,6 +904,34 @@ namespace Faahi.Service.Store
                         existingAddress.country = st_address.country;
                         existingAddress.address_type = st_address.address_type;
                         _context.st_StoresAddres.Update(existingAddress);
+                        existingAddress.st_store_currencies ??= new List<st_store_currencies>();
+
+                        var existingcategories = await _context.st_store_currencies.Where(a => a.store_id == store_id).ToListAsync();
+                        var newCategoryIds = st_address.st_store_currencies.Select(c => c.store_currency_id).ToList();
+                        var deletedCategories = existingcategories.Where(c => !newCategoryIds.Contains(c.store_currency_id)).ToList();
+                        if (deletedCategories.Any())
+                        {
+                            foreach (var category in deletedCategories)
+                            {
+                                _context.st_store_currencies.Remove(category);
+                            }
+                            await _context.SaveChangesAsync();
+                        }
+                        foreach (var currency in st_address.st_store_currencies)
+                        {
+                            var exisitg_currencies = await _context.st_store_currencies.FirstOrDefaultAsync(a=>a.store_currency_id==currency.store_currency_id);
+                            if (exisitg_currencies == null)
+                            {
+                                st_store_currencies st_Store_Currencies = new st_store_currencies();
+                                st_Store_Currencies.store_currency_id = Guid.CreateVersion7();
+                                st_Store_Currencies.store_id = store_id;
+                                st_Store_Currencies.currency_code = currency.currency_code;
+                                st_Store_Currencies.is_default = "";
+                                _context.st_store_currencies.Add(st_Store_Currencies);
+                                existingAddress.st_store_currencies.Add(st_Store_Currencies);
+                            }
+                            
+                        }
                     }
                     else
                     {
@@ -879,7 +950,19 @@ namespace Faahi.Service.Store
                         st_StoresAddres.is_current = "T";
                         _context.st_StoresAddres.Add(st_StoresAddres);
                         st_Stores1.st_StoresAddres.Add(st_StoresAddres);
+
+                        foreach (var currency in st_address.st_store_currencies)
+                        {
+                            st_store_currencies st_Store_Currencies = new st_store_currencies();
+                            st_Store_Currencies.store_currency_id = Guid.CreateVersion7();
+                            st_Store_Currencies.store_id = st_Stores.store_id;
+                            st_Store_Currencies.currency_code = currency.currency_code;
+                            st_Store_Currencies.is_default = "";
+                            _context.st_store_currencies.Add(st_Store_Currencies);
+                            st_StoresAddres.st_store_currencies.Add(st_Store_Currencies);
+                        }
                     }
+                    
 
                 }
                 existingStore.st_StoresAddres = st_Stores1.st_StoresAddres;
@@ -1005,10 +1088,14 @@ namespace Faahi.Service.Store
                     var exising_address = exising_data.st_StoresAddres.FirstOrDefault(a => a.store_address_id == st_address.store_address_id);
                     if (exising_address != null)
                     {
-                        exising_address.valid_to = DateTime.Now;
-                        exising_address.is_current = "F";
-                        _context.st_StoresAddres.Update(exising_address);
-                        await _context.SaveChangesAsync();
+                        if (exising_address.valid_to == null)
+                        {
+                            exising_address.valid_to = DateTime.Now;
+                            exising_address.is_current = "F";
+                            _context.st_StoresAddres.Update(exising_address);
+                            await _context.SaveChangesAsync();
+                        }
+                       
 
                     }
 

@@ -45,5 +45,25 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "char(1)")]
         public string? status { get; set; } = string.Empty;
 
+        //Updated at 14/11/2025
+
+        [Column(TypeName = "nvarchar(100)")]
+        public string? contact_name { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(50)")]
+        public string? contact_phone1 { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(50)")]
+        public string? contact_phone2 { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(255)")]
+        public string? contact_website { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(150)")]
+        public string? contact_email { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(50)")]
+        public string? tex_identification_number { get; set; } = null;
+
     }
 }

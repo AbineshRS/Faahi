@@ -88,6 +88,11 @@ namespace Faahi.Controllers.Application
 
         public DbSet<st_StoresAddres> st_StoresAddres { get; set; }
 
+        public DbSet<fx_Currencies> fx_Currencies { get; set; }
+
+        public DbSet<fx_timezones> fx_Timezones { get; set; }
+
+        public DbSet<st_store_currencies> st_store_currencies { get; set; }
     }
 
 }
