@@ -63,8 +63,8 @@ namespace Faahi.Service.im_products
 
                 im_Product.product_id = Guid.CreateVersion7();
                 im_Product.company_id = im_Product.company_id;
-                im_Product.item_class_id = im_Product.item_class_id;
-                im_Product.item_subclass_id = im_Product.item_subclass_id;
+                im_Product.category_id = im_Product.category_id;
+                im_Product.parent_id = im_Product.parent_id;
                 im_Product.title = im_Product.title;
                 im_Product.description = im_Product.description;
                 im_Product.brand = im_Product.brand;

@@ -13,7 +13,7 @@ namespace Faahi.Model.Shared_tables
         [ForeignKey("party_id")]
         [Display(Name = "st_PartyRoles")]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? party_id { get; set; }
+        public Guid? party_id { get; set; } = null;
 
         [Column(TypeName ="varchar(30)")]
         public string? address_type { get; set; }
@@ -49,6 +49,16 @@ namespace Faahi.Model.Shared_tables
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]
         public string? is_default { get; set; } = string.Empty;
+
+        [ForeignKey("customer_id")]
+        [Display(Name = "ar_Customers")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? customer_id { get; set; } = null;
+
+        [ForeignKey("vendor_id")]
+        [Display(Name = "ap_Vendors")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? vendor_id { get; set; } = null;
 
         public ICollection<st_PartyContacts> PartyContacts { get; set; } = null;
 

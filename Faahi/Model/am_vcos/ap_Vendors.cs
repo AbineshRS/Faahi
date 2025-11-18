@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using Faahi.Model.Shared_tables;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -64,6 +65,8 @@ namespace Faahi.Model.am_vcos
 
         [Column(TypeName = "nvarchar(50)")]
         public string? tex_identification_number { get; set; } = null;
+
+        public ICollection<st_PartyAddresses> st_PartyAddresses { get; set; } = null;
 
     }
 }

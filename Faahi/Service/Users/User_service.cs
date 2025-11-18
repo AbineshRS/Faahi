@@ -1,6 +1,8 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Migrations;
 using Faahi.Model.am_vcos;
+using Faahi.Model.Shared_tables;
 using Microsoft.EntityFrameworkCore;
 
 namespace Faahi.Service.Users
@@ -53,7 +55,7 @@ namespace Faahi.Service.Users
                 vendors.company_id = vendors.company_id;
                 vendors.status = vendors.status;
                 vendors.contact_name = vendors.contact_name;
-                vendors.contact_phone1= vendors.contact_phone1;
+                vendors.contact_phone1 = vendors.contact_phone1;
                 vendors.contact_phone2 = vendors.contact_phone2;
                 vendors.contact_email = vendors.contact_email;
                 vendors.contact_website = vendors.contact_website;
@@ -71,7 +73,7 @@ namespace Faahi.Service.Users
                     Data = vendors
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while creating a vendor.");
                 return new ServiceResult<ap_Vendors>
@@ -82,7 +84,7 @@ namespace Faahi.Service.Users
                 };
             }
 
-            
+
 
         }
         public async Task<ServiceResult<ar_Customers>> Create_customer(ar_Customers ar_Customers)
@@ -127,10 +129,11 @@ namespace Faahi.Service.Users
                 ar_Customers.company_id = ar_Customers.company_id;
                 ar_Customers.status = ar_Customers.status;
                 ar_Customers.contact_name = ar_Customers.contact_name;
-                ar_Customers.contact_email=ar_Customers.contact_email;
-                ar_Customers.contact_phone1=ar_Customers.contact_phone1;
-                ar_Customers.contact_phone2=ar_Customers.contact_phone2;
+                ar_Customers.contact_email = ar_Customers.contact_email;
+                ar_Customers.contact_phone1 = ar_Customers.contact_phone1;
+                ar_Customers.contact_phone2 = ar_Customers.contact_phone2;
                 ar_Customers.tex_identification_number = ar_Customers.tex_identification_number;
+                ar_Customers.credit_hold = "T";
                 _context.ar_Customers.Add(ar_Customers);
 
 
@@ -146,7 +149,7 @@ namespace Faahi.Service.Users
                 };
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while creating a customer.");
                 return new ServiceResult<ar_Customers>
@@ -156,7 +159,305 @@ namespace Faahi.Service.Users
                     Status = -1
                 };
             }
-            
+
+        }
+        public async Task<ServiceResult<ar_Customers>> Update_arcustomer(Guid customer_id, ar_Customers ar_Customers)
+        {
+            if (customer_id == null || ar_Customers == null)
+            {
+                _logger.LogWarning("No data to found insert");
+                return new ServiceResult<ar_Customers>
+                {
+                    Status = -1,
+                    Success = false,
+                    Message = "No data found to insert",
+                    Data = null
+                };
+            }
+            var customer = await _context.ar_Customers.Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.customer_id == customer_id);
+
+            customer.contact_name = ar_Customers.contact_name;
+            customer.contact_phone1 = ar_Customers.contact_phone1;
+            customer.contact_phone2 = ar_Customers.contact_phone2;
+            customer.contact_email = ar_Customers.contact_email;
+            customer.credit_limit = ar_Customers.credit_limit;
+            customer.tex_identification_number = ar_Customers.tex_identification_number;
+            customer.updated_at = DateTime.Now;
+
+            var exisitng_add = await _context.st_PartyAddresses.Where(a => a.customer_id == customer_id).ToListAsync();
+            var newAddressIds = ar_Customers.st_PartyAddresses.Select(c => c.address_id).ToList();
+            var delete_address = exisitng_add.Where(a => !newAddressIds.Contains(a.address_id)).ToList();
+            if (delete_address.Any())
+            {
+                foreach (var addre in delete_address)
+                {
+                    _context.st_PartyAddresses.Remove(addre);
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            foreach (var address in ar_Customers.st_PartyAddresses)
+            {
+               
+                var existing_address = await _context.st_PartyAddresses.FirstOrDefaultAsync(a => a.address_id == address.address_id);
+                if (existing_address == null)
+                {
+                    st_PartyAddresses st_PartyAddresses = new st_PartyAddresses();
+                    st_PartyAddresses.address_id = Guid.CreateVersion7();
+                    st_PartyAddresses.customer_id = customer_id;
+                    st_PartyAddresses.address_type = address.address_type;
+                    st_PartyAddresses.line1 = address.line1;
+                    st_PartyAddresses.line2 = address.line2;
+                    st_PartyAddresses.region = address.region;
+                    st_PartyAddresses.postal_code = address.postal_code;
+                    st_PartyAddresses.country = address.country;
+                    st_PartyAddresses.created_at = DateTime.Now;
+                    st_PartyAddresses.updated_at = DateTime.Now;
+                    st_PartyAddresses.is_default = address.is_default;
+                    if(address.address_type== "shipping" && address.is_default == "T")
+                    {
+                        customer.default_shipping_address_id = st_PartyAddresses.address_id;
+
+                    }
+                    else if (address.address_type == "shipping" && address.is_default == "F")
+                    {
+                        customer.default_shipping_address_id = null;
+                    }
+                    if (address.address_type== "billing" && address.is_default == "T")
+                    {
+                        customer.default_billing_address_id = st_PartyAddresses.address_id;
+
+                    }
+                    else if (address.address_type == "billing" && address.is_default == "F")
+                    {
+                        customer.default_billing_address_id = null;
+                    }
+
+                    _context.st_PartyAddresses.Add(st_PartyAddresses);
+                    customer.st_PartyAddresses.Add(st_PartyAddresses);
+                }
+                else
+                {
+                    existing_address.address_type = address.address_type;
+                    existing_address.line1 = address.line1;
+                    existing_address.line2 = address.line2;
+                    existing_address.region = address.region;
+                    existing_address.postal_code = address.postal_code;
+                    existing_address.country = address.country;
+                    existing_address.updated_at = DateTime.Now;
+                    existing_address.is_default = address.is_default;
+
+                    if (address.address_type == "shipping" && address.is_default == "T")
+                    {
+                        customer.default_shipping_address_id = existing_address.address_id;
+
+                    }else if(address.address_type == "shipping" && address.is_default == "F")
+                    {
+                        customer.default_shipping_address_id =null;
+                    }
+
+                    if (address.address_type == "billing" && address.is_default == "T")
+                    {
+                        customer.default_billing_address_id = existing_address.address_id;
+
+                    }else if (address.address_type == "billing" && address.is_default == "F")
+                    {
+                        customer.default_billing_address_id = null;
+                    }
+
+
+                  
+                    _context.st_PartyAddresses.Update(existing_address);
+                    customer.st_PartyAddresses.Add( existing_address);
+
+                }
+
+               
+            }
+            _context.ar_Customers.Update(customer);
+            await _context.SaveChangesAsync();
+            return new ServiceResult<ar_Customers>
+            {
+                Status = 1,
+                Success = true,
+                Message = "updated",
+                Data = customer
+            };
+        }
+        public async Task<ServiceResult<ap_Vendors>> Update_apvendor(Guid vendor_id, ap_Vendors ap_Vendors)
+        {
+            if (vendor_id == null || ap_Vendors == null)
+            { 
+                _logger.LogWarning("No data to found insert");
+                return new ServiceResult<ap_Vendors>
+                {
+                    Status = -1,
+                    Success = false,
+                    Message = "No data found to insert",
+                    Data = null
+                };
+            }
+            var vendor = await _context.ap_Vendors.Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
+
+            vendor.contact_name = ap_Vendors.contact_name;
+            vendor.contact_phone1 = ap_Vendors.contact_phone1;
+            vendor.contact_phone2 = ap_Vendors.contact_phone2;
+            vendor.contact_email = ap_Vendors.contact_email;
+            vendor.tex_identification_number = ap_Vendors.tex_identification_number;
+            vendor.preferred_payment_method = ap_Vendors.preferred_payment_method;
+            vendor.updated_at = DateTime.Now;
+
+            var exisitng_add = await _context.st_PartyAddresses.Where(a => a.vendor_id == vendor_id).ToListAsync();
+            var newAddressIds = ap_Vendors.st_PartyAddresses.Select(c => c.address_id).ToList();
+            var delete_address = exisitng_add.Where(a => !newAddressIds.Contains(a.address_id)).ToList();
+            if (delete_address.Any())
+            {
+                foreach (var addre in delete_address)
+                {
+                    _context.st_PartyAddresses.Remove(addre);
+                }
+                await _context.SaveChangesAsync();
+            }
+
+            foreach (var address in ap_Vendors.st_PartyAddresses)
+            {
+               
+                var existing_address = await _context.st_PartyAddresses.FirstOrDefaultAsync(a => a.address_id == address.address_id);
+                if (existing_address == null)
+                {
+                    st_PartyAddresses st_PartyAddresses = new st_PartyAddresses();
+                    st_PartyAddresses.address_id = Guid.CreateVersion7();
+                    st_PartyAddresses.vendor_id = vendor_id;
+                    st_PartyAddresses.address_type = address.address_type;
+                    st_PartyAddresses.line1 = address.line1;
+                    st_PartyAddresses.line2 = address.line2;
+                    st_PartyAddresses.region = address.region;
+                    st_PartyAddresses.postal_code = address.postal_code;
+                    st_PartyAddresses.country = address.country;
+                    st_PartyAddresses.created_at = DateTime.Now;
+                    st_PartyAddresses.updated_at = DateTime.Now;
+                    st_PartyAddresses.is_default = address.is_default;
+                    _context.st_PartyAddresses.Add(st_PartyAddresses);
+                    vendor.st_PartyAddresses.Add(st_PartyAddresses);
+                }
+                else
+                {
+                    existing_address.address_type = address.address_type;
+                    existing_address.line1 = address.line1;
+                    existing_address.line2 = address.line2;
+                    existing_address.region = address.region;
+                    existing_address.postal_code = address.postal_code;
+                    existing_address.country = address.country;
+                    existing_address.updated_at = DateTime.Now;
+                    existing_address.is_default = address.is_default;
+                    _context.st_PartyAddresses.Update(existing_address);
+                    vendor.st_PartyAddresses.Add( existing_address);
+
+                }
+
+               
+            }
+            _context.ap_Vendors.Update(vendor);
+            await _context.SaveChangesAsync();
+            return new ServiceResult<ap_Vendors>
+            {
+                Status = 1,
+                Success = true,
+                Message = "updated",
+                Data = vendor
+            };
+        }
+        public async Task<ServiceResult<ar_Customers>> Get_customer(Guid customer_id)
+        {
+            if (customer_id == null)
+            {
+                _logger.LogWarning("customer_id  not found");
+                return new ServiceResult<ar_Customers>
+                {
+                    Success = false,
+                    Status = -1,
+                    Data = null
+                };
+            }
+            try
+            {
+                var customer = await _context.ar_Customers.Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.customer_id == customer_id);
+                if (customer == null)
+                {
+                    _logger.LogWarning("no data found in ar_customer table");
+                    return new ServiceResult<ar_Customers>
+                    {
+                        Success = false,
+                        Status = -2,
+                        Message = "no data found in ar_customer table",
+                        Data = null
+                    };
+                }
+                return new ServiceResult<ar_Customers>
+                {
+                    Success = true,
+                    Status = 1,
+                    Message = "success",
+                    Data = customer
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while returning a customer.");
+                return new ServiceResult<ar_Customers>
+                {
+                    Success = false,
+                    Message = "An error occurred while returning the customer.",
+                    Status = -1
+                };
+            }
+
+        }
+        public async Task<ServiceResult<ap_Vendors>> Get_vendor(Guid vendor_id)
+        {
+            if (vendor_id == null)
+            {
+                _logger.LogWarning("customer_id  not found");
+                return new ServiceResult<ap_Vendors>
+                {
+                    Success = false,
+                    Status = -1,
+                    Data = null
+                };
+            }
+            try
+            {
+                var customer = await _context.ap_Vendors.Include(a=>a.st_PartyAddresses).FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
+                if (customer == null)
+                {
+                    _logger.LogWarning("no data found in ar_customer table");
+                    return new ServiceResult<ap_Vendors>
+                    {
+                        Success = false,
+                        Status = -2,
+                        Message = "no data found in ar_customer table",
+                        Data = null
+                    };
+                }
+                return new ServiceResult<ap_Vendors>
+                {
+                    Success = true,
+                    Status = 1,
+                    Message = "success",
+                    Data = customer
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while returning a customer.");
+                return new ServiceResult<ap_Vendors>
+                {
+                    Success = false,
+                    Message = "An error occurred while returning the customer.",
+                    Status = -1
+                };
+            }
+
         }
         public async Task<ServiceResult<List<ar_Customers>>> Get_all_customer(Guid company_id)
         {

@@ -93,6 +93,12 @@ namespace Faahi.Controllers.Application
         public DbSet<fx_timezones> fx_Timezones { get; set; }
 
         public DbSet<st_store_currencies> st_store_currencies { get; set; }
+
+        public DbSet<im_InventoryLedger> im_InventoryLedger { get;set; }
+         
+        public DbSet<im_SellerInventory> im_SellerInventory { get; set; }
+
+        public DbSet<im_Lots> im_Lots { get; set; }
     }
 
 }

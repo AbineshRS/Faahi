@@ -41,6 +41,54 @@ namespace Faahi.Controllers.Users
             return Ok(customer);
         }
         [Authorize]
+        [HttpPost]
+        [Route("update_arcustomer/{customer_id}")]
+        public async Task<ActionResult<ar_Customers>> Update_arcustomer(Guid customer_id,ar_Customers ar_Customers)
+        {
+            if(customer_id==null || ar_Customers == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _iuser.Update_arcustomer(customer_id,ar_Customers);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("update_apvendor/{vendor_id}")]
+        public async Task<ActionResult<ap_Vendors>> Update_apvendor(Guid vendor_id, ap_Vendors ap_Vendors)
+        {
+            if(vendor_id == null || ap_Vendors == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _iuser.Update_apvendor(vendor_id, ap_Vendors);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_customer/{customer_id}")]
+        public async Task<IActionResult> Get_customer(Guid customer_id)
+        {
+            if (customer_id == null)
+            {
+                return Ok("not found");
+            }
+            var result = await _iuser.Get_customer(customer_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_vendor/{vendor_id}")]
+        public async Task<IActionResult> Get_vendor(Guid vendor_id)
+        {
+            if (vendor_id == null)
+            {
+                return Ok("not found");
+            }
+            var result = await _iuser.Get_vendor(vendor_id);
+            return Ok(result);
+        }
+        [Authorize]
         [HttpGet]
         [Route("get_all_customer/{company_id}")]
         public async Task<ActionResult<ar_Customers>> Get_all_customer(Guid company_id)

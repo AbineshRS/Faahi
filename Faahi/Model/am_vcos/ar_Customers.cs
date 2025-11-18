@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using Faahi.Model.Shared_tables;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -29,11 +30,11 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "decimal(18,4)")]
         public Decimal? credit_limit { get; set; } = null;
 
-        [Column(TypeName = "varchar(20)")]
-        public string? default_billing_address_id { get; set; } = null;
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? default_billing_address_id { get; set; } = null;
 
-        [Column(TypeName ="varchar(20)")]
-        public string? default_shipping_address_id { get; set; } = null;
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? default_shipping_address_id { get; set; } = null;
 
         [Column(TypeName = "decimal(18,4)")]
         public Decimal? loyalty_points { get; set; } = null;
@@ -81,5 +82,7 @@ namespace Faahi.Model.am_vcos
 
         [Column(TypeName ="nvarchar(50)")]
         public string? tex_identification_number { get; set; } = null;
+
+        public ICollection<st_PartyAddresses> st_PartyAddresses { get; set; } = null;
     }
 }
