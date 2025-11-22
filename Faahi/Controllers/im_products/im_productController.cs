@@ -22,7 +22,7 @@ namespace Faahi.Controllers.im_products
             _im_products = im_products;
             _context = context;
         }
-        //[Authorize]
+        [Authorize]
         [HttpPost]
         [Route("add_product")]
         public async Task<ActionResult<im_Products>> Create_prodcust(im_Products im_Product)
@@ -47,7 +47,7 @@ namespace Faahi.Controllers.im_products
             var thumbnail = await _im_products.UploadProductAsync(formFile, product_id);
             return Ok(thumbnail);
         }
-        [Authorize]
+        //[Authorize]
         [HttpPost]
         [Route("UploadProductMultipleFiles/{product_id}/{variant_id}")]
         public async Task<ActionResult<string>> UploadMutiple_image(IFormFile[] formFiles, string product_id, string variant_id)
@@ -83,10 +83,10 @@ namespace Faahi.Controllers.im_products
             var all_product_details = await _im_products.get_company_product(company_id);
             return Ok(all_product_details);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_all_product_details/{company_id}")]
-        public async Task<IActionResult> all_product_details(string company_id)
+        public async Task<IActionResult> all_product_details(Guid company_id)
         {
             if (company_id == null)
             {
@@ -144,7 +144,30 @@ namespace Faahi.Controllers.im_products
             return Ok(deleted_data);
 
         }
-
+        [Authorize]
+        [HttpPost]
+        [Route("add_attribute")]
+        public async Task<ActionResult<im_ProductAttributes>> Create_Attribute(im_ProductAttributes im_ProductAttributes)
+        {
+            if(im_ProductAttributes == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _im_products.Create_Attribute(im_ProductAttributes);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_attribute/{company_id}")]
+        public async Task<IActionResult> Get_attribute(Guid company_id)
+        {
+            if (company_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_products.Get_attribute(company_id);
+            return Ok(result);
+        }
 
 
         [HttpPost("data")]

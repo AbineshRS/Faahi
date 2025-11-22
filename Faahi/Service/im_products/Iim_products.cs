@@ -18,7 +18,7 @@ namespace Faahi.Service.im_products
        
         Task<ServiceResult<string>> get_company_product(string company_id);
 
-        Task<ServiceResult<im_Products>> all_product_details(string company_id);
+        Task<ServiceResult<im_Products>> all_product_details(Guid company_id);
 
         Task<ActionResult<ServiceResult<im_products_dto>>> Get_product_details(string product_id);
 
@@ -27,5 +27,9 @@ namespace Faahi.Service.im_products
         Task<ActionResult<ServiceResult<im_ProductVariants>>> Add_subCategory(string product_id,im_ProductVariants im_ProductVariants);
 
         Task<ActionResult<ServiceResult<im_Products>>> Delete_product(string product_id);
+
+        Task<ServiceResult<im_ProductAttributes>> Create_Attribute(im_ProductAttributes im_ProductAttributes);
+
+        Task<ServiceResult<List<im_ProductAttributes>>> Get_attribute(Guid company_id);
     }
 }

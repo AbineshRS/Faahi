@@ -1,9 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel;
+using Microsoft.EntityFrameworkCore;
 
 namespace Faahi.Model.im_products
 {
+    [Index(nameof(company_id))]
+    [Index(nameof(title))]
     public class im_Products
     {
         [Key]
@@ -20,31 +23,39 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? category_id { get; set; }
 
+        [ForeignKey("category_id")]
+        [Display(Name = "im_ProductCategories")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? sub_category_id { get; set; }
+
         [ForeignKey("parent_id")]
         [Display(Name = "im_ProductCategories")]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? parent_id { get; set; }
+        public Guid? sub_sub_category_id { get; set; } = null;
 
         [Column(TypeName = "varchar(200)")]
         public string? title { get; set; } = null;
 
-        [Column(TypeName = "varchar(max)")]
+        [Column(TypeName = "nvarchar(max)")]
         public string? description { get; set; } = null;
 
         [Column(TypeName = "varchar(100)")]
         public string? brand { get; set; } = null;
 
-        [Column(TypeName = "varchar(20)")]
-        public string? tax_class { get; set; } = null;
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? tax_class_id { get; set; } = null;
 
         [Column(TypeName = "varchar(200)")]
         public string? thumbnail_url { get; set; } = null;
 
-        [Column(TypeName = "varchar(10)")]
-        public string? HS_CODE { get; set; } = null;
+        //[Column(TypeName = "varchar(10)")]
+        //public string? HS_CODE { get; set; } = null;
 
-        [Column(TypeName = "varchar(30)")]
-        public string? vendor_Code { get; set; } = null;
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? vendor_Code { get; set; } = null;
+
+        [Column(TypeName = "varchar(32)")]
+        public string? kitchen_type { get; set; } = null;
 
         [Column(TypeName = "datetime")]
         public DateTime? created_at { get; set; } = null;
@@ -55,10 +66,40 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "decimal(16, 4)")]
         public Decimal? dutyP { get; set; } = null;
 
+        //[StringLength(1)]
+        //[DefaultValue("F")]
+        //[Column(TypeName = "char(1)")]
+        //public string? katta { get; set; } = string.Empty;
+
         [StringLength(1)]
         [DefaultValue("F")]
         [Column(TypeName = "char(1)")]
-        public string? katta { get; set; } = string.Empty;
+        public string? fixed_price { get; set; } = string.Empty;
+
+        [StringLength(1)]
+        [DefaultValue("F")]
+        [Column(TypeName = "char(1)")]
+        public string? track_expiry { get; set; } = string.Empty;
+
+        [StringLength(1)]
+        [DefaultValue("F")]
+        [Column(TypeName = "char(1)")]
+        public string? allow_below_zero { get; set; } = string.Empty;
+
+        [StringLength(1)]
+        [DefaultValue("F")]
+        [Column(TypeName = "char(1)")]
+        public string? is_multi_unit { get; set; } = string.Empty;
+
+        [StringLength(1)]
+        [DefaultValue("F")]
+        [Column(TypeName = "char(1)")]
+        public string? low_stock_alert { get; set; } = string.Empty;
+
+        [StringLength(1)]
+        [DefaultValue("F")]
+        [Column(TypeName = "char(1)")]
+        public string? published { get; set; } = string.Empty;
 
         [StringLength(1)]
         [DefaultValue("T")]
@@ -70,20 +111,20 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "char(1)")]
         public string? ignore_direct { get; set; } = string.Empty;
 
-        [StringLength(1)]
-        [DefaultValue("F")]
-        [Column(TypeName = "char(1)")]
-        public string? consign_item { get; set; } = string.Empty;
+        //[StringLength(1)]
+        //[DefaultValue("F")]
+        //[Column(TypeName = "char(1)")]
+        //public string? consign_item { get; set; } = string.Empty;
 
         [StringLength(1)]
         [DefaultValue("F")]
         [Column(TypeName = "char(1)")]
-        public string? free_item { get; set; } = string.Empty;
+        public string? has_free_item { get; set; } = string.Empty;
 
         [StringLength(1)]
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]
-        public string? iqnore_decimal_qty { get; set; } = string.Empty;
+        public string? restrict_deciaml_qty { get; set; } = string.Empty;
 
         [StringLength(1)]
         [DefaultValue("F")]
@@ -91,9 +132,9 @@ namespace Faahi.Model.im_products
         public string? restrict_HS { get; set; } = string.Empty;
 
         [StringLength(1)]
-        [DefaultValue("T")]
+        [DefaultValue("Y")]
         [Column(TypeName = "char(1)")]
-        public string? stock { get; set; }  = string.Empty;
+        public string? stock_flag { get; set; }  = string.Empty;
 
         [StringLength(1)]
         [DefaultValue("T")]

@@ -99,6 +99,14 @@ namespace Faahi.Controllers.Application
         public DbSet<im_SellerInventory> im_SellerInventory { get; set; }
 
         public DbSet<im_Lots> im_Lots { get; set; }
+
+        public DbSet<im_ProductAttributes> im_ProductAttributes { get; set; }
+
+        public DbSet<im_AttributeValues> im_AttributeValues { get; set; }
+
+        public DbSet<im_VariantAttributes> im_VariantAttributes { get; set; }
+
+        public DbSet<im_StoreVariantInventory> im_StoreVariantInventory { get;set; }
     }
 
 }

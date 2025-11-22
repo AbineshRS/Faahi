@@ -20,7 +20,7 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? variant_id { get; set; }
 
-        [Column(TypeName = "varchar(200)")]
+        [Column(TypeName = "varchar(max)")]
         public string? image_url { get; set; } = null;
 
         [StringLength(1)]

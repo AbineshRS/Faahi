@@ -933,6 +933,34 @@ namespace Faahi.Migrations
                     b.ToTable("fx_Timezones");
                 });
 
+            modelBuilder.Entity("Faahi.Model.im_products.im_AttributeValues", b =>
+                {
+                    b.Property<Guid>("value_id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("attribute_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("color_name")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int?>("display_order")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("im_ProductAttributesattribute_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("value")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("value_id");
+
+                    b.HasIndex("im_ProductAttributesattribute_id");
+
+                    b.ToTable("im_AttributeValues");
+                });
+
             modelBuilder.Entity("Faahi.Model.im_products.im_InventoryLedger", b =>
                 {
                     b.Property<Guid>("ledger_id")
@@ -1080,6 +1108,30 @@ namespace Faahi.Migrations
                     b.ToTable("im_PriceTiers");
                 });
 
+            modelBuilder.Entity("Faahi.Model.im_products.im_ProductAttributes", b =>
+                {
+                    b.Property<Guid>("attribute_id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("company_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("display_order")
+                        .HasColumnType("int");
+
+                    b.Property<string>("name")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("attribute_id");
+
+                    b.HasIndex("company_id");
+
+                    b.HasIndex("name");
+
+                    b.ToTable("im_ProductAttributes");
+                });
+
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductCategories", b =>
                 {
                     b.Property<Guid>("category_id")
@@ -1130,8 +1182,11 @@ namespace Faahi.Migrations
                     b.Property<int?>("display_order")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("im_ProductVariantsvariant_id")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("image_url")
-                        .HasColumnType("varchar(200)");
+                        .HasColumnType("varchar(max)");
 
                     b.Property<string>("is_primary")
                         .HasMaxLength(1)
@@ -1147,6 +1202,8 @@ namespace Faahi.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("image_id");
+
+                    b.HasIndex("im_ProductVariantsvariant_id");
 
                     b.ToTable("im_ProductImages");
                 });
@@ -1194,61 +1251,36 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("allow_below_Zero")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
                     b.Property<string>("barcode")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("barcovendor_part_number")
                         .HasColumnType("varchar(50)");
 
-                    b.Property<decimal?>("chargeable_weight_kg")
-                        .HasColumnType("decimal(16, 4)");
-
-                    b.Property<string>("color")
-                        .HasColumnType("varchar(50)");
+                    b.Property<decimal?>("base_price")
+                        .HasColumnType("decimal(18, 4)");
 
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
-                    b.Property<decimal?>("height_cm")
-                        .HasColumnType("decimal(16, 4)");
-
                     b.Property<Guid?>("im_Productsproduct_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal?>("length_cm")
-                        .HasColumnType("decimal(16, 4)");
-
-                    b.Property<string>("low_stock_alert")
+                    b.Property<string>("is_default")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
-
-                    b.Property<decimal?>("price")
-                        .HasColumnType("decimal(18, 4)");
 
                     b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("size")
-                        .HasColumnType("varchar(50)");
-
                     b.Property<string>("sku")
                         .HasColumnType("varchar(50)");
-
-                    b.Property<decimal?>("stock_quantity")
-                        .HasColumnType("decimal(18, 4)");
 
                     b.Property<Guid?>("uom_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("updated_at")
                         .HasColumnType("datetime");
-
-                    b.Property<decimal?>("weight_kg")
-                        .HasColumnType("decimal(16, 4)");
-
-                    b.Property<decimal?>("width_cm")
-                        .HasColumnType("decimal(16, 4)");
 
                     b.HasKey("variant_id");
 
@@ -1263,8 +1295,9 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("HS_CODE")
-                        .HasColumnType("varchar(10)");
+                    b.Property<string>("allow_below_zero")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
 
                     b.Property<string>("brand")
                         .HasColumnType("varchar(100)");
@@ -1275,15 +1308,11 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("consign_item")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
                     b.Property<string>("description")
-                        .HasColumnType("varchar(max)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("dutyP")
                         .HasColumnType("decimal(16, 4)");
@@ -1292,7 +1321,11 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<string>("free_item")
+                    b.Property<string>("fixed_price")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
+
+                    b.Property<string>("has_free_item")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
@@ -1300,18 +1333,26 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<string>("iqnore_decimal_qty")
+                    b.Property<string>("is_multi_unit")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<string>("katta")
+                    b.Property<string>("kitchen_type")
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<string>("low_stock_alert")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<Guid?>("parent_id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("published")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
 
                     b.Property<string>("restrict_HS")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
+
+                    b.Property<string>("restrict_deciaml_qty")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
@@ -1319,12 +1360,18 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<string>("stock")
+                    b.Property<string>("stock_flag")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<string>("tax_class")
-                        .HasColumnType("varchar(20)");
+                    b.Property<Guid?>("sub_category_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("sub_sub_category_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("tax_class_id")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("thumbnail_url")
                         .HasColumnType("varchar(200)");
@@ -1332,13 +1379,21 @@ namespace Faahi.Migrations
                     b.Property<string>("title")
                         .HasColumnType("varchar(200)");
 
+                    b.Property<string>("track_expiry")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
+
                     b.Property<DateTime?>("updated_at")
                         .HasColumnType("datetime");
 
-                    b.Property<string>("vendor_Code")
-                        .HasColumnType("varchar(30)");
+                    b.Property<Guid?>("vendor_Code")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("product_id");
+
+                    b.HasIndex("company_id");
+
+                    b.HasIndex("title");
 
                     b.ToTable("im_Products");
                 });
@@ -1411,6 +1466,44 @@ namespace Faahi.Migrations
                     b.ToTable("im_SellerInventory");
                 });
 
+            modelBuilder.Entity("Faahi.Model.im_products.im_StoreVariantInventory", b =>
+                {
+                    b.Property<Guid>("store_variant_inventory_id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("bin_number")
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<decimal?>("committed_quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("company_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("im_ProductVariantsvariant_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("on_hand_quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("store_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("variant_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("store_variant_inventory_id");
+
+                    b.HasIndex("im_ProductVariantsvariant_id");
+
+                    b.HasIndex("store_id");
+
+                    b.HasIndex("variant_id");
+
+                    b.ToTable("im_StoreVariantInventory");
+                });
+
             modelBuilder.Entity("Faahi.Model.im_products.im_UnitsOfMeasure", b =>
                 {
                     b.Property<Guid>("uom_id")
@@ -1426,6 +1519,28 @@ namespace Faahi.Migrations
                     b.HasKey("uom_id");
 
                     b.ToTable("im_UnitsOfMeasures");
+                });
+
+            modelBuilder.Entity("Faahi.Model.im_products.im_VariantAttributes", b =>
+                {
+                    b.Property<Guid>("varient_attribute_id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("im_ProductVariantsvariant_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("value_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("variant_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("varient_attribute_id");
+
+                    b.HasIndex("im_ProductVariantsvariant_id");
+
+                    b.ToTable("im_VariantAttributes");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_item_Category", b =>
@@ -1592,9 +1707,6 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<Guid?>("im_ProductVariantsvariant_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("item_barcode")
                         .HasColumnType("varchar(50)");
 
@@ -1657,8 +1769,6 @@ namespace Faahi.Migrations
                         .HasColumnType("decimal(18, 4)");
 
                     b.HasKey("sub_variant_id");
-
-                    b.HasIndex("im_ProductVariantsvariant_id");
 
                     b.ToTable("im_product_subvariant");
                 });
@@ -2142,11 +2252,25 @@ namespace Faahi.Migrations
                         .HasForeignKey("fx_Currenciescurrency_id");
                 });
 
+            modelBuilder.Entity("Faahi.Model.im_products.im_AttributeValues", b =>
+                {
+                    b.HasOne("Faahi.Model.im_products.im_ProductAttributes", null)
+                        .WithMany("im_AttributeValues")
+                        .HasForeignKey("im_ProductAttributesattribute_id");
+                });
+
             modelBuilder.Entity("Faahi.Model.im_products.im_PriceTiers", b =>
                 {
                     b.HasOne("Faahi.Model.im_products.im_product_subvariant", null)
                         .WithMany("im_PriceTiers")
                         .HasForeignKey("im_product_subvariantsub_variant_id");
+                });
+
+            modelBuilder.Entity("Faahi.Model.im_products.im_ProductImages", b =>
+                {
+                    b.HasOne("Faahi.Model.im_products.im_ProductVariants", null)
+                        .WithMany("im_ProductImages")
+                        .HasForeignKey("im_ProductVariantsvariant_id");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductVariantPrices", b =>
@@ -2163,6 +2287,20 @@ namespace Faahi.Migrations
                         .HasForeignKey("im_Productsproduct_id");
                 });
 
+            modelBuilder.Entity("Faahi.Model.im_products.im_StoreVariantInventory", b =>
+                {
+                    b.HasOne("Faahi.Model.im_products.im_ProductVariants", null)
+                        .WithMany("im_StoreVariantInventory")
+                        .HasForeignKey("im_ProductVariantsvariant_id");
+                });
+
+            modelBuilder.Entity("Faahi.Model.im_products.im_VariantAttributes", b =>
+                {
+                    b.HasOne("Faahi.Model.im_products.im_ProductVariants", null)
+                        .WithMany("im_VariantAttributes")
+                        .HasForeignKey("im_ProductVariantsvariant_id");
+                });
+
             modelBuilder.Entity("Faahi.Model.im_products.im_item_site", b =>
                 {
                     b.HasOne("Faahi.Model.im_products.im_site", null)
@@ -2175,13 +2313,6 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.im_products.im_item_Category", null)
                         .WithMany("im_item_subcategory")
                         .HasForeignKey("im_item_Categoryitem_class_id");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_product_subvariant", b =>
-                {
-                    b.HasOne("Faahi.Model.im_products.im_ProductVariants", null)
-                        .WithMany("im_Product_Subvariants")
-                        .HasForeignKey("im_ProductVariantsvariant_id");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_listing_details", b =>
@@ -2236,9 +2367,18 @@ namespace Faahi.Migrations
                     b.Navigation("im_ProductVariantPrices");
                 });
 
+            modelBuilder.Entity("Faahi.Model.im_products.im_ProductAttributes", b =>
+                {
+                    b.Navigation("im_AttributeValues");
+                });
+
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductVariants", b =>
                 {
-                    b.Navigation("im_Product_Subvariants");
+                    b.Navigation("im_ProductImages");
+
+                    b.Navigation("im_StoreVariantInventory");
+
+                    b.Navigation("im_VariantAttributes");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_Products", b =>
