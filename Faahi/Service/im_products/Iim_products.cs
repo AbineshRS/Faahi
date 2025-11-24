@@ -10,7 +10,7 @@ namespace Faahi.Service.im_products
 
         Task<ServiceResult<im_Products>> Create_Product(im_Products im_Product);
 
-        Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile,string product_id);
+        Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile,Guid product_id);
 
         Task<ActionResult<ServiceResult<string>>> UploadMutiple_image(IFormFile[] formFile,string product_id,string variant_id);
         
@@ -18,7 +18,7 @@ namespace Faahi.Service.im_products
        
         Task<ServiceResult<string>> get_company_product(string company_id);
 
-        Task<ServiceResult<im_Products>> all_product_details(Guid company_id);
+        Task<ServiceResult<List<im_Products>>> all_product_details(Guid company_id);
 
         Task<ActionResult<ServiceResult<im_products_dto>>> Get_product_details(string product_id);
 

@@ -38,7 +38,7 @@ namespace Faahi.Controllers.im_products
         [Authorize]
         [HttpPost]
         [Route("UploadProductDefaultImage/{product_id}")]
-        public async Task<ActionResult<string>> UploadProductAsync(IFormFile formFile, string product_id)
+        public async Task<ActionResult<string>> UploadProductAsync(IFormFile formFile, Guid product_id)
         {
             if (formFile == null || product_id == null)
             {

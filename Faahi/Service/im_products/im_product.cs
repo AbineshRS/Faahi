@@ -1,4 +1,6 @@
-﻿using Faahi.Controllers.Application;
+﻿using Amazon.S3;
+using Amazon.S3.Model;
+using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Dto.Product_dto;
 using Faahi.Model.im_products;
@@ -18,6 +20,7 @@ namespace Faahi.Service.im_products
         private readonly ApplicationDbContext _context;
         public static IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<im_product> _logger;
+        private readonly IAmazonS3 _s3Client;
 
         public im_product(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, ILogger<im_product> logger)
         {
@@ -99,7 +102,7 @@ namespace Faahi.Service.im_products
                         varient_attrbut.value_id = varient_attrbut.value_id;
                         varient_attrbut.variant_id = im_varint.variant_id;
 
-                        
+
 
                     }
                     foreach (var store_inv in im_varint.im_StoreVariantInventory)
@@ -180,7 +183,7 @@ namespace Faahi.Service.im_products
 
                 return new ServiceResult<im_Products>
                 {
-                    Status=1,
+                    Status = 1,
                     Success = true,
                     Message = " created successfully",
                     Data = im_Product
@@ -191,14 +194,14 @@ namespace Faahi.Service.im_products
                 _logger.LogError(ex, "Create_Product: An error occurred while creating the product");
                 return new ServiceResult<im_Products>
                 {
-                    Status=500,
+                    Status = 500,
                     Success = false,
                     Message = "An error occurred while creating the product"
                 };
             }
 
         }
-        public async Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile, string product_id)
+        public async Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile, Guid product_id)
         {
             if (formFile == null || formFile.Length == 0)
             {
@@ -212,47 +215,121 @@ namespace Faahi.Service.im_products
             }
             try
             {
-                FileInfo fileInfo = new FileInfo(formFile.FileName);
-                var product_guid = Guid.Parse(product_id);
-                var im_product = await _context.im_Products.FirstOrDefaultAsync(a => a.product_id == product_guid);
+                var product = await _context.im_Products.FirstOrDefaultAsync(p => p.product_id == product_id);
 
-                var newItemFile = "Item_" + im_product.product_id + "_1" + fileInfo.Extension;
-                string relativeFolder = Path.Combine("Images", "ProductItems", im_product.product_id.ToString(), "Default");
-                string fullFolderPath = Path.Combine(_webHostEnvironment.WebRootPath, relativeFolder);
+                var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == product.company_id);
+                long planLimitInBytes;
 
-                if (!Directory.Exists(fullFolderPath))
+                if (co_business.plan_type == "Basic")
                 {
-                    Directory.CreateDirectory(fullFolderPath);
+                    planLimitInBytes = 5L * 1024 * 1024 * 1024; // 5 GB
                 }
-
-                //delete image
-                if (!string.IsNullOrEmpty(im_product.thumbnail_url))
+                else if (co_business.plan_type == "Intermediate")
                 {
-                    string oldFullPath = Path.Combine(_webHostEnvironment.WebRootPath, im_product.thumbnail_url.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                    if (System.IO.File.Exists(oldFullPath))
+                    planLimitInBytes = 20L * 1024 * 1024 * 1024; // 20 GB
+                }
+                else if (co_business.plan_type == "Advanced")
+                {
+                    planLimitInBytes = 50L * 1024 * 1024 * 1024; // 50 GB
+                }
+                else
+                {
+                    planLimitInBytes = 5L * 1024 * 1024 * 1024; // default 5 GB
+                }
+               
+
+                string storeName = co_business.business_name;
+                long storeFolderSize = await GetStoreFolderSizeAsync("your-bucket-name", storeName);
+                if (storeFolderSize + formFile.Length > planLimitInBytes)
+                {
+                    return new ServiceResult<string>
                     {
-                        System.IO.File.Delete(oldFullPath);
-                    }
+                        Success = false,
+                        Message = "Store storage limit reached",
+                        Data = null
+                    };
                 }
-
-                string fullPath = Path.Combine(fullFolderPath, newItemFile);
-
-                using (var stream = new FileStream(fullPath, FileMode.Create))
+                if (product == null)
                 {
-                    await formFile.CopyToAsync(stream);
-                    await stream.FlushAsync();
+                    _logger.LogWarning("UploadProductAsync: Invalid product ID");
+                    return new ServiceResult<string>
+                    {
+                        Success = false,
+                        Message = "Invalid product ID",
+                        Data = null
+                    };
                 }
-                string relativePath = Path.Combine(relativeFolder, newItemFile).Replace("\\", "/");
+                // Optional: delete old image from Wasabi
+                if (!string.IsNullOrEmpty(product.thumbnail_url))
+                {
+                    // Extract key from URL
+                    var oldKey = new Uri(product.thumbnail_url).AbsolutePath.TrimStart('/');
+                    await _s3Client.DeleteObjectAsync("your-bucket-name", oldKey);
+                }
 
-                im_product.thumbnail_url = relativePath;
-                _context.im_Products.Update(im_product);
+                FileInfo fileInfo = new FileInfo(formFile.FileName);
+
+                var newFileName = $"Item_{product.product_id}_1{fileInfo.Extension}";
+
+                // Create key in the format: users/{userId}/product_{productId}/default/{fileName}
+                var key = $"users/{co_business.business_name}/product_{product.product_id}/default/{newFileName}";
+
+                // Upload to Wasabi
+                using var stream = formFile.OpenReadStream();
+                var request = new Amazon.S3.Model.PutObjectRequest
+                {
+                    BucketName = "your-bucket-name",
+                    Key = key,
+                    InputStream = stream,
+                    ContentType = formFile.ContentType,
+                    CannedACL = S3CannedACL.PublicRead,
+                    Headers = { CacheControl = "public,max-age=604800" } // 1 week caching
+                };
+                await _s3Client.PutObjectAsync(request);
+
+
+                //var newItemFile = "Item_" + product.product_id + "_1" + fileInfo.Extension;
+                //string relativeFolder = Path.Combine("Images", "ProductItems", product.product_id.ToString(), "Default");
+                //string fullFolderPath = Path.Combine(_webHostEnvironment.WebRootPath, relativeFolder);
+
+                //if (!Directory.Exists(fullFolderPath))
+                //{
+                //    Directory.CreateDirectory(fullFolderPath);
+                //}
+
+                ////delete image
+                //if (!string.IsNullOrEmpty(product.thumbnail_url))
+                //{
+                //    string oldFullPath = Path.Combine(_webHostEnvironment.WebRootPath, product.thumbnail_url.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                //    if (System.IO.File.Exists(oldFullPath))
+                //    {
+                //        System.IO.File.Delete(oldFullPath);
+                //    }
+                //}
+
+                //string fullPath = Path.Combine(fullFolderPath, newItemFile);
+
+                //using (var stream = new FileStream(fullPath, FileMode.Create))
+                //{
+                //    await formFile.CopyToAsync(stream);
+                //    await stream.FlushAsync();
+                //}
+                //string relativePath = Path.Combine(relativeFolder, newItemFile).Replace("\\", "/");
+
+
+                var version = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+                // Assign Cloudflare CDN URL with cache-busting
+                product.thumbnail_url = $"https://cdn.example.com/{key}?v={version}";
+
+                _context.im_Products.Update(product);
                 await _context.SaveChangesAsync();
                 return new ServiceResult<string>
                 {
-                    Status=1,
+                    Status = 1,
                     Success = true,
                     Message = "File uploaded",
-                    Data = relativePath
+                    Data = product.thumbnail_url,
                 };
 
             }
@@ -261,7 +338,7 @@ namespace Faahi.Service.im_products
                 _logger.LogError(ex, "UploadProductAsync: An error occurred while uploading the file");
                 return new ServiceResult<string>
                 {
-                    Status=500,
+                    Status = 500,
                     Success = false,
                     Message = "An error occurred while uploading the file.",
                     Data = null
@@ -270,6 +347,33 @@ namespace Faahi.Service.im_products
 
 
         }
+        public async Task<long> GetStoreFolderSizeAsync(string bucketName, string storeName)
+        {
+            long totalSize = 0;
+
+            var request = new Amazon.S3.Model.ListObjectsV2Request
+            {
+                BucketName = bucketName,
+                Prefix = $"stores/{storeName}/" // All objects under this store
+            };
+
+            ListObjectsV2Response response;
+            do
+            {
+                response = await _s3Client.ListObjectsV2Async(request);
+
+                foreach (var obj in response.S3Objects)
+                {
+                    totalSize += obj.Size;
+                }
+
+                request.ContinuationToken = response.NextContinuationToken;
+
+            } while (response.IsTruncated);
+
+            return totalSize;
+        }
+
         public async Task<ActionResult<ServiceResult<string>>> UploadMutiple_image(IFormFile[] formFile, string product_id, string variant_id)
         {
             if (formFile == null || formFile.Length == 0)
@@ -307,7 +411,7 @@ namespace Faahi.Service.im_products
                         _context.im_ProductImages.Remove(existingImage);
                     }
                 }
-                
+
 
                 string folderPath = Path.Combine(_webHostEnvironment.WebRootPath, "Images", "ProductItems", product_id, "ProductSubImages", variant_id);
 
@@ -348,7 +452,7 @@ namespace Faahi.Service.im_products
 
                 return new ServiceResult<string>
                 {
-                    Status=1,
+                    Status = 1,
                     Success = true,
                     Message = "All files uploaded successfully.",
                     Data = null
@@ -359,7 +463,7 @@ namespace Faahi.Service.im_products
                 _logger.LogError(ex, "UploadMutiple_image: An error occurred while uploading multiple images");
                 return new ServiceResult<string>
                 {
-                    Status=500,
+                    Status = 500,
                     Success = false,
                     Message = "An error occurred while uploading multiple images.",
                     Data = null
@@ -466,7 +570,7 @@ namespace Faahi.Service.im_products
 
                 return new ServiceResult<string>
                 {
-                    Status=1,
+                    Status = 1,
                     Success = true,
                     Message = "All video files uploaded successfully.",
                     Data = null
@@ -477,7 +581,7 @@ namespace Faahi.Service.im_products
                 _logger.LogError(ex, "Upload_vedio: An error occurred while uploading video files");
                 return new ServiceResult<string>
                 {
-                    Status=500,
+                    Status = 500,
                     Success = false,
                     Message = "An error occurred while uploading video files.",
                     Data = null
@@ -509,20 +613,20 @@ namespace Faahi.Service.im_products
             };
         }
 
-        public async Task<ServiceResult<im_Products>> all_product_details(Guid company_id)
+        public async Task<ServiceResult<List<im_Products>>> all_product_details(Guid company_id)
         {
             if (company_id == null)
             {
-                return new ServiceResult<im_Products>
+                return new ServiceResult<List<im_Products>>
                 {
                     Success = false,
                     Message = "not found"
                 };
             }
             var im_prodcut = await _context.im_Products.FirstOrDefaultAsync(a => a.product_id == company_id);
-            var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a=>a.im_StoreVariantInventory).Include(a=>a.im_ProductVariants).ThenInclude(a=>a.im_ProductImages)
-                                      .FirstOrDefaultAsync(a => a.company_id == company_id);
-            return new ServiceResult<im_Products>
+            var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
+                                      .Where(a => a.company_id == company_id).ToListAsync();
+            return new ServiceResult<List<im_Products>>
             {
                 Success = true,
                 Message = "successfully",
@@ -999,6 +1103,15 @@ namespace Faahi.Service.im_products
                 Message = "Success",
                 Data = attribute
             };
+        }
+
+        // Update the constructor to accept IAmazonS3 s3Client
+        public im_product(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, ILogger<im_product> logger, IAmazonS3 s3Client)
+        {
+            _context = context;
+            _webHostEnvironment = webHostEnvironment;
+            _logger = logger;
+            _s3Client = s3Client;
         }
     }
 }
