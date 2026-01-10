@@ -1,6 +1,5 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
-using Faahi.Migrations;
 using Faahi.Model.am_vcos;
 using Faahi.Model.Shared_tables;
 using Microsoft.EntityFrameworkCore;

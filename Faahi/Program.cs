@@ -1,3 +1,5 @@
+using Amazon.Runtime;
+using Amazon.S3;
 using Faahi.Controllers.Application;
 using Faahi.Mapper;
 using Faahi.Service.Auth;
@@ -105,6 +107,24 @@ builder.Services.AddScoped<Istore,store_service>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<Iavl_countries,avl_countries_service>();
 builder.Services.AddMemoryCache();
+
+var wasabiOptions = builder.Configuration.GetSection("Wasabi");
+var accessKey = wasabiOptions["AccessKey"];
+var secretKey = wasabiOptions["SecretKey"];
+var serviceUrl = wasabiOptions["ServiceUrl"];
+
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var credentials = new BasicAWSCredentials(accessKey, secretKey);
+
+    var config = new AmazonS3Config
+    {
+        ServiceURL = serviceUrl, // Wasabi endpoint
+        ForcePathStyle = true    // Required for Wasabi
+    };
+
+    return new AmazonS3Client(credentials, config);
+});
 
 var app = builder.Build();
 

@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
-using Faahi.Migrations;
 using Faahi.Model.Email_verify;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;

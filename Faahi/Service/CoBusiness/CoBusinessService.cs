@@ -76,7 +76,11 @@ namespace Faahi.Service.CoBusiness
                 {
                     return new ServiceResult<co_business> { Success = false, Message = "Username already exists.", Status = -2 };
                 }
+                var table = "co_business";
+                var am_table = await _context.am_table_next_key.FindAsync(table);
+                var key = Convert.ToInt16(am_table.next_key);
 
+                business.company_code = Convert.ToString(key + 1);
 
 
                 var namePart = Regex.Replace(business.business_name ?? "", @"\s+", "")
@@ -206,6 +210,9 @@ namespace Faahi.Service.CoBusiness
                             </body>
                             </html>
                             ";
+                am_table.next_key = key + 1;
+                 _context.am_table_next_key.Update(am_table);
+
                 var emailService = new EmailService(_configuration);
                 await emailService.SendEmailAsync(business.email, subject, body);
 

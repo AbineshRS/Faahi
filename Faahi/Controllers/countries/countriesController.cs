@@ -1,5 +1,4 @@
-﻿using Faahi.Migrations;
-using Faahi.Model.countries;
+﻿using Faahi.Model.countries;
 using Faahi.Service.countries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;

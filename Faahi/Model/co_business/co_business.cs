@@ -26,6 +26,9 @@ namespace Faahi.Model.co_business
         [Column(TypeName = "uniqueidentifier")]
         public Guid? company_id { get; set; }
 
+        [Column(TypeName ="varchar(200)")]
+        public string? company_code { get; set; }
+
         [Column(TypeName ="varchar(100)")]
         public string? business_name { get; set; }
 

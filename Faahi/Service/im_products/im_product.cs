@@ -21,12 +21,15 @@ namespace Faahi.Service.im_products
         public static IWebHostEnvironment _webHostEnvironment;
         private readonly ILogger<im_product> _logger;
         private readonly IAmazonS3 _s3Client;
+        private readonly IConfiguration _configure;
 
-        public im_product(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, ILogger<im_product> logger)
+        public im_product(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, ILogger<im_product> logger, IAmazonS3 s3Client, IConfiguration configure)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
             _logger = logger;
+            _s3Client = s3Client ?? throw new ArgumentNullException(nameof(s3Client));
+            _configure = configure;
         }
 
 
@@ -54,20 +57,14 @@ namespace Faahi.Service.im_products
                 im_Product.title = im_Product.title;
                 im_Product.description = im_Product.description;
                 im_Product.brand = im_Product.brand;
-                //im_Product.tax_class = im_Product.tax_class;
-                //im_Product.HS_CODE = rnd.Next(100000, 999999).ToString();
                 im_Product.vendor_Code = im_Product.vendor_Code;
                 im_Product.created_at = DateTime.Now;
                 im_Product.updated_at = DateTime.Now;
                 im_Product.dutyP = im_Product.dutyP;
-                //im_Product.katta = im_Product.katta;
                 im_Product.featured_item = im_Product.featured_item;
                 im_Product.ignore_direct = im_Product.ignore_direct;
-                //im_Product.consign_item = im_Product.consign_item;
-                //im_Product.free_item = im_Product.free_item;
                 im_Product.ignore_direct = im_Product.ignore_direct;
                 im_Product.restrict_HS = im_Product.restrict_HS;
-                //im_Product.stock = im_Product.stock;
                 im_Product.status = im_Product.status;
 
                 foreach (var im_varint in im_Product.im_ProductVariants)
@@ -80,30 +77,29 @@ namespace Faahi.Service.im_products
                         .ToUpper();
                     var SKU = namePart + "-";
                     im_varint.sku = SKU + rnd.Next(100000, 999999).ToString();
-                    //im_varint.color = im_varint.color;
-                    //im_varint.size = im_varint.size;
-                    //im_varint.price = im_varint.price;
-                    //im_varint.stock_quantity = im_varint.stock_quantity;
-                    //im_varint.weight_kg = im_varint.weight_kg;
-                    //im_varint.width_cm = im_varint.width_cm;
-                    //im_varint.height_cm = im_varint.height_cm;
-                    //im_varint.length_cm = im_varint.length_cm;
-                    //var chargeable_weight = im_varint.width_cm * im_varint.height_cm * im_varint.length_cm;
-                    //im_varint.chargeable_weight_kg = chargeable_weight / 10000;
+
+                    if (im_varint.barcode == null || im_varint.barcode == "" || im_varint.barcode=="0")
+                    {
+                        string first3 = Regex.Replace(im_Product.title ?? "", @"\s+", "")
+                                         .Substring(0, Math.Min(3, (im_Product.title ?? "").Length))
+                                         .ToUpper();
+                        string randomNumber = rnd.Next(100000, 999999).ToString();
+
+                        im_varint.barcode = $"{first3}{randomNumber}";
+
+                    }
+                    else
+                    {
+                        im_varint.barcode = im_varint.barcode;
+                    }
                     im_varint.created_at = DateTime.Now;
                     im_varint.updated_at = DateTime.Now;
-                    //im_varint.allow_below_Zero = im_varint.allow_below_Zero;
-                    //im_varint.low_stock_alert = im_varint.low_stock_alert;
-
                     foreach (var varient_attrbut in im_varint.im_VariantAttributes)
                     {
                         varient_attrbut.varient_attribute_id = Guid.CreateVersion7();
 
                         varient_attrbut.value_id = varient_attrbut.value_id;
                         varient_attrbut.variant_id = im_varint.variant_id;
-
-
-
                     }
                     foreach (var store_inv in im_varint.im_StoreVariantInventory)
                     {
@@ -115,65 +111,6 @@ namespace Faahi.Service.im_products
                         store_inv.committed_quantity = store_inv.committed_quantity;
                         store_inv.bin_number = store_inv.bin_number;
                     }
-
-                    //foreach (var sub_varient in im_varint.im_Product_Subvariants)
-                    //{
-                    //    sub_varient.sub_variant_id = Guid.CreateVersion7();
-                    //    sub_varient.variant_id = im_varint.variant_id;
-                    //    sub_varient.product_id = im_Product.product_id;
-                    //    sub_varient.variantType = sub_varient.variantType;
-                    //    sub_varient.variantValue = sub_varient.variantValue;
-                    //    sub_varient.list_price = sub_varient.list_price;
-                    //    sub_varient.standard_cost = sub_varient.standard_cost;
-                    //    sub_varient.last_cost = sub_varient.last_cost;
-                    //    sub_varient.avg_cost = sub_varient.avg_cost;
-                    //    sub_varient.ws_price = sub_varient.ws_price;
-                    //    sub_varient.profit_p = sub_varient.profit_p;
-                    //    sub_varient.minimum_selling = sub_varient.minimum_selling;
-                    //    sub_varient.item_barcode = sub_varient.item_barcode;
-                    //    sub_varient.modal_number = sub_varient.modal_number;
-                    //    sub_varient.shipping_weight = sub_varient.shipping_weight;
-                    //    sub_varient.shipping_length = sub_varient.shipping_length;
-                    //    sub_varient.shipping_width = sub_varient.shipping_width;
-                    //    sub_varient.shipping_height = sub_varient.shipping_height;
-                    //    sub_varient.total_volume = sub_varient.total_volume;
-                    //    sub_varient.total_weight = sub_varient.total_weight;
-                    //    sub_varient.deduct_qnty = sub_varient.deduct_qnty;
-                    //    sub_varient.quantity = sub_varient.quantity;
-                    //    sub_varient.created_at = DateTime.Now;
-                    //    sub_varient.edit_user_id = sub_varient.edit_user_id;
-                    //    sub_varient.unit_breakdown = sub_varient.unit_breakdown;
-                    //    sub_varient.fixed_price = sub_varient.fixed_price;
-                    //    sub_varient.generateBarcode = sub_varient.generateBarcode;
-
-
-                    //    foreach (var price_tair in sub_varient.im_PriceTiers)
-                    //    {
-                    //        price_tair.price_tier_id = Guid.CreateVersion7();
-                    //        price_tair.variant_id = im_varint.variant_id;
-                    //        price_tair.name = price_tair.name;
-                    //        price_tair.sub_variant_id = sub_varient.sub_variant_id;
-                    //        price_tair.description = price_tair.description;
-
-
-
-                    //        foreach (var price_varient in price_tair.im_ProductVariantPrices)
-                    //        {
-                    //            price_varient.variant_price_id = Guid.CreateVersion7();
-                    //            price_varient.sub_variant_id = sub_varient.sub_variant_id;
-                    //            price_varient.company_id = im_Product.company_id;
-                    //            price_varient.price_tier_id = price_tair.price_tier_id;
-                    //            price_varient.price = price_varient.price;
-                    //            price_varient.currency = price_varient.currency;
-                    //            price_varient.created_at = DateTime.Now;
-                    //            price_varient.updated_at = DateTime.Now;
-
-
-                    //        }
-                    //    }
-                    //}
-
-
                 }
                 _context.im_Products.Add(im_Product);
 
@@ -213,16 +150,29 @@ namespace Faahi.Service.im_products
                     Data = null
                 };
             }
+
             try
             {
                 var product = await _context.im_Products.FirstOrDefaultAsync(p => p.product_id == product_id);
+
+                if (product == null)
+                {
+                    _logger.LogWarning("UploadProductAsync: Invalid product ID");
+                    return new ServiceResult<string>
+                    {
+                        Status=-2,
+                        Success = false,
+                        Message = "Invalid product ID",
+                        Data = null
+                    };
+                }
 
                 var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == product.company_id);
                 long planLimitInBytes;
 
                 if (co_business.plan_type == "Basic")
                 {
-                    planLimitInBytes = 5L * 1024 * 1024 * 1024; // 5 GB
+                    planLimitInBytes = 5L * 1024 * 1024 * 1024; // 5 GB 
                 }
                 else if (co_business.plan_type == "Intermediate")
                 {
@@ -236,10 +186,10 @@ namespace Faahi.Service.im_products
                 {
                     planLimitInBytes = 5L * 1024 * 1024 * 1024; // default 5 GB
                 }
-               
+
 
                 string storeName = co_business.business_name;
-                long storeFolderSize = await GetStoreFolderSizeAsync("your-bucket-name", storeName);
+                long storeFolderSize = await GetStoreFolderSizeAsync(_configure["Wasabi:BucketName"], storeName);
                 if (storeFolderSize + formFile.Length > planLimitInBytes)
                 {
                     return new ServiceResult<string>
@@ -249,36 +199,29 @@ namespace Faahi.Service.im_products
                         Data = null
                     };
                 }
-                if (product == null)
-                {
-                    _logger.LogWarning("UploadProductAsync: Invalid product ID");
-                    return new ServiceResult<string>
-                    {
-                        Success = false,
-                        Message = "Invalid product ID",
-                        Data = null
-                    };
-                }
-                // Optional: delete old image from Wasabi
+
+                var bucketName = _configure["Wasabi:BucketName"];
+
+                // Optional: delete old image
                 if (!string.IsNullOrEmpty(product.thumbnail_url))
                 {
-                    // Extract key from URL
                     var oldKey = new Uri(product.thumbnail_url).AbsolutePath.TrimStart('/');
-                    await _s3Client.DeleteObjectAsync("your-bucket-name", oldKey);
+                    await _s3Client.DeleteObjectAsync(bucketName, oldKey);
                 }
 
+                // Prepare new file
+                // Prepare new file
                 FileInfo fileInfo = new FileInfo(formFile.FileName);
-
                 var newFileName = $"Item_{product.product_id}_1{fileInfo.Extension}";
 
-                // Create key in the format: users/{userId}/product_{productId}/default/{fileName}
-                var key = $"users/{co_business.business_name}/product_{product.product_id}/default/{newFileName}";
+                // NEW CORRECT FOLDER STRUCTURE
+                var key = $"faahi/company/{co_business.company_code}/product_{product.product_id}/default/{newFileName}";
 
                 // Upload to Wasabi
                 using var stream = formFile.OpenReadStream();
                 var request = new Amazon.S3.Model.PutObjectRequest
                 {
-                    BucketName = "your-bucket-name",
+                    BucketName = bucketName,
                     Key = key,
                     InputStream = stream,
                     ContentType = formFile.ContentType,
@@ -287,51 +230,21 @@ namespace Faahi.Service.im_products
                 };
                 await _s3Client.PutObjectAsync(request);
 
-
-                //var newItemFile = "Item_" + product.product_id + "_1" + fileInfo.Extension;
-                //string relativeFolder = Path.Combine("Images", "ProductItems", product.product_id.ToString(), "Default");
-                //string fullFolderPath = Path.Combine(_webHostEnvironment.WebRootPath, relativeFolder);
-
-                //if (!Directory.Exists(fullFolderPath))
-                //{
-                //    Directory.CreateDirectory(fullFolderPath);
-                //}
-
-                ////delete image
-                //if (!string.IsNullOrEmpty(product.thumbnail_url))
-                //{
-                //    string oldFullPath = Path.Combine(_webHostEnvironment.WebRootPath, product.thumbnail_url.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                //    if (System.IO.File.Exists(oldFullPath))
-                //    {
-                //        System.IO.File.Delete(oldFullPath);
-                //    }
-                //}
-
-                //string fullPath = Path.Combine(fullFolderPath, newItemFile);
-
-                //using (var stream = new FileStream(fullPath, FileMode.Create))
-                //{
-                //    await formFile.CopyToAsync(stream);
-                //    await stream.FlushAsync();
-                //}
-                //string relativePath = Path.Combine(relativeFolder, newItemFile).Replace("\\", "/");
-
-
-                var version = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-                // Assign Cloudflare CDN URL with cache-busting
-                product.thumbnail_url = $"https://cdn.example.com/{key}?v={version}";
-
+                // Save canonical URL in DB (no cache-busting)
+                product.thumbnail_url = $"https://cdn.faahi.com/{key}";
                 _context.im_Products.Update(product);
                 await _context.SaveChangesAsync();
+
+                // Return cache-busted URL to client
+                var cacheBustedUrl = $"{product.thumbnail_url}?v={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+
                 return new ServiceResult<string>
                 {
                     Status = 1,
                     Success = true,
                     Message = "File uploaded",
-                    Data = product.thumbnail_url,
+                    Data = cacheBustedUrl
                 };
-
             }
             catch (Exception ex)
             {
@@ -344,9 +257,8 @@ namespace Faahi.Service.im_products
                     Data = null
                 };
             }
-
-
         }
+
         public async Task<long> GetStoreFolderSizeAsync(string bucketName, string storeName)
         {
             long totalSize = 0;
@@ -354,7 +266,8 @@ namespace Faahi.Service.im_products
             var request = new Amazon.S3.Model.ListObjectsV2Request
             {
                 BucketName = bucketName,
-                Prefix = $"stores/{storeName}/" // All objects under this store
+                Prefix = $"faahi/company/{storeName}/"
+                // All objects under this store
             };
 
             ListObjectsV2Response response;
@@ -378,7 +291,6 @@ namespace Faahi.Service.im_products
         {
             if (formFile == null || formFile.Length == 0)
             {
-                _logger.LogWarning("UploadMutiple_image: No files were uploaded");
                 return new ServiceResult<string>
                 {
                     Success = false,
@@ -386,92 +298,125 @@ namespace Faahi.Service.im_products
                     Data = null
                 };
             }
+
             try
             {
-                int itemNumber = 0;
-                var guid_varientid = Guid.Parse(variant_id);
-                var guid_product_id = Guid.Parse(product_id);
-                var im_varients = await _context.im_ProductVariants.Include(v => v.im_ProductImages).FirstOrDefaultAsync(v => v.variant_id == guid_varientid);
-                //var product = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.variant_id == variant_id);
-                var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.variant_id == guid_varientid);
-                var existingImages = await _context.im_ProductImages.Where(a => a.variant_id == guid_varientid).ToListAsync();
+                var guidProductId = Guid.Parse(product_id);
+                var guidVariantId = Guid.Parse(variant_id);
 
-                if (existingImages.Any())
+                var variant = await _context.im_ProductVariants
+                    .Include(v => v.im_ProductImages)
+                    .FirstOrDefaultAsync(v => v.variant_id == guidVariantId);
+
+                if (variant == null)
                 {
-                    foreach (var existingImage in existingImages)
+                    return new ServiceResult<string>
                     {
-                        var fullImagePath = Path.Combine(_webHostEnvironment.WebRootPath,
-                            existingImage.image_url.Replace("/", Path.DirectorySeparatorChar.ToString()));
+                        Success = false,
+                        Message = "Invalid variant ID.",
+                        Data = null
+                    };
+                }
 
-                        if (System.IO.File.Exists(fullImagePath))
-                        {
-                            System.IO.File.Delete(fullImagePath);
-                        }
+                var product = await _context.im_Products
+                    .FirstOrDefaultAsync(p => p.product_id == guidProductId);
 
-                        _context.im_ProductImages.Remove(existingImage);
-                    }
+                var business = await _context.co_business
+                    .FirstOrDefaultAsync(c => c.company_id == product.company_id);
+
+                var bucketName = _configure["Wasabi:BucketName"];
+
+
+                // -----------------------------------------
+                // DELETE OLD IMAGES (WASABI + DB)
+                // -----------------------------------------
+
+                var oldImages = _context.im_ProductImages
+                    .Where(img => img.variant_id == guidVariantId)
+                    .ToList();
+
+                foreach (var img in oldImages)
+                {
+                    var oldKey = new Uri(img.image_url).AbsolutePath.TrimStart('/');
+                    await _s3Client.DeleteObjectAsync(bucketName, oldKey);
+                    _context.im_ProductImages.Remove(img);
                 }
 
 
-                string folderPath = Path.Combine(_webHostEnvironment.WebRootPath, "Images", "ProductItems", product_id, "ProductSubImages", variant_id);
+                // -----------------------------------------
+                // SAVE NEW IMAGES
+                // -----------------------------------------
 
-                if (!Directory.Exists(folderPath))
+                int imageNumber = 0;
+
+                foreach (var file in formFile)
                 {
-                    Directory.CreateDirectory(folderPath);
-                }
+                    imageNumber++;
 
-                foreach (var newfile in formFile)
-                {
-                    itemNumber++;
-                    FileInfo fileInfo = new FileInfo(newfile.FileName);
-                    var newFileName = $"sub_{product_id}_{itemNumber}{fileInfo.Extension}";
-                    var fullPath = Path.Combine(folderPath, newFileName);
+                    FileInfo info = new FileInfo(file.FileName);
 
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    string fileName = $"sub_{imageNumber}{info.Extension}";
+
+                    // FINAL CORRECT PATH (NO VARIANT FOLDER)
+                    string key =
+                        $"faahi/company/{business.company_code}/product_{product_id}/sub_images/{fileName}";
+
+                    using var stream = file.OpenReadStream();
+
+                    var req = new Amazon.S3.Model.PutObjectRequest
                     {
-                        await newfile.CopyToAsync(stream);
-                    }
+                        BucketName = bucketName,
+                        Key = key,
+                        InputStream = stream,
+                        ContentType = file.ContentType,
+                        CannedACL = S3CannedACL.PublicRead,
+                        Headers = { CacheControl = "public,max-age=604800" }
+                    };
 
-                    var relativePath = Path.Combine("Images", "ProductItems", product_id, "ProductSubImages", variant_id, newFileName).Replace("\\", "/");
-                    var image = new im_ProductImages
+                    await _s3Client.PutObjectAsync(req);
+
+                    string canonicalUrl = $"https://cdn.faahi.com/{key}";
+
+                    var imageEntity = new im_ProductImages
                     {
                         image_id = Guid.CreateVersion7(),
-                        product_id = guid_product_id,
-                        variant_id = guid_varientid,
-                        image_url = relativePath,
+                        product_id = guidProductId,
+                        variant_id = guidVariantId,
+                        image_url = canonicalUrl,
                         uploaded_at = DateTime.Now,
                         is_primary = "F",
-                        display_order = itemNumber
+                        display_order = imageNumber
                     };
-                    _context.im_ProductImages.Add(image);
-                    im_varients.im_ProductImages.Add(image);
+
+                    _context.im_ProductImages.Add(imageEntity);
                 }
 
-
                 await _context.SaveChangesAsync();
+
 
                 return new ServiceResult<string>
                 {
                     Status = 1,
                     Success = true,
-                    Message = "All files uploaded successfully.",
+                    Message = "Images uploaded successfully.",
                     Data = null
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "UploadMutiple_image: An error occurred while uploading multiple images");
+                _logger.LogError(ex, "UploadMutiple_image error");
+
                 return new ServiceResult<string>
                 {
                     Status = 500,
                     Success = false,
-                    Message = "An error occurred while uploading multiple images.",
+                    Message = "Error uploading images.",
                     Data = null
                 };
             }
-
-
         }
+
+
         public async Task<ActionResult<ServiceResult<string>>> Upload_vedio(IFormFile[] formFile, string product_id, string variant_id)
         {
             if (formFile == null || formFile.Length == 0)
@@ -1105,13 +1050,6 @@ namespace Faahi.Service.im_products
             };
         }
 
-        // Update the constructor to accept IAmazonS3 s3Client
-        public im_product(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, ILogger<im_product> logger, IAmazonS3 s3Client)
-        {
-            _context = context;
-            _webHostEnvironment = webHostEnvironment;
-            _logger = logger;
-            _s3Client = s3Client;
-        }
+        
     }
 }

@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <Folder Include="Interface\" />
+    <Folder Include="Model\Admin\" />
     <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
 
