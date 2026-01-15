@@ -1,4 +1,5 @@
 ﻿using Faahi.Model.am_vcos;
+using Faahi.Model.Shared_tables;
 using Faahi.Service.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -19,7 +20,7 @@ namespace Faahi.Controllers.Users
         [Authorize]
         [HttpPost]
         [Route("create_vendore")]
-        public async Task<ActionResult<ap_Vendors>> Create_vendors(ap_Vendors vendors)
+        public async Task<ActionResult<st_Parties>> Create_vendors(st_Parties vendors)
         {
             if(vendors == null)
             {

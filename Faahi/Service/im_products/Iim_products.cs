@@ -31,6 +31,8 @@ namespace Faahi.Service.im_products
 
         Task<ActionResult<ServiceResult<im_ProductVariants>>> Add_subCategory(string product_id,im_ProductVariants im_ProductVariants);
 
+        Task<ServiceResult<List<im_Products>>> Get_product_list();
+
         Task<ActionResult<ServiceResult<im_Products>>> Delete_product(string product_id);
 
         Task<ServiceResult<im_ProductAttributes>> Create_Attribute(im_ProductAttributes im_ProductAttributes);

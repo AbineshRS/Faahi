@@ -15,12 +15,12 @@ namespace Faahi.Service.Users
             _context = context;
             _logger = logger;
         }
-        public async Task<ServiceResult<ap_Vendors>> Create_vendors(ap_Vendors vendors)
+        public async Task<ServiceResult<st_Parties>> Create_vendors(st_Parties st_Parties)
         {
-            if (vendors == null)
+            if (st_Parties == null)
             {
                 _logger.LogWarning("Create_vendors: No data found");
-                return new ServiceResult<ap_Vendors>
+                return new ServiceResult<st_Parties>
                 {
                     Success = false,
                     Message = "NO Data found",
@@ -40,42 +40,56 @@ namespace Faahi.Service.Users
                 }
                 while (exists);
 
+                st_Parties.party_id = Guid.CreateVersion7();
+                st_Parties.company_id = st_Parties.company_id;
+                st_Parties.party_type = "vendor";
+                st_Parties.display_name = st_Parties.display_name;
+                st_Parties.legal_name = st_Parties.legal_name;
+                st_Parties.payable_name = st_Parties.payable_name;
+                st_Parties.tax_id = st_Parties.tax_id;
+                st_Parties.email = st_Parties.email;
+                st_Parties.phone = st_Parties.phone;
+                st_Parties.created_at = DateTime.Now;
+                st_Parties.updated_at = DateTime.Now;
+                foreach(var vendors in st_Parties.ap_Vendors)
+                {
+                    vendors.vendor_id = Guid.CreateVersion7();
+                    vendors.party_id = st_Parties.party_id;
+                    vendors.vendor_code = "V-" + Convert.ToString(vendorCode);
+                    vendors.payment_term_id = vendors.payment_term_id;
+                    vendors.preferred_payment_method = vendors.preferred_payment_method;
+                    vendors.withholding_tax_rate = vendors.withholding_tax_rate;
+                    vendors.ap_control_account = vendors.ap_control_account;
+                    vendors.note = vendors.note;
+                    vendors.created_at = DateTime.Now;
+                    vendors.updated_at = DateTime.Now;
+                    vendors.company_id = vendors.company_id;
+                    vendors.status = vendors.status;
+                    vendors.contact_name = vendors.contact_name;
+                    vendors.contact_phone1 = vendors.contact_phone1;
+                    vendors.contact_phone2 = vendors.contact_phone2;
+                    vendors.contact_email = vendors.contact_email;
+                    vendors.contact_website = vendors.contact_website;
+                    vendors.tex_identification_number = vendors.tex_identification_number;
+                    
 
-
-                vendors.vendor_id = Guid.CreateVersion7();
-                vendors.vendor_code = "V-" + Convert.ToString(vendorCode);
-                vendors.payment_term_id = vendors.payment_term_id;
-                vendors.preferred_payment_method = vendors.preferred_payment_method;
-                vendors.withholding_tax_rate = vendors.withholding_tax_rate;
-                vendors.ap_control_account = vendors.ap_control_account;
-                vendors.note = vendors.note;
-                vendors.created_at = DateTime.Now;
-                vendors.updated_at = DateTime.Now;
-                vendors.company_id = vendors.company_id;
-                vendors.status = vendors.status;
-                vendors.contact_name = vendors.contact_name;
-                vendors.contact_phone1 = vendors.contact_phone1;
-                vendors.contact_phone2 = vendors.contact_phone2;
-                vendors.contact_email = vendors.contact_email;
-                vendors.contact_website = vendors.contact_website;
-                vendors.tex_identification_number = vendors.tex_identification_number;
-                _context.ap_Vendors.Add(vendors);
-
+                }
+                await _context.st_Parties.AddAsync(st_Parties);
 
                 await _context.SaveChangesAsync();
 
-                return new ServiceResult<ap_Vendors>
+                return new ServiceResult<st_Parties>
                 {
                     Success = true,
                     Message = "Success",
                     Status = 1,
-                    Data = vendors
+                    Data = st_Parties
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while creating a vendor.");
-                return new ServiceResult<ap_Vendors>
+                return new ServiceResult<st_Parties>
                 {
                     Success = false,
                     Message = "An error occurred while creating the vendor.",
@@ -110,6 +124,9 @@ namespace Faahi.Service.Users
                                            .AnyAsync(c => c.customer_code == customerCode);
                 }
                 while (exists);
+
+
+
 
                 ar_Customers.customer_id = Guid.CreateVersion7();
                 ar_Customers.customer_code = "C-" + customerCode;

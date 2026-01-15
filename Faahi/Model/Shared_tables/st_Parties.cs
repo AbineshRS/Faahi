@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using Faahi.Model.am_vcos;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,13 +9,15 @@ namespace Faahi.Model.Shared_tables
     {
         [Key]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid party_id { get; set; }
+        public Guid? party_id { get; set; }
 
+        [ForeignKey("company_id")]
+        [Display(Name = "co_business")]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? vsco_id { get; set; } = null;
+        public Guid? company_id { get; set; }
 
         [Column(TypeName = "varchar(20)")]
-        public string party_type { get; set; } = null;
+        public string? party_type { get; set; } = null;
 
         [Column(TypeName = "varchar(200)")]
         public string? display_name { get; set; } = null;
@@ -49,6 +52,10 @@ namespace Faahi.Model.Shared_tables
         [Column(TypeName ="char(1)")]
         public string? status { get; set; }=string.Empty;
 
-        public ICollection<st_PartyRoles> st_PartyRoles { get; set; } = null;
+
+        public ICollection<ap_Vendors>? ap_Vendors { get; set; } = null;
+        public ICollection<ar_Customers>? ar_Customers { get; set; } = null;
+
+        //public ICollection<st_PartyRoles> st_PartyRoles { get; set; } = null;
     }
 }

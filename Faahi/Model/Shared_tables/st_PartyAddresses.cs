@@ -60,7 +60,7 @@ namespace Faahi.Model.Shared_tables
         [Column(TypeName = "uniqueidentifier")]
         public Guid? vendor_id { get; set; } = null;
 
-        public ICollection<st_PartyContacts> PartyContacts { get; set; } = null;
+        public ICollection<st_PartyContacts>? PartyContacts { get; set; } = null;
 
     }
 }
