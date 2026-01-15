@@ -16,6 +16,11 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "uniqueidentifier")]
         public Guid? company_id { get; set; }
 
+        [ForeignKey("party_id")]
+        [Display(Name = "st_Parties")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? party_id { get; set; }
+
         [Column(TypeName ="varchar(30)")]
         public string? vendor_code { get; set; }
 
@@ -66,7 +71,7 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "nvarchar(50)")]
         public string? tex_identification_number { get; set; } = null;
 
-        public ICollection<st_PartyAddresses> st_PartyAddresses { get; set; } = null;
+        public ICollection<st_PartyAddresses>? st_PartyAddresses { get; set; } = null;
 
     }
 }

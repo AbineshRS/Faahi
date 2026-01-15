@@ -73,6 +73,7 @@ namespace Faahi.Service.im_products
                     im_varint.variant_id = Guid.CreateVersion7();
                     im_varint.product_id = im_Product.product_id;
                     im_varint.uom_id = im_varint.uom_id;
+                    im_varint.description_2 = im_varint.description_2;
                     var namePart = Regex.Replace(im_Product.title ?? "", @"\s+", "")
                         .Substring(0, Math.Min(3, (im_Product.title ?? "").Length))
                         .ToUpper();
@@ -788,7 +789,14 @@ namespace Faahi.Service.im_products
                 foreach (var varient in im_products.im_ProductVariants)
                 {
                     var existingVariant = product.im_ProductVariants.FirstOrDefault(v => v.variant_id == varient.variant_id);
+                    string description_2 = varient.description_2;
+                    if (existingVariant != null)
+                    {
+                        existingVariant.description_2 = "";
+                        _context.Update(existingVariant);
+                    }
                     existingVariant.base_price= varient.base_price;
+                    existingVariant.description_2 = description_2;
                     //existingVariant.barcode = varient.barcode;
                     //existingVariant.uom_id = varient.uom_id;
                     //existingVariant.updated_at = DateTime.Now;
@@ -861,8 +869,15 @@ namespace Faahi.Service.im_products
                     var existingVariant = product.im_ProductVariants.FirstOrDefault(v => v.variant_id == varient.variant_id);
                     if(existingVariant != null)
                     {
+                        string description_2 = varient.description_2;
+                        if (existingVariant != null)
+                        {
+                            existingVariant.description_2 = "";
+                            _context.Update(existingVariant);
+                        }
                         existingVariant.base_price = varient?.base_price;
                         existingVariant.barcode = varient.barcode;
+                        existingVariant.description_2 = description_2;
 
                         foreach (var im_attr in varient.im_VariantAttributes)
                         {
@@ -1080,6 +1095,40 @@ namespace Faahi.Service.im_products
 
         }
 
+        public async Task<ServiceResult<List<im_Products>>> Get_product_list()
+        {
+            try
+            {
+                var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
+                                      .ToListAsync();
+                if (all_product_details == null)
+                {
+                    return new ServiceResult<List<im_Products>>
+                    {
+                        Success = false,
+                        Message = "Product not found"
+                    };
+                }
+                return new ServiceResult<List<im_Products>>
+                {
+                    Status=200,
+                    Success = true,
+                    Message = "successfully",
+                    Data = all_product_details
+                };
+
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Get_product_list: An error occurred while fetching product list");
+                return new ServiceResult<List<im_Products>>
+                {
+                    Success = false,
+                    Message = "An error occurred while fetching product list"
+                };
+            }
+            
+        }
         public async Task<ActionResult<ServiceResult<im_Products>>> Delete_product(string product_id)
         {
             if (product_id == null)

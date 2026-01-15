@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260115055126_desc_2")]
+    partial class desc_2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -156,9 +159,6 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("company_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
@@ -193,6 +193,9 @@ namespace Faahi.Migrations
 
                     b.Property<DateTime?>("updated_at")
                         .HasColumnType("datetime");
+
+                    b.Property<Guid?>("vsco_id")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("party_id");
 
@@ -328,7 +331,12 @@ namespace Faahi.Migrations
                     b.Property<string>("role")
                         .HasColumnType("varchar(30)");
 
+                    b.Property<Guid?>("st_Partiesparty_id")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("party_role_id");
+
+                    b.HasIndex("st_Partiesparty_id");
 
                     b.ToTable("st_PartyRoles");
                 });
@@ -639,17 +647,11 @@ namespace Faahi.Migrations
                     b.Property<string>("note")
                         .HasColumnType("varchar(40)");
 
-                    b.Property<Guid?>("party_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("payment_term_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("preferred_payment_method")
                         .HasColumnType("varchar(20)");
-
-                    b.Property<Guid?>("st_Partiesparty_id")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("status")
                         .HasMaxLength(1)
@@ -668,8 +670,6 @@ namespace Faahi.Migrations
                         .HasColumnType("decimal(18,4)");
 
                     b.HasKey("vendor_id");
-
-                    b.HasIndex("st_Partiesparty_id");
 
                     b.ToTable("ap_Vendors");
                 });
@@ -729,9 +729,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("price_tier_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("st_Partiesparty_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("status")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
@@ -747,8 +744,6 @@ namespace Faahi.Migrations
                         .HasColumnType("datetime");
 
                     b.HasKey("customer_id");
-
-                    b.HasIndex("st_Partiesparty_id");
 
                     b.ToTable("ar_Customers");
                 });
@@ -2330,6 +2325,13 @@ namespace Faahi.Migrations
                         .HasForeignKey("st_PartyAddressesaddress_id");
                 });
 
+            modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyRoles", b =>
+                {
+                    b.HasOne("Faahi.Model.Shared_tables.st_Parties", null)
+                        .WithMany("st_PartyRoles")
+                        .HasForeignKey("st_Partiesparty_id");
+                });
+
             modelBuilder.Entity("Faahi.Model.Stores.st_StoreCategories", b =>
                 {
                     b.HasOne("Faahi.Model.st_sellers.st_stores", "Stores")
@@ -2351,20 +2353,6 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.Stores.st_StoresAddres", null)
                         .WithMany("st_store_currencies")
                         .HasForeignKey("st_StoresAddresstore_address_id");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>
-                {
-                    b.HasOne("Faahi.Model.Shared_tables.st_Parties", null)
-                        .WithMany("ap_Vendors")
-                        .HasForeignKey("st_Partiesparty_id");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_vcos.ar_Customers", b =>
-                {
-                    b.HasOne("Faahi.Model.Shared_tables.st_Parties", null)
-                        .WithMany("ar_Customers")
-                        .HasForeignKey("st_Partiesparty_id");
                 });
 
             modelBuilder.Entity("Faahi.Model.co_business.co_address", b =>
@@ -2458,9 +2446,7 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_Parties", b =>
                 {
-                    b.Navigation("ap_Vendors");
-
-                    b.Navigation("ar_Customers");
+                    b.Navigation("st_PartyRoles");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyAddresses", b =>

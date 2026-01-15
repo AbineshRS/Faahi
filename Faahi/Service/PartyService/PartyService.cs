@@ -32,7 +32,7 @@ namespace Faahi.Service.PartyService
             try
             {
                 parties.party_id = Guid.CreateVersion7();
-                parties.vsco_id = parties.vsco_id;
+                //parties.vsco_id = parties.vsco_id;
                 parties.party_type = parties.party_type;
                 parties.display_name = parties.display_name;
                 parties.legal_name = parties.legal_name;
@@ -45,44 +45,39 @@ namespace Faahi.Service.PartyService
                 parties.updated_at = DateTime.Now;
                 parties.status = parties.status;
 
-                foreach (var st_roles in parties.st_PartyRoles)
-                {
-                    st_roles.party_role_id = Guid.CreateVersion7();
-                    st_roles.party_id = parties.party_id;
-                    st_roles.role = st_roles.role;
-                    st_roles.created_at = DateTime.Now;
+                
 
-                    foreach (var party_address in st_roles.st_PartyAddresses)
-                    {
-                        party_address.address_id = Guid.CreateVersion7();
-                        party_address.party_id = parties.party_id;
-                        party_address.address_type = party_address.address_type;
-                        party_address.line1 = party_address.line1;
-                        party_address.line2 = party_address.line2;
-                        party_address.region = party_address.region;
-                        party_address.postal_code = party_address.postal_code;
-                        party_address.country = party_address.country;
-                        party_address.latitude = party_address.latitude;
-                        party_address.longitude = party_address.longitude;
-                        party_address.created_at = DateTime.Now;
-                        party_address.updated_at = DateTime.Now;
-                        party_address.is_default = party_address.is_default;
+                    //foreach (var party_address in parties.st_PartyAddresses)
+                    //{
+                    //    party_address.address_id = Guid.CreateVersion7();
+                    //    party_address.party_id = parties.party_id;
+                    //    party_address.address_type = party_address.address_type;
+                    //    party_address.line1 = party_address.line1;
+                    //    party_address.line2 = party_address.line2;
+                    //    party_address.region = party_address.region;
+                    //    party_address.postal_code = party_address.postal_code;
+                    //    party_address.country = party_address.country;
+                    //    party_address.latitude = party_address.latitude;
+                    //    party_address.longitude = party_address.longitude;
+                    //    party_address.created_at = DateTime.Now;
+                    //    party_address.updated_at = DateTime.Now;
+                    //    party_address.is_default = party_address.is_default;
 
-                        foreach (var party_contact in party_address.PartyContacts)
-                        {
-                            party_contact.contact_id = Guid.CreateVersion7();
-                            party_contact.party_id = parties.party_id;
-                            party_contact.first_name = party_contact.first_name;
-                            party_contact.last_name = party_contact.last_name;
-                            party_contact.email = party_contact.email;
-                            party_contact.phone = party_contact.phone;
-                            party_contact.title = party_contact.title;
-                            party_contact.created_at = DateTime.Now;
-                            party_contact.updated_at = DateTime.Now;
-                            party_contact.is_primary = party_contact.is_primary;
-                        }
-                    }
-                }
+                    //    foreach (var party_contact in party_address.PartyContacts)
+                    //    {
+                    //        party_contact.contact_id = Guid.CreateVersion7();
+                    //        party_contact.party_id = parties.party_id;
+                    //        party_contact.first_name = party_contact.first_name;
+                    //        party_contact.last_name = party_contact.last_name;
+                    //        party_contact.email = party_contact.email;
+                    //        party_contact.phone = party_contact.phone;
+                    //        party_contact.title = party_contact.title;
+                    //        party_contact.created_at = DateTime.Now;
+                    //        party_contact.updated_at = DateTime.Now;
+                    //        party_contact.is_primary = party_contact.is_primary;
+                    //    }
+                    //}
+                
                 _context.st_Parties.Add(parties);
 
 
