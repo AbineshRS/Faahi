@@ -179,7 +179,6 @@ namespace Faahi.Service.countries
                     .FromSqlRaw("EXEC dbo.GetAllProductCategories @opr={0}", opr)
                     .AsNoTracking()
                     .ToListAsync();
-                countries = await _context.avl_countries.ToListAsync();
             }
             catch (Exception ex)
             {
