@@ -114,6 +114,8 @@ namespace Faahi.Controllers.Application
         public DbSet<sa_country_regions> sa_country_regions { get; set; }
 
         public DbSet<sa_regions> sa_regions { get; set; }
+
+        public DbSet<fin_PartyBankAccounts> fin_PartyBankAccounts { get; set; }
     }
 
 }

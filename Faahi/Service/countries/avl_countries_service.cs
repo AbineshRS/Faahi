@@ -174,7 +174,11 @@ namespace Faahi.Service.countries
             List<avl_countries> countries;
             try
             {
-                countries = await _context.avl_countries.ToListAsync();
+                int opr = 2; 
+                 countries = await _context.avl_countries
+                    .FromSqlRaw("EXEC dbo.GetAllProductCategories @opr={0}", opr)
+                    .AsNoTracking()
+                    .ToListAsync();
             }
             catch (Exception ex)
             {

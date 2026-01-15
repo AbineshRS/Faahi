@@ -8,7 +8,7 @@ namespace Faahi.Service.Users
     {
         Task<ServiceResult<st_Parties>> Create_vendors(st_Parties ap_Vendors);
 
-        Task<ServiceResult<ar_Customers>> Create_customer(ar_Customers ar_Customers);
+        Task<ServiceResult<st_Parties>> Create_customer(st_Parties ar_Customers);
 
         Task<ServiceResult<ar_Customers>> Update_arcustomer(Guid customer_id, ar_Customers ar_Customers);
 

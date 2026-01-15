@@ -32,7 +32,7 @@ namespace Faahi.Controllers.Users
         [Authorize]
         [HttpPost]
         [Route("create_customer")]
-        public async Task<ActionResult<ar_Customers>> Create_customer(ar_Customers ar_Customers)
+        public async Task<ActionResult<st_Parties>> Create_customer(st_Parties ar_Customers)
         {
             if(ar_Customers == null)
             {
