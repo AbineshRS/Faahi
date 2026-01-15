@@ -1,9 +1,15 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.Shared_tables
 {
+    [Index(nameof(address_id), Name = "idx_address_id", IsUnique = true)]
+    [Index(nameof(party_id), Name = "idx_party_id")]
+    [Index(nameof(customer_id), Name = "idx_customer_id")]
+    [Index(nameof(vendor_id), Name = "idx_vendor_id")]
+
     public class st_PartyAddresses
     {
         [Key]

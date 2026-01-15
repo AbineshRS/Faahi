@@ -463,14 +463,19 @@ namespace Faahi.Service.im_products.category
             }
             try
             {
-                var Category = await _context.im_ProductCategories.FromSqlRaw("EXEC dbo.GetAllProductCategories").AsNoTracking().ToListAsync();
+                int opr = 1; 
+                var categories = await _context.im_ProductCategories
+                    .FromSqlRaw("EXEC dbo.GetAllProductCategories @opr={0}", opr)
+                    .AsNoTracking()
+                    .ToListAsync();
+                //var Category = await _context.im_ProductCategories.FromSqlRaw("EXEC dbo.GetAllProductCategories").AsNoTracking().ToListAsync();
 
                 return new ServiceResult<List<im_ProductCategories>>
                 {
                     Success = true,
                     Message = "Success",
                     Status = 1,
-                    Data = Category
+                    Data = categories
                 };
             }
             catch (Exception ex)

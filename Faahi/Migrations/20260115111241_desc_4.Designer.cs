@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260115111241_desc_4")]
+    partial class desc_4
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -148,69 +151,6 @@ namespace Faahi.Migrations
                     b.HasKey("Email_id");
 
                     b.ToTable("am_emailVerifications");
-                });
-
-            modelBuilder.Entity("Faahi.Model.Shared_tables.fin_PartyBankAccounts", b =>
-                {
-                    b.Property<Guid>("party_account_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("account_holder_name")
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("account_number")
-                        .HasColumnType("nvarchar(80)");
-
-                    b.Property<Guid?>("ap_Vendorsvendor_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ar_Customerscustomer_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("bank_name")
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime?>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("currency")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("customer_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("iban")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("is_default")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<Guid?>("party_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("routing_number")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("swift_code")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("vendor_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("party_account_id");
-
-                    b.HasIndex("ap_Vendorsvendor_id");
-
-                    b.HasIndex("ar_Customerscustomer_id");
-
-                    b.HasIndex(new[] { "party_account_id" }, "party_account_id")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "party_id" }, "party_id");
-
-                    b.ToTable("fin_PartyBankAccounts");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_Parties", b =>
@@ -2408,17 +2348,6 @@ namespace Faahi.Migrations
                         .HasForeignKey("sa_country_regionscountry_region_id");
                 });
 
-            modelBuilder.Entity("Faahi.Model.Shared_tables.fin_PartyBankAccounts", b =>
-                {
-                    b.HasOne("Faahi.Model.am_vcos.ap_Vendors", null)
-                        .WithMany("fin_PartyBankAccounts")
-                        .HasForeignKey("ap_Vendorsvendor_id");
-
-                    b.HasOne("Faahi.Model.am_vcos.ar_Customers", null)
-                        .WithMany("fin_PartyBankAccounts")
-                        .HasForeignKey("ar_Customerscustomer_id");
-                });
-
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyAddresses", b =>
                 {
                     b.HasOne("Faahi.Model.am_vcos.ap_Vendors", null)
@@ -2591,15 +2520,11 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>
                 {
-                    b.Navigation("fin_PartyBankAccounts");
-
                     b.Navigation("st_PartyAddresses");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ar_Customers", b =>
                 {
-                    b.Navigation("fin_PartyBankAccounts");
-
                     b.Navigation("st_PartyAddresses");
                 });
 

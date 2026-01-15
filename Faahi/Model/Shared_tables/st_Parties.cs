@@ -1,10 +1,15 @@
 ﻿using Faahi.Model.am_vcos;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.Shared_tables
 {
+    [Index(nameof(party_id),Name ="idx_party_id",IsUnique =true)]
+    [Index(nameof(company_id),Name ="idx_company_id")]
+    [Index(nameof(email),Name ="idx_email")]
+    [Index(nameof(status),Name ="idx_status")]
     public class st_Parties
     {
         [Key]

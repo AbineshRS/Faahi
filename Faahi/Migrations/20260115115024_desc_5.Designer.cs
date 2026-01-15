@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260115115024_desc_5")]
+    partial class desc_5
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -165,9 +168,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("ap_Vendorsvendor_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ar_Customerscustomer_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("bank_name")
                         .HasColumnType("nvarchar(255)");
 
@@ -176,9 +176,6 @@ namespace Faahi.Migrations
 
                     b.Property<string>("currency")
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("customer_id")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("iban")
                         .HasColumnType("nvarchar(50)");
@@ -196,14 +193,9 @@ namespace Faahi.Migrations
                     b.Property<string>("swift_code")
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<Guid?>("vendor_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("party_account_id");
 
                     b.HasIndex("ap_Vendorsvendor_id");
-
-                    b.HasIndex("ar_Customerscustomer_id");
 
                     b.HasIndex(new[] { "party_account_id" }, "party_account_id")
                         .IsUnique();
@@ -2413,10 +2405,6 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.am_vcos.ap_Vendors", null)
                         .WithMany("fin_PartyBankAccounts")
                         .HasForeignKey("ap_Vendorsvendor_id");
-
-                    b.HasOne("Faahi.Model.am_vcos.ar_Customers", null)
-                        .WithMany("fin_PartyBankAccounts")
-                        .HasForeignKey("ar_Customerscustomer_id");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyAddresses", b =>
@@ -2598,8 +2586,6 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ar_Customers", b =>
                 {
-                    b.Navigation("fin_PartyBankAccounts");
-
                     b.Navigation("st_PartyAddresses");
                 });
 

@@ -1,10 +1,16 @@
 ﻿using Faahi.Model.Shared_tables;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.am_vcos
 {
+    [Index(nameof(vendor_id),Name ="idx_vendor_id", IsUnique = true)]
+    [Index(nameof(party_id), Name = "idx_party_id")]
+    [Index(nameof(company_id), Name = "idx_company_id")]
+    [Index(nameof(vendor_code), Name = "idx_vendor_code")]
+    [Index(nameof(status), Name = "idx_status")]
     public class ap_Vendors
     {
         [Key]
@@ -70,6 +76,8 @@ namespace Faahi.Model.am_vcos
 
         [Column(TypeName = "nvarchar(50)")]
         public string? tex_identification_number { get; set; } = null;
+
+        public ICollection<fin_PartyBankAccounts>? fin_PartyBankAccounts { get; set; } = null;
 
         public ICollection<st_PartyAddresses>? st_PartyAddresses { get; set; } = null;
 
