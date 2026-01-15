@@ -6,6 +6,7 @@ using Faahi.Dto.Product_dto;
 using Faahi.Model.im_products;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Runtime.InteropServices;
@@ -99,6 +100,7 @@ namespace Faahi.Service.im_products
                         varient_attrbut.varient_attribute_id = Guid.CreateVersion7();
 
                         varient_attrbut.value_id = varient_attrbut.value_id;
+                        varient_attrbut.attribute_id = varient_attrbut.attribute_id;
                         varient_attrbut.variant_id = im_varint.variant_id;
                     }
                     foreach (var store_inv in im_varint.im_StoreVariantInventory)
@@ -138,6 +140,7 @@ namespace Faahi.Service.im_products
             }
 
         }
+        
         public async Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile, Guid product_id)
         {
             if (formFile == null || formFile.Length == 0)
@@ -337,9 +340,10 @@ namespace Faahi.Service.im_products
 
                 foreach (var img in oldImages)
                 {
-                    var oldKey = new Uri(img.image_url).AbsolutePath.TrimStart('/');
-                    await _s3Client.DeleteObjectAsync(bucketName, oldKey);
-                    _context.im_ProductImages.Remove(img);
+                    //var oldKey = new Uri(img.image_url).AbsolutePath.TrimStart('/');
+                    //await _s3Client.DeleteObjectAsync(bucketName, oldKey);
+                    //_context.im_ProductImages.Remove(img);
+                    //_context.SaveChanges();
                 }
 
 
@@ -355,7 +359,9 @@ namespace Faahi.Service.im_products
 
                     FileInfo info = new FileInfo(file.FileName);
 
-                    string fileName = $"sub_{imageNumber}{info.Extension}";
+                    string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+                    string fileName = $"sub_{imageNumber}_{timestamp}{info.Extension}";
 
                     // FINAL CORRECT PATH (NO VARIANT FOLDER)
                     string key =
@@ -389,8 +395,9 @@ namespace Faahi.Service.im_products
                     };
 
                     _context.im_ProductImages.Add(imageEntity);
+                    variant.im_ProductImages.Add(imageEntity);
                 }
-
+                 _context.im_ProductVariants.Update(variant);
                 await _context.SaveChangesAsync();
 
 
@@ -412,6 +419,62 @@ namespace Faahi.Service.im_products
                     Success = false,
                     Message = "Error uploading images.",
                     Data = null
+                };
+            }
+        }
+
+        public async Task<ServiceResult<DeleteImageDto>> Delete_ProductImage(DeleteImageDto deleteImageDto)
+        {
+            if (deleteImageDto == null || deleteImageDto.Deleted_Images == null || !deleteImageDto.Deleted_Images.Any())
+            {
+                _logger.LogWarning("Delete_ProductImage: No images provided");
+                return new ServiceResult<DeleteImageDto>
+                {
+                    Success = false,
+                    Message = "No images provided for deletion"
+                };
+            }
+
+            try
+            {
+                // Get all images for the variant into memory
+                var images = await _context.im_ProductImages
+                    .Where(a => a.variant_id == deleteImageDto.Variant_Id)
+                    .ToListAsync();
+
+                // Filter in memory using Path.GetFileName
+                var imagesToDelete = images
+                    .Where(img => deleteImageDto.Deleted_Images.Contains(Path.GetFileName(img.image_url)))
+                    .ToList();
+
+                // Delete the images
+                foreach (var img in imagesToDelete)
+                {
+                    var bucketName = _configure["Wasabi:BucketName"];
+                    var oldKey = new Uri(img.image_url).AbsolutePath.TrimStart('/');
+                    await _s3Client.DeleteObjectAsync(bucketName, oldKey);
+                    _context.im_ProductImages.Remove(img);
+                }
+
+                //await _context.SaveChangesAsync();
+
+
+                await _context.SaveChangesAsync();
+
+                return new ServiceResult<DeleteImageDto>
+                {
+                    Success = true,
+                    Message = "Selected images deleted successfully",
+                    Data = deleteImageDto
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Delete_ProductImage: Error while deleting images");
+                return new ServiceResult<DeleteImageDto>
+                {
+                    Success = false,
+                    Message = "An error occurred while deleting the product images"
                 };
             }
         }
@@ -558,137 +621,143 @@ namespace Faahi.Service.im_products
             };
         }
 
+        //public async Task<ServiceResult<List<im_Products>>> all_product_details(Guid company_id)
+        //{
+        //    if (company_id == null)
+        //    {
+        //        return new ServiceResult<List<im_Products>>
+        //        {
+        //            Success = false,
+        //            Message = "not found"
+        //        };
+        //    }
+        //    var im_prodcut = await _context.im_Products.FirstOrDefaultAsync(a => a.product_id == company_id);
+        //    var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
+        //                              .Where(a => a.company_id == company_id).ToListAsync();
+        //    return new ServiceResult<List<im_Products>>
+        //    {
+        //        Success = true,
+        //        Message = "successfully",
+        //        Data = all_product_details
+        //    };
+
+        //}
         public async Task<ServiceResult<List<im_Products>>> all_product_details(Guid company_id)
         {
-            if (company_id == null)
+            if (company_id == Guid.Empty)
             {
                 return new ServiceResult<List<im_Products>>
                 {
                     Success = false,
-                    Message = "not found"
+                    Message = "Company ID not found"
                 };
             }
-            var im_prodcut = await _context.im_Products.FirstOrDefaultAsync(a => a.product_id == company_id);
-            var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
-                                      .Where(a => a.company_id == company_id).ToListAsync();
+
+            var jsonResult = _context.Database
+               .SqlQueryRaw<string>(
+                   "EXEC dbo.GetAllProductDetails_JSON @CompanyId = @CompanyId, @opr = @opr_param",
+                   new SqlParameter("@CompanyId", company_id),
+                   new SqlParameter("@opr_param", 1) 
+               )
+               .AsEnumerable()
+               .FirstOrDefault();
+            
+
+
+            if (string.IsNullOrEmpty(jsonResult))
+            {
+                return new ServiceResult<List<im_Products>>
+                {
+                    Success = false,
+                    Message = "No products found",
+                    Data = new List<im_Products>()
+                };
+            }
+
+            var products = JsonConvert.DeserializeObject<List<im_Products>>(jsonResult);
+
             return new ServiceResult<List<im_Products>>
             {
                 Success = true,
-                Message = "successfully",
-                Data = all_product_details
+                Message = "Successfully retrieved products",
+                Data = products
             };
-
         }
-        public async Task<ActionResult<ServiceResult<im_products_dto>>> Get_product_details(string product_id)
+        //public async Task<ServiceResult<im_Products>> Get_product_details(Guid product_id)
+        //{
+        //    if (product_id == null)
+        //    {
+        //        return new ServiceResult<im_Products>
+        //        {
+        //            Success = false,
+        //            Message = "No id found"
+        //        };
+        //    }
+
+        //    var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
+        //        .FirstOrDefaultAsync(a => a.product_id == product_id);
+
+        //    if (all_product_details == null)
+        //    {
+        //        return new ServiceResult<im_Products>
+        //        {
+        //            Success = false,
+        //            Message = "Product not found"
+        //        };
+        //    }
+
+
+
+        //    return new ServiceResult<im_Products>
+        //    {
+        //        Success = true,
+        //        Message = "successfully",
+        //        Data = all_product_details
+        //    };
+        //}
+        public async Task<ServiceResult<im_Products>> Get_product_details(Guid product_id)
         {
             if (product_id == null)
             {
-                return new ServiceResult<im_products_dto>
+                return new ServiceResult<im_Products>
                 {
                     Success = false,
                     Message = "No id found"
                 };
             }
-            var guid_product = Guid.Parse(product_id);
+            var jsonResult = _context.Database
+                .SqlQueryRaw<string>(
+                    "EXEC dbo.GetAllProductDetails_JSON @product_id = @product_id_param, @opr = @opr_param",
+                    new SqlParameter("@product_id_param", product_id),
+                    new SqlParameter("@opr_param", 2) // single product
+                )
+                .AsEnumerable()
+                .FirstOrDefault();
 
-            var all_product_details = await _context.im_Products
-                .Include(a => a.im_ProductVariants)
-                    .ThenInclude(a => a.im_VariantAttributes)
-                        .Include(a => a.im_ProductVariants)
-                .FirstOrDefaultAsync(a => a.product_id == guid_product);
 
             if (all_product_details == null)
             {
-                return new ServiceResult<im_products_dto>
+                return new ServiceResult<im_Products>
                 {
                     Success = false,
                     Message = "Product not found"
                 };
             }
+                var products = JsonConvert.DeserializeObject<im_Products>(jsonResult);
 
-            var productImages = await _context.im_ProductImages
-                .Where(img => img.product_id == guid_product)
-                .ToListAsync();
 
-            im_products_dto im_Products_Dto = new im_products_dto();
-            var im_prodct = await _context.im_Products.FirstOrDefaultAsync(a => a.product_id == guid_product);
-            im_Products_Dto.product_id = all_product_details.product_id;
-            im_Products_Dto.updated_at = all_product_details.updated_at;
-            im_Products_Dto.im_ProductVariants_dto = new List<im_ProductVariants_dto>();
 
-            //foreach (var product in all_product_details.im_ProductVariants)
-            //{
-            //    var im_prodct_varient = im_prodct.im_ProductVariants.FirstOrDefault(a => a.variant_id == product.variant_id);
-            //    im_ProductVariants_dto im_ProductVariants_Dto = new im_ProductVariants_dto();
-            //    im_ProductVariants_Dto.price = product.price;
-            //    im_ProductVariants_Dto.im_Product_Subvariants_dto = new List<im_Product_Subvariants_dto>();
-
-            //    foreach (var im_prodct_sub_varient in product.im_Product_Subvariants)
-            //    {
-            //        var im_prodcut_sub_varient = im_prodct_varient.im_Product_Subvariants.FirstOrDefault(a => a.sub_variant_id == im_prodct_sub_varient.sub_variant_id);
-            //        im_Product_Subvariants_dto im_ProductSubvariants_ = new im_Product_Subvariants_dto();
-            //        im_ProductSubvariants_.list_price = im_prodct_sub_varient.list_price;
-            //        im_ProductSubvariants_.im_PriceTiers_dto = new List<im_PriceTiers_dto>();
-
-            //        foreach (var im_price in im_prodct_sub_varient.im_PriceTiers)
-            //        {
-            //            var im_prices = im_prodcut_sub_varient.im_PriceTiers.FirstOrDefault(a => a.price_tier_id == im_price.price_tier_id);
-            //            im_PriceTiers_dto im_PriceTiers_Dto = new im_PriceTiers_dto();
-            //            im_PriceTiers_Dto.price_tier_id = im_price.price_tier_id;
-            //            im_PriceTiers_Dto.im_ProductVariantPrices_dto = new List<im_ProductVariantPrices_dto>();
-
-            //            foreach (var im_productvarient_price in im_price.im_ProductVariantPrices)
-            //            {
-            //                var im_prodctvarient = im_prices.im_ProductVariantPrices.FirstOrDefault(a => a.variant_price_id == im_productvarient_price.variant_price_id);
-            //                im_ProductVariantPrices_dto im_ProductVariantPrices_Dto1 = new im_ProductVariantPrices_dto();
-            //                im_ProductVariantPrices_Dto1.price = im_productvarient_price.price;
-            //                im_ProductVariantPrices_Dto1.im_ProductImages_dto = new List<im_ProductImages_dto>();
-
-            //                var images = productImages
-            //                    .Where(a => a.product_id == all_product_details.product_id)
-            //                    .ToList();
-
-            //                foreach (var img in images)
-            //                {
-            //                    im_ProductVariantPrices_Dto1.im_ProductImages_dto.Add(new im_ProductImages_dto
-            //                    {
-            //                        image_id = img.image_id,
-            //                        product_id = img.product_id,
-            //                        variant_id = img.variant_id,
-            //                        image_url = img.image_url,
-            //                        is_primary = img.is_primary,
-            //                        display_order = img.display_order,
-            //                        uploaded_at = img.uploaded_at
-            //                    });
-            //                }
-
-            //                // Add the variant price DTO to the PriceTier's list
-            //                im_PriceTiers_Dto.im_ProductVariantPrices_dto.Add(im_ProductVariantPrices_Dto1);
-            //            }
-
-            //            // Add the PriceTier DTO to the Subvariant's list
-            //            im_ProductSubvariants_.im_PriceTiers_dto.Add(im_PriceTiers_Dto);
-            //        }
-
-            //        // Add the Subvariant DTO to the Variant's list
-            //        im_ProductVariants_Dto.im_Product_Subvariants_dto.Add(im_ProductSubvariants_);
-            //    }
-
-            //    // Add the Variant DTO to the Product's list
-            //    im_Products_Dto.im_ProductVariants_dto.Add(im_ProductVariants_Dto);
-            //}
-
-            return new ServiceResult<im_products_dto>
+            return new ServiceResult<im_Products>
             {
                 Success = true,
                 Message = "successfully",
-                Data = im_Products_Dto
+                Data = products
             };
         }
 
 
 
-        public async Task<ActionResult<ServiceResult<im_Products>>> Update_Product(string product_id, im_Products im_products)
+        public async Task<ActionResult<ServiceResult<im_Products>>> Update_Product(Guid product_id, im_Products im_products)
         {
             if (product_id == null)
             {
@@ -701,61 +770,44 @@ namespace Faahi.Service.im_products
             }
             try
             {
-                var guid_product_id = Guid.Parse(product_id);
-                var product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants)
-                            .FirstOrDefaultAsync(a => a.product_id == guid_product_id);
+                var product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
+                .FirstOrDefaultAsync(a => a.product_id == product_id);
 
-                //product.title = im_products.title;
-                //product.description = im_products.description;
-                //product.brand = im_products.brand;
-                //product.updated_at = DateTime.Now;
-                //product.free_item = im_products.free_item;
-                //product.stock = im_products.stock;
-                //product.status = im_products.status;
-                //foreach (var varient in im_products.im_ProductVariants)
-                //{
-                //    var existingVariant = product.im_ProductVariants.FirstOrDefault(v => v.variant_id == varient.variant_id);
-
-                //    existingVariant.barcode = varient.barcode;
-                //    existingVariant.color = varient.color;
-                //    existingVariant.uom_id = varient.uom_id;
-                //    existingVariant.size = varient.size;
-                //    existingVariant.price = varient.price;
-                //    existingVariant.stock_quantity = varient.stock_quantity;
-                //    existingVariant.updated_at = DateTime.Now;
-
-                //    foreach (var sub_varient in varient.im_Product_Subvariants)
-                //    {
-                //        var exising_sub = existingVariant.im_Product_Subvariants.FirstOrDefault(a => a.sub_variant_id == sub_varient.sub_variant_id);
-                //        exising_sub.variantType = sub_varient.variantType;
-                //        exising_sub.variantValue = sub_varient.variantValue;
-                //        exising_sub.list_price = sub_varient.list_price;
-                //        exising_sub.fixed_price = sub_varient.fixed_price;
-                //        exising_sub.quantity = sub_varient.quantity;
-                //        exising_sub.created_at = DateTime.Now;
-                //        foreach (var price_tire in sub_varient.im_PriceTiers)
-                //        {
-                //            var existingTier = exising_sub.im_PriceTiers.FirstOrDefault(t => t.price_tier_id == price_tire.price_tier_id);
-
-                //            existingTier.name = price_tire.name;
-                //            existingTier.description = price_tire.description;
+                product.title = im_products.title;
+                product.description = im_products.description;
+                product.brand = im_products.brand;
+                product.updated_at = DateTime.Now;
+                product.stock_flag = im_products.stock_flag;
+                product.ignore_direct = im_products.ignore_direct;
+                product.low_stock_alert = im_products.low_stock_alert;
+                product.restrict_deciaml_qty = im_products.restrict_deciaml_qty;
+                product.allow_below_zero = im_products.allow_below_zero;
+                product.fixed_price = im_products.fixed_price;
+                product.published = im_products.published;
+                product.status = im_products.status;
+                foreach (var varient in im_products.im_ProductVariants)
+                {
+                    var existingVariant = product.im_ProductVariants.FirstOrDefault(v => v.variant_id == varient.variant_id);
+                    existingVariant.base_price= varient.base_price;
+                    //existingVariant.barcode = varient.barcode;
+                    //existingVariant.uom_id = varient.uom_id;
+                    //existingVariant.updated_at = DateTime.Now;
 
 
-                //            foreach (var varient_price in price_tire.im_ProductVariantPrices)
-                //            {
-                //                var existingPrice = existingTier.im_ProductVariantPrices.FirstOrDefault(p => p.variant_price_id == varient_price.variant_price_id);
-
-                //                existingPrice.price = varient_price.price;
-                //                existingPrice.updated_at = DateTime.Now;
-                //            }
-                //        }
-                //    }
+                    foreach (var im_store in varient.im_StoreVariantInventory)
+                    {
+                        var existingStoreInv = existingVariant.im_StoreVariantInventory.FirstOrDefault(s => s.store_variant_inventory_id == im_store.store_variant_inventory_id);
+                        existingStoreInv.on_hand_quantity = im_store.on_hand_quantity;
+                        existingStoreInv.committed_quantity = im_store.committed_quantity;
+                        //existingStoreInv.bin_number = im_store.bin_number;
+                    }
 
 
-                //}
+                }
                 await _context.SaveChangesAsync();
                 return new ServiceResult<im_Products>
                 {
+                    Status=201,
                     Success = true,
                     Message = "Product updated successfully.",
                     Data = product
@@ -772,6 +824,131 @@ namespace Faahi.Service.im_products
                 };
             }
 
+        }
+        public async Task<ServiceResult<im_Products>> Update_Mutiple_Product(Guid product_id, im_Products im_Products)
+        {
+            if (product_id == null)
+            {
+                _logger.LogWarning("Update_Mutiple_Product: No product ID provided");
+                return new ServiceResult<im_Products>
+                {
+                    Success = false,
+                    Message = "Not found"
+                };
+            }
+            try
+            {
+                var product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
+                                .FirstOrDefaultAsync(a => a.product_id == product_id);
+
+                product.title = im_Products.title;
+                product.category_id = im_Products.category_id;
+                product.sub_category_id = im_Products.sub_category_id;
+                product.sub_sub_category_id = im_Products.sub_sub_category_id;
+                product.description = im_Products.description;
+                product.brand = im_Products.brand;
+                product.updated_at = DateTime.Now;
+                product.stock_flag = im_Products.stock_flag;
+                product.ignore_direct = im_Products.ignore_direct;
+                product.low_stock_alert = im_Products.low_stock_alert;
+                product.restrict_deciaml_qty = im_Products.restrict_deciaml_qty;
+                product.allow_below_zero = im_Products.allow_below_zero;
+                product.fixed_price = im_Products.fixed_price;
+                product.published = im_Products.published;
+                product.status = im_Products.status;
+                foreach (var varient in im_Products.im_ProductVariants)
+                {
+                    var existingVariant = product.im_ProductVariants.FirstOrDefault(v => v.variant_id == varient.variant_id);
+                    if(existingVariant != null)
+                    {
+                        existingVariant.base_price = varient?.base_price;
+                        existingVariant.barcode = varient.barcode;
+
+                        foreach (var im_attr in varient.im_VariantAttributes)
+                        {
+                            var existingAttr = existingVariant.im_VariantAttributes.FirstOrDefault(a => a.varient_attribute_id == im_attr.varient_attribute_id);
+                            if (existingAttr != null)
+                            {
+                                existingAttr.attribute_id = im_attr.attribute_id;
+                                existingAttr.value_id = im_attr.value_id;
+                            }
+                            else
+                            {
+                                im_attr.varient_attribute_id = Guid.CreateVersion7();
+                                im_attr.value_id = im_attr.value_id;
+                                im_attr.variant_id = existingVariant.variant_id;
+                                im_attr.attribute_id = im_attr.attribute_id;
+                                _context.im_VariantAttributes.Add(im_attr);
+                                existingVariant.im_VariantAttributes.Add(im_attr);
+                            }
+
+                        }
+
+                        foreach (var im_store in varient.im_StoreVariantInventory)
+                        {
+                            var existingStoreInv = existingVariant.im_StoreVariantInventory.FirstOrDefault(s => s.store_variant_inventory_id == im_store.store_variant_inventory_id);
+
+                            existingStoreInv.on_hand_quantity = im_store.on_hand_quantity;
+                            existingStoreInv.committed_quantity = im_store.committed_quantity;
+
+                        }
+                    }
+                    else
+                    {
+                        varient.variant_id = Guid.CreateVersion7();
+                        varient.product_id = product.product_id;
+                        varient.uom_id = varient.uom_id;
+                        varient.sku = varient.sku;
+                        varient.created_at = DateTime.Now;
+                        varient.updated_at = DateTime.Now;
+
+                        foreach(var im_store in varient.im_StoreVariantInventory)
+                        {
+                            im_store.store_variant_inventory_id = Guid.CreateVersion7();
+                            im_store.variant_id = varient.variant_id;
+                            im_store.company_id = im_store.company_id;
+                            im_store.store_id = im_store.store_id;
+                            im_store.on_hand_quantity = im_store.on_hand_quantity;
+                            im_store.committed_quantity = im_store.committed_quantity;
+                            im_store.bin_number = im_store.bin_number;
+                        }
+                        foreach(var im_attr in varient.im_VariantAttributes)
+                        {
+                            im_attr.varient_attribute_id =  Guid.CreateVersion7();
+                            im_attr.value_id = im_attr.value_id;
+                            im_attr.variant_id = varient.variant_id;
+                            im_attr.attribute_id = im_attr.attribute_id;
+                        }
+
+                        _context.im_ProductVariants.Add(varient);
+                        product.im_ProductVariants.Add(varient);
+                    }
+
+
+                       
+
+                    
+
+
+                }
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_Products>
+                {
+                    Status = 201,
+                    Success = true,
+                    Message = "Product updated successfully.",
+                    Data = product
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Update_Mutiple_Product: An error occurred while updating the product");
+                return new ServiceResult<im_Products>
+                {
+                    Success = false,
+                    Message = "An error occurred while updating the product"
+                };
+            }
         }
 
         public async Task<ActionResult<ServiceResult<im_ProductVariants>>> Add_subCategory(string product_id, im_ProductVariants im_varint)
@@ -1040,13 +1217,24 @@ namespace Faahi.Service.im_products
                     Message = "NO data found in the company_id"
                 };
             }
-            var attribute = await _context.im_ProductAttributes.OrderByDescending(a => a.attribute_id).Include(a => a.im_AttributeValues.OrderByDescending(a => a.attribute_id)).Where(a => a.company_id == company_id).ToListAsync();
+             
+            //var attribute = await _context.im_ProductAttributes.OrderByDescending(a => a.attribute_id).Include(a => a.im_AttributeValues.OrderByDescending(a => a.attribute_id)).Where(a => a.company_id == company_id).ToListAsync();
+            var jsonResult = _context.Database
+        .SqlQueryRaw<string>(
+                    "EXEC dbo.GetAllProductAttributes_JSON @CompanyId = @CompanyId",
+                    new SqlParameter("@CompanyId", company_id)
+                    
+                )
+        .AsEnumerable()        
+        .FirstOrDefault();
+            var attributes = JsonConvert.DeserializeObject<List<im_ProductAttributes>>(jsonResult);
+
             return new ServiceResult<List<im_ProductAttributes>>
             {
                 Status = 1,
                 Success = true,
                 Message = "Success",
-                Data = attribute
+                Data = attributes
             };
         }
 

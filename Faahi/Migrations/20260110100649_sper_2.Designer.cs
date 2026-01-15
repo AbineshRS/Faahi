@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260110100649_sper_2")]
+    partial class sper_2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,55 +24,6 @@ namespace Faahi.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Faahi.Model.Admin.sa_country_regions", b =>
-                {
-                    b.Property<Guid>("country_region_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("avl_countries_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("region_name")
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<string>("status")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.HasKey("country_region_id");
-
-                    b.ToTable("sa_country_regions");
-                });
-
-            modelBuilder.Entity("Faahi.Model.Admin.sa_regions", b =>
-                {
-                    b.Property<Guid>("region_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("city")
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<Guid?>("country_region_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("parent_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("region_name")
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<Guid?>("sa_country_regionscountry_region_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("region_id");
-
-                    b.HasIndex("sa_country_regionscountry_region_id");
-
-                    b.ToTable("sa_regions");
-                });
 
             modelBuilder.Entity("Faahi.Model.Admin.super_admin", b =>
                 {
@@ -1628,9 +1582,6 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("attribute_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("im_ProductVariantsvariant_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -2290,13 +2241,6 @@ namespace Faahi.Migrations
                     b.ToTable("am_table_next_key");
                 });
 
-            modelBuilder.Entity("Faahi.Model.Admin.sa_regions", b =>
-                {
-                    b.HasOne("Faahi.Model.Admin.sa_country_regions", null)
-                        .WithMany("sa_regions")
-                        .HasForeignKey("sa_country_regionscountry_region_id");
-                });
-
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyAddresses", b =>
                 {
                     b.HasOne("Faahi.Model.am_vcos.ap_Vendors", null)
@@ -2431,11 +2375,6 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.im_products.im_purchase_listing", null)
                         .WithMany("im_purchase_listing_details")
                         .HasForeignKey("im_purchase_listinglisting_id");
-                });
-
-            modelBuilder.Entity("Faahi.Model.Admin.sa_country_regions", b =>
-                {
-                    b.Navigation("sa_regions");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_Parties", b =>

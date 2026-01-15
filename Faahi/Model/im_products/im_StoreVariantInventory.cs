@@ -10,7 +10,7 @@ namespace Faahi.Model.im_products
     {
         [Key]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid store_variant_inventory_id { get; set; }
+        public Guid? store_variant_inventory_id { get; set; }
 
         [ForeignKey("variant_id")]
         [Display(Name = "im_ProductVariants")]

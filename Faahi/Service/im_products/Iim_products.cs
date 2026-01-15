@@ -13,16 +13,21 @@ namespace Faahi.Service.im_products
         Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile,Guid product_id);
 
         Task<ActionResult<ServiceResult<string>>> UploadMutiple_image(IFormFile[] formFile,string product_id,string variant_id);
-        
+
+        Task<ServiceResult<DeleteImageDto>> Delete_ProductImage(DeleteImageDto deleteImageDto);
+
+
         Task<ActionResult<ServiceResult<string>>> Upload_vedio(IFormFile[] formFile,string product_id,string variant_id);
        
         Task<ServiceResult<string>> get_company_product(string company_id);
 
         Task<ServiceResult<List<im_Products>>> all_product_details(Guid company_id);
 
-        Task<ActionResult<ServiceResult<im_products_dto>>> Get_product_details(string product_id);
+        Task<ServiceResult<im_Products>> Get_product_details(Guid product_id);
 
-        Task<ActionResult<ServiceResult<im_Products>>> Update_Product(string product_id,im_Products im_Products);
+        Task<ActionResult<ServiceResult<im_Products>>> Update_Product(Guid product_id,im_Products im_Products);
+
+        Task<ServiceResult<im_Products>> Update_Mutiple_Product(Guid product_id, im_Products im_Products);
 
         Task<ActionResult<ServiceResult<im_ProductVariants>>> Add_subCategory(string product_id,im_ProductVariants im_ProductVariants);
 

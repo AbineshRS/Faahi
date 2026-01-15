@@ -12,6 +12,8 @@ namespace Faahi.Service.CoBusiness
 
         Task<ServiceResult<co_business>> Create_account(co_business co_business);
 
+        Task<ServiceResult<List<co_business>>> Company_list();
+
         Task<AuthResponse> LoginAsyn(string username,string password);
 
         Task<ServiceResult<string>> send_reset_password(string email);
@@ -27,6 +29,8 @@ namespace Faahi.Service.CoBusiness
         Task<ServiceResult<co_business>> Get_company(Guid company_id);
 
         Task<ServiceResult<co_business>> Update_profile(co_business co_business,string company_id);
+
+        Task<ServiceResult<ActionResult>> Inactive_company(Guid company_id);
 
         Task<ServiceResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries);
 

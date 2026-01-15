@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -84,6 +85,10 @@ namespace Faahi.Model.co_business
         [Column(TypeName = "varchar(50)")]
         public string? email { get; set; } = null;
 
+        [StringLength(1)]
+        [DefaultValue("T")]
+        [Column(TypeName = "char(1)")]
+        public string? status { get; set; } = null;
 
         public ICollection<co_address>? co_addresses { get; set; } = null;
     }

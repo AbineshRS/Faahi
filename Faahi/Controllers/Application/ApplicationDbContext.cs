@@ -1,4 +1,5 @@
 ﻿using Faahi.Model;
+using Faahi.Model.Admin;
 using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
 using Faahi.Model.countries;
@@ -107,6 +108,12 @@ namespace Faahi.Controllers.Application
         public DbSet<im_VariantAttributes> im_VariantAttributes { get; set; }
 
         public DbSet<im_StoreVariantInventory> im_StoreVariantInventory { get;set; }
+
+        public DbSet<super_admin> super_admin { get; set; }
+
+        public DbSet<sa_country_regions> sa_country_regions { get; set; }
+
+        public DbSet<sa_regions> sa_regions { get; set; }
     }
 
 }

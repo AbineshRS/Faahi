@@ -194,8 +194,8 @@ namespace Faahi.Service.CoBusiness
                                         <p>We are excited to have you join our marketplace. As a seller, you'll now have the ability to manage your products, track your sales, and connect with customers across the globe.</p>
                                         <p>Here are a few next steps to get started:</p>
                                         <ul>
-                                            <li><strong>Upload your products</strong> – Start adding your products to our platform.</li>
                                             <li><strong>Set up your store</strong> – Personalize your storefront and manage your brand.</li>
+                                            <li><strong>Upload your products</strong> – Start adding your products to our platform.</li>
                                             <li><strong>Start selling</strong> – Once your products are live, customers can start buying from you!</li>
                                         </ul>
                                         <p>If you have any questions or need assistance, our support team is here to help.</p>
@@ -237,6 +237,31 @@ namespace Faahi.Service.CoBusiness
                 };
             }
 
+        }
+
+        public async Task<ServiceResult<List<co_business>>> Company_list()
+        {
+            try
+            {
+                var company_list = await _context.co_business.Include(a=>a.co_addresses).OrderByDescending(a=>a.company_code).ToListAsync();
+                return new ServiceResult<List<co_business>>
+                {
+                    Status = 1,
+                    Success = true,
+                    Message = "Company list retrieved successfully",
+                    Data = company_list
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while retrieving company list");
+                return new ServiceResult<List<co_business>>
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred",
+                    Status = -500
+                };
+            }
         }
         public async Task<ActionResult<ServiceResult<string>>> Upload_logo(IFormFile formFile, Guid company_id)
         {
@@ -961,6 +986,7 @@ namespace Faahi.Service.CoBusiness
                 {
                     return new ServiceResult<co_business>
                     {
+                        Status=400,
                         Success = false,
                         Message = "User not found",
                         Data = null
@@ -973,6 +999,8 @@ namespace Faahi.Service.CoBusiness
                 existing.sites_allowed = user.sites_allowed;
                 existing.createdSites = user.createdSites;
                 existing.email = user.email;
+                existing.status = user.status;
+                existing.edit_date_time = user.edit_date_time;
 
                 foreach (var co_address in user.co_addresses)
                 {
@@ -989,6 +1017,7 @@ namespace Faahi.Service.CoBusiness
                 await _context.SaveChangesAsync();
                 return new ServiceResult<co_business>
                 {
+                    Status=200,
                     Success = true,
                     Message = "User profile updated successfully",
                     Data = existing
@@ -1005,6 +1034,51 @@ namespace Faahi.Service.CoBusiness
                 };
             }
 
+        }
+        public async Task<ServiceResult<ActionResult>> Inactive_company(Guid company_id)
+        {
+            if (company_id == Guid.Empty)
+            {
+                _logger.LogWarning("No company ID provided for inactivation", company_id);
+                return new ServiceResult<ActionResult>
+                {
+                    Success = false,
+                    Message = "No company ID provided",
+                    Status = -1
+                };
+            }
+            try
+            {
+                var existing = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == company_id);
+                if (existing == null)
+                {
+                    return new ServiceResult<ActionResult>
+                    {
+                        Success = false,
+                        Message = "Company not found",
+                        Status = -2
+                    };
+                }
+                existing.status = "F";
+                _context.co_business.Update(existing);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<ActionResult>
+                {
+                    Success = true,
+                    Message = "Company inactivated successfully",
+                    Status = 1
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while inactivating company");
+                return new ServiceResult<ActionResult>
+                {
+                    Success = false,
+                    Message = "An unexpected error occurred",
+                    Status = -500
+                };
+            }
         }
         public async Task<ServiceResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries)
         {

@@ -37,10 +37,10 @@ namespace Faahi.Controllers.Authentication
             return Ok(new { status = 1, token });
 
         }
-        [HttpPost("refresh-token/{request}")]
-        public ActionResult<AuthResponse> RefreshToken( string request)
+        [HttpPost("refresh-token/{refreshToken}")]
+        public ActionResult<AuthResponse> RefreshToken( string refreshToken)
         {
-            var response = _authService.RefreshToken(request);
+            var response = _authService.RefreshToken(refreshToken);
             if (response == null)
                 return Unauthorized("Invalid refresh token");
 

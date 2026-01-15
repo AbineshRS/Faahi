@@ -8,7 +8,7 @@ namespace Faahi.Model.im_products
     {
         [Key]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid variant_id { get; set; }
+        public Guid? variant_id { get; set; }
 
         [ForeignKey("product_id")]
         [Display(Name = "im_Products")]

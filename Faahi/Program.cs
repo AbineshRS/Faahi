@@ -2,6 +2,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Faahi.Controllers.Application;
 using Faahi.Mapper;
+using Faahi.Service.Admin;
 using Faahi.Service.Auth;
 using Faahi.Service.CoBusiness;
 using Faahi.Service.countries;
@@ -106,6 +107,7 @@ builder.Services.AddScoped<Iim_purchase,im_purchase_service>();
 builder.Services.AddScoped<Istore,store_service>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<Iavl_countries,avl_countries_service>();
+builder.Services.AddScoped<Iadmin,admin_service>();
 builder.Services.AddMemoryCache();
 
 var wasabiOptions = builder.Configuration.GetSection("Wasabi");

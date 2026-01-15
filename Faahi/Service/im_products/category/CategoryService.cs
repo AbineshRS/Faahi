@@ -360,6 +360,96 @@ namespace Faahi.Service.im_products.category
                 };
             }
         }
+        public async Task<ServiceResult<im_ProductCategories>> Create_sub_product_categories(im_ProductCategories im_ProductCategories)
+        {
+            if (im_ProductCategories == null)
+            {
+                _logger.LogWarning("Update_product_category called with null im_ProductCategories");
+                return new ServiceResult<im_ProductCategories>
+                {
+                    Success = false,
+                    Message = "No data found to update",
+                    Status = 400,
+                };
+            }
+            try
+            {
+                var category = await _context.im_ProductCategories.FirstOrDefaultAsync(a => a.category_id == im_ProductCategories.category_id);
+                if (category == null)
+                {
+                    return new ServiceResult<im_ProductCategories>
+                    {
+                        Success = false,
+                        Message = "Category not found",
+                        Status = 400,
+                    };
+                }
+                im_ProductCategories.category_id = Guid.CreateVersion7();
+                im_ProductCategories.category_name = im_ProductCategories.category_name;
+                im_ProductCategories.image_url = im_ProductCategories.image_url;
+                im_ProductCategories.parent_id = category.category_id;
+                //category.edit_user_id = im_ProductCategories.edit_user_id;
+                im_ProductCategories.edit_date_time = im_ProductCategories.edit_date_time;
+                im_ProductCategories.is_active = im_ProductCategories.is_active;
+                _context.im_ProductCategories.Add(im_ProductCategories);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_ProductCategories>
+                {
+                    Success = true,
+                    Message = "Success",
+                    Status = 201,
+                    Data = category
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating product category");
+                return new ServiceResult<im_ProductCategories>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = 500,
+                };
+            }
+        }
+        public async Task<ServiceResult<im_ProductCategories>> Delete_product_category(Guid category_id)
+        {
+            if (category_id == null)
+            {
+                return new ServiceResult<im_ProductCategories>
+                {
+                    Success = false,
+                    Message = "Not found",
+                    Status = 400
+                };
+            }
+            try
+            {
+                var category = await _context.im_ProductCategories.Where(a => a.category_id == category_id || a.parent_id == category_id).ToListAsync();
+
+                _context.im_ProductCategories.RemoveRange(category);
+
+
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_ProductCategories>
+                {
+                    Success = true,
+                    Message = "Deleted ",
+                    Status = 200
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while deleting product category");
+                return new ServiceResult<im_ProductCategories>
+                {
+                    Success = false,
+                    Message = "An error occurred while processing your request.",
+                    Status = 500,
+                };
+            }
+
+        }
         public async Task<ServiceResult<List<im_ProductCategories>>> Get_all_product_category()
         {
             if (_context.im_ProductCategories == null)
@@ -373,7 +463,7 @@ namespace Faahi.Service.im_products.category
             }
             try
             {
-                var Category = await _context.im_ProductCategories.ToListAsync();
+                var Category = await _context.im_ProductCategories.FromSqlRaw("EXEC dbo.GetAllProductCategories").AsNoTracking().ToListAsync();
 
                 return new ServiceResult<List<im_ProductCategories>>
                 {
@@ -393,7 +483,7 @@ namespace Faahi.Service.im_products.category
                     Status = -1,
                 };
             }
-            
+
         }
         public async Task<ServiceResult<List<st_StoreCategories>>> Create_StoreCategories(List<st_StoreCategories> st_StoreCategories)
         {
@@ -409,8 +499,8 @@ namespace Faahi.Service.im_products.category
             }
             try
             {
-                var existingcategories = await _context.st_StoreCategories.Where(a=>a.store_id==st_StoreCategories.First().store_id && a.category_id==st_StoreCategories.First().category_id).ToListAsync();
-                if(existingcategories.Any())
+                var existingcategories = await _context.st_StoreCategories.Where(a => a.store_id == st_StoreCategories.First().store_id && a.category_id == st_StoreCategories.First().category_id).ToListAsync();
+                if (existingcategories.Any())
                 {
                     return new ServiceResult<List<st_StoreCategories>>
                     {

@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260108114523_init")]
-    partial class init
+    [Migration("20260110075208_sper_1")]
+    partial class sper_1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,51 @@ namespace Faahi.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Faahi.Model.Admin.super_admin", b =>
+                {
+                    b.Property<Guid>("super_admin_id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("created_at")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("email")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("name")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("password")
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("phone")
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("status")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
+
+                    b.Property<DateTime?>("updated_at")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("user_type")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("super_admin_id");
+
+                    b.HasIndex(new[] { "email" }, "email");
+
+                    b.HasIndex(new[] { "phone" }, "phone");
+
+                    b.HasIndex(new[] { "status" }, "status");
+
+                    b.HasIndex(new[] { "super_admin_id" }, "super_admin_id")
+                        .IsUnique();
+
+                    b.ToTable("super_admin");
+                });
 
             modelBuilder.Entity("Faahi.Model.Email_verify.am_emailVerifications", b =>
                 {

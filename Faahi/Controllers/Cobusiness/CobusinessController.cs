@@ -36,6 +36,14 @@ namespace Faahi.Controllers.Cobusiness
             var data = await _co_businessService.Create_account(co_business);
             return Ok(data);
         }
+        [Authorize]
+        [HttpGet]
+        [Route("company_list")]
+        public async Task<IActionResult> Company_list()
+        {
+            var company_list = await _co_businessService.Company_list();
+            return Ok(company_list);
+        }
         [HttpPost]
         [Route("upload_logo/{company_id}")]
         public async Task<ActionResult<string>> Upload(IFormFile formFil, Guid company_id)
@@ -128,6 +136,18 @@ namespace Faahi.Controllers.Cobusiness
                 return Ok("Not found Company_id");
             }
             var update = await _co_businessService.Update_profile(co_Address, company_id);
+            return Ok(update);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("inactive_company/{company_id}")]
+        public async Task<ActionResult> Inactive_company(Guid company_id)
+        {
+            if (company_id == null)
+            {
+                return Ok("Not found Company_id");
+            }
+            var update = await _co_businessService.Inactive_company( company_id);
             return Ok(update);
         }
         [Authorize]

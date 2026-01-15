@@ -95,6 +95,28 @@ namespace Faahi.Controllers.im_products.Category
             var created = await _category.Create_product_category(im_ProductCategories);
             return Ok(created);
         }
+        [HttpPost]
+        [Route("add_sub_product_categories")]
+        public async Task<ActionResult<im_ProductCategories>> Add_sub_product_categories(im_ProductCategories im_SubProductCategories)
+        {
+            if (im_SubProductCategories == null)
+            {
+                return Ok("no data found");
+            }
+            var created = await _category.Create_sub_product_categories(im_SubProductCategories);
+            return Ok(created);
+        }
+        [HttpDelete]
+        [Route("delete_product_category/{category_id}")]
+        public async Task<IActionResult> Delete_product_category(Guid category_id)
+        {
+            if (category_id == null)
+            {
+                return Ok("no data found");
+            }
+            var deleted_category = await _category.Delete_product_category(category_id);
+            return Ok(deleted_category);
+        }
         [HttpGet]
         [Route("product_category_list")]
         public async Task<IActionResult> product_category_list()

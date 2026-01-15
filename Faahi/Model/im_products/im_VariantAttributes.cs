@@ -7,7 +7,7 @@ namespace Faahi.Model.im_products
     {
         [Key]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid varient_attribute_id {  get; set; }
+        public Guid? varient_attribute_id {  get; set; }
 
         [ForeignKey("value_id")]
         [Display(Name = "im_AttributeValues")]
@@ -18,6 +18,11 @@ namespace Faahi.Model.im_products
         [Display(Name = "im_ProductVariants")]
         [Column(TypeName = "uniqueidentifier")]
         public Guid? variant_id { get; set; }
+
+        [ForeignKey("attribute_id")]
+        [Display(Name = "im_ProductAttributes")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? attribute_id { get; set; }
 
 
     }

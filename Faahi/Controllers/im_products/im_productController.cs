@@ -1,5 +1,6 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Dto.Product_dto;
 using Faahi.Model.im_products;
 using Faahi.Service;
 using Faahi.Service.im_products;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace Faahi.Controllers.im_products
 {
@@ -61,6 +62,22 @@ namespace Faahi.Controllers.im_products
         }
         [Authorize]
         [HttpPost]
+        [Route("Delete_ProductImageForm")]
+        public async Task<IActionResult> Delete_ProductImage([FromBody] DeleteImageDto deleteImageDto)
+        {
+            //var deleteDto = new DeleteImageDto
+            //{
+            //    Product_Id = productId,
+            //    Variant_Id = variantId,
+            //    Deleted_Images = deletedImages
+            //};
+
+            var result = await _im_products.Delete_ProductImage(deleteImageDto);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost]
         [Route("Upload_vedio/{product_id}/{variant_id}")]
         public async Task<ActionResult<string>> Upload_vedios(IFormFile[] formFiles, string product_id, string variant_id)
         {
@@ -98,7 +115,7 @@ namespace Faahi.Controllers.im_products
         [Authorize]
         [HttpGet]
         [Route("get_Product_details/{product_id}")]
-        public async Task<IActionResult> Get_product_details(string product_id)
+        public async Task<IActionResult> Get_product_details(Guid product_id)
         {
             if (product_id == null)
             {
@@ -110,13 +127,25 @@ namespace Faahi.Controllers.im_products
         [Authorize]
         [HttpPost]
         [Route("Update_product/{product_id}")]
-        public async Task<ActionResult<im_Products>> Update_Product(string product_id,im_Products im_Products)
+        public async Task<ActionResult<im_Products>> Update_Product(Guid product_id,im_Products im_Products)
         {
             if(product_id == null)
             {
                 return Ok("Product Id not found");
             }
             var update_product = await _im_products.Update_Product(product_id,im_Products);
+            return Ok(update_product);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("update_mutiple_product/{product_id}")]
+        public async Task<ActionResult<im_Products>> Update_Mutiple_Product(Guid product_id, im_Products im_Products)
+        {
+            if (product_id == null)
+            {
+                return Ok("Product Id not found");
+            }
+            var update_product = await _im_products.Update_Mutiple_Product(product_id, im_Products);
             return Ok(update_product);
         }
         [Authorize]
@@ -170,20 +199,7 @@ namespace Faahi.Controllers.im_products
         }
 
 
-        [HttpPost("data")]
-        public IActionResult ViewDecryptedData(EncryptedRequest request)
-        {
-            try
-            {
-                var decryptedJson = EncryptionHelper.DecryptString(request.EncryptedData);
-                var product = JsonConvert.DeserializeObject<im_Products>(decryptedJson);
-                return Ok(product);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Decryption failed: {ex.Message}");
-            }
-        }
+        
         [HttpPost("encript/{id}")]
         public IActionResult EncryptId(string id)
         {
