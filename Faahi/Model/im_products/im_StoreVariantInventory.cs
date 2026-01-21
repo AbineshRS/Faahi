@@ -4,8 +4,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.im_products
 {
-    [Index(nameof(variant_id))]
-    [Index(nameof(store_id))]
+    [Index(nameof(store_variant_inventory_id),Name = "store_variant_inventory_id")]
+    [Index(nameof(variant_id),Name = "variant_id")]
+    [Index(nameof(store_id),Name = "store_id")]
     public class im_StoreVariantInventory
     {
         [Key]

@@ -25,6 +25,8 @@ namespace Faahi.Service.im_products.im_tags
 
         Task<ServiceResult<im_UnitsOfMeasure>> Update_uom(im_UnitsOfMeasure im_UnitsOfMeasure, string uom_id);
 
+        Task<ServiceResult<List<im_UnitsOfMeasure>>> umo_list();
+
         Task<ServiceResult<im_UnitsOfMeasure>> Delete_umo(string tag_id);
 
 

@@ -209,6 +209,7 @@ namespace Faahi.Service.Users
             customer.contact_email = ar_Customers.contact_email;
             customer.credit_limit = ar_Customers.credit_limit;
             customer.tex_identification_number = ar_Customers.tex_identification_number;
+            customer.default_currency = ar_Customers.default_currency;
             customer.updated_at = DateTime.Now;
 
             var existing_bank = await _context.fin_PartyBankAccounts.Where(a => a.customer_id == customer_id).ToListAsync();
@@ -380,6 +381,7 @@ namespace Faahi.Service.Users
             vendor.contact_email = ap_Vendors.contact_email;
             vendor.tex_identification_number = ap_Vendors.tex_identification_number;
             vendor.preferred_payment_method = ap_Vendors.preferred_payment_method;
+            vendor.default_currency = ap_Vendors.default_currency;
             vendor.updated_at = DateTime.Now;
 
             //Bank Details
@@ -627,7 +629,7 @@ namespace Faahi.Service.Users
                     Status = -1
                 };
             }
-            var vendors = await _context.ap_Vendors.Where(v => v.company_id == company_id).ToListAsync();
+            var vendors = await _context.ap_Vendors.Include(a=>a.st_PartyAddresses).Include(a=>a.fin_PartyBankAccounts).Where(v => v.company_id == company_id).ToListAsync();
             if (vendors == null || vendors.Count == 0)
             {
                 return new ServiceResult<List<ap_Vendors>>

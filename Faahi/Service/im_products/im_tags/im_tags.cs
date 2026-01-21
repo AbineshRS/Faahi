@@ -154,6 +154,37 @@ namespace Faahi.Service.im_products.im_tags
             }
 
         }
+
+        public async Task<ServiceResult<List<im_UnitsOfMeasure>>> umo_list()
+        {
+            try
+            {
+                var umo_list = await _context.im_UnitsOfMeasures.ToListAsync();
+                if( umo_list == null)
+                {
+                    return new ServiceResult<List<im_UnitsOfMeasure>>
+                    {
+                        Status = 0,
+                        Message = "NO data found",
+                        Success = false,
+                    };
+                }
+                return new ServiceResult<List<im_UnitsOfMeasure>>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = umo_list
+                };
+            }catch(Exception ex)
+            {
+                return new ServiceResult<List<im_UnitsOfMeasure>>
+                {
+                    Status = 500,
+                    Success = false,
+
+                };
+            }
+        }
         public async Task<ServiceResult<im_products_tag>> Delete(string tag_id)
         {
             if (tag_id == null)

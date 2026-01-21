@@ -1,8 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.im_products
 {
+    [Index(nameof(varient_attribute_id),Name = "varient_attribute_id")]
+    [Index(nameof(value_id),Name = "value_id")]
+    [Index(nameof(attribute_id),Name = "attribute_id")]
+    [Index(nameof(variant_id),Name = "variant_id")]
     public class im_VariantAttributes
     {
         [Key]

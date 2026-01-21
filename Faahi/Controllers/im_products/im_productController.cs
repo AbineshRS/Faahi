@@ -38,6 +38,18 @@ namespace Faahi.Controllers.im_products
         }
         [Authorize]
         [HttpPost]
+        [Route("add_varient/{product_id}")]
+        public async Task<ActionResult<List<im_ProductVariants>>> Add_varient(List<im_ProductVariants> im_ProductVariants,Guid product_id)
+        {
+            if (im_ProductVariants == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_products.Add_varient(im_ProductVariants, product_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
         [Route("UploadProductDefaultImage/{product_id}")]
         public async Task<ActionResult<string>> UploadProductAsync(IFormFile formFile, Guid product_id)
         {
@@ -88,7 +100,7 @@ namespace Faahi.Controllers.im_products
             var uploadmutiple = await _im_products.Upload_vedio(formFiles, product_id, variant_id);
             return Ok(uploadmutiple);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_company_product/{company_id}")]
         public async Task<IActionResult> get_company_product(string company_id)

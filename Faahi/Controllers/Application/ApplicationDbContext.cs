@@ -9,6 +9,7 @@ using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
 using Faahi.Model.table_key;
+using Faahi.Model.temp_tables;
 using Microsoft.EntityFrameworkCore;
 
 namespace Faahi.Controllers.Application
@@ -116,6 +117,8 @@ namespace Faahi.Controllers.Application
         public DbSet<sa_regions> sa_regions { get; set; }
 
         public DbSet<fin_PartyBankAccounts> fin_PartyBankAccounts { get; set; }
+
+        public DbSet<temp_im_variant> temp_im_variants { get; set; }
     }
 
 }

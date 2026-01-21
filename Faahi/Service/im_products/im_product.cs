@@ -67,12 +67,13 @@ namespace Faahi.Service.im_products
                 im_Product.ignore_direct = im_Product.ignore_direct;
                 im_Product.restrict_HS = im_Product.restrict_HS;
                 im_Product.status = im_Product.status;
+                im_Product.is_varient = im_Product.is_varient;
 
                 foreach (var im_varint in im_Product.im_ProductVariants)
                 {
                     im_varint.variant_id = Guid.CreateVersion7();
                     im_varint.product_id = im_Product.product_id;
-                    im_varint.uom_id = im_varint.uom_id;
+                    im_varint.uom_name = im_varint.uom_name;
                     im_varint.description_2 = im_varint.description_2;
                     var namePart = Regex.Replace(im_Product.title ?? "", @"\s+", "")
                         .Substring(0, Math.Min(3, (im_Product.title ?? "").Length))
@@ -141,7 +142,94 @@ namespace Faahi.Service.im_products
             }
 
         }
-        
+
+        public async Task<ServiceResult<List<im_ProductVariants>>> Add_varient(List<im_ProductVariants> im_ProductVariants, Guid product_id)
+        {
+            try
+            {
+                if (im_ProductVariants == null)
+                {
+                    _logger.LogInformation("Inserting List<im_ProductVariants> was NUll");
+                    return new ServiceResult<List<im_ProductVariants>>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "NO data to found to insert"
+                    };
+                }
+                Random rnd = new Random();
+
+                var im_product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
+                .FirstOrDefaultAsync(a => a.product_id == product_id);
+                foreach (var item in im_ProductVariants)
+                {
+                    item.variant_id = Guid.CreateVersion7();
+                    item.product_id = product_id;
+                    item.uom_name = item.uom_name;
+                    var namePart = Regex.Replace(im_product.title ?? "", @"\s+", "")
+                            .Substring(0, Math.Min(3, (im_product.title ?? "").Length))
+                            .ToUpper();
+                    var SKU = namePart + "-";
+                    item.sku = SKU;
+                    if (item.barcode == null || item.barcode == "" || item.barcode == "0")
+                    {
+                        string first3 = Regex.Replace(im_product.title ?? "", @"\s+", "")
+                                         .Substring(0, Math.Min(3, (im_product.title ?? "").Length))
+                                         .ToUpper();
+                        string randomNumber = rnd.Next(100000, 999999).ToString();
+
+                        item.barcode = $"{first3}{randomNumber}";
+
+                    }
+                    else
+                    {
+                        item.barcode = item.barcode;
+                    }
+                    foreach (var varient_attrbut in item.im_VariantAttributes)
+                    {
+                        varient_attrbut.varient_attribute_id = Guid.CreateVersion7();
+
+                        varient_attrbut.value_id = varient_attrbut.value_id;
+                        varient_attrbut.attribute_id = varient_attrbut.attribute_id;
+                        varient_attrbut.variant_id = item.variant_id;
+                    }
+                    foreach (var store_inv in item.im_StoreVariantInventory)
+                    {
+                        store_inv.store_variant_inventory_id = Guid.CreateVersion7();
+                        store_inv.variant_id = item.variant_id;
+                        store_inv.company_id = store_inv.company_id;
+                        store_inv.store_id = store_inv.store_id;
+                        store_inv.on_hand_quantity = store_inv.on_hand_quantity;
+                        store_inv.committed_quantity = store_inv.committed_quantity;
+                        store_inv.bin_number = store_inv.bin_number;
+                    }
+                    await _context.im_ProductVariants.AddAsync(item);
+                    im_product.im_ProductVariants.Add(item); 
+
+
+                }
+                _context.im_Products.Update(im_product);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<List<im_ProductVariants>>
+                {
+                    Status = 201,
+                    Success = true,
+                    Data = im_ProductVariants
+                };
+            }
+            catch(Exception  ex)
+            {
+                return new ServiceResult<List<im_ProductVariants>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+            
+        }
+
+
         public async Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile, Guid product_id)
         {
             if (formFile == null || formFile.Length == 0)
@@ -610,6 +698,10 @@ namespace Faahi.Service.im_products
                     Message = "not found"
                 };
             }
+            var jsonResult = (await _context.Database.SqlQueryRaw<string>(
+                    "EXEC dbo.GetAllProductDetails_JSON @CompanyId = @CompanyId, @opr = @opr",
+                     new SqlParameter("@CompanyId", company_id),
+                    new SqlParameter("@opr", 3)).ToListAsync()).FirstOrDefault();
             //var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_PriceTiers)
             //                          .ThenInclude(a => a.im_ProductVariantPrices).ThenInclude(a => a.im_ProductImages).FirstOrDefaultAsync(a => a.company_id == company_id);
             var jsonData = JsonConvert.SerializeObject(all_product_details);
@@ -726,6 +818,7 @@ namespace Faahi.Service.im_products
                     Message = "No id found"
                 };
             }
+
             var jsonResult = _context.Database
                 .SqlQueryRaw<string>(
                     "EXEC dbo.GetAllProductDetails_JSON @product_id = @product_id_param, @opr = @opr_param",
@@ -785,6 +878,7 @@ namespace Faahi.Service.im_products
                 product.allow_below_zero = im_products.allow_below_zero;
                 product.fixed_price = im_products.fixed_price;
                 product.published = im_products.published;
+                product.is_varient = im_products.is_varient;
                 product.status = im_products.status;
                 foreach (var varient in im_products.im_ProductVariants)
                 {
@@ -797,6 +891,7 @@ namespace Faahi.Service.im_products
                     }
                     existingVariant.base_price= varient.base_price;
                     existingVariant.description_2 = description_2;
+                    existingVariant.uom_name = varient.uom_name;
                     //existingVariant.barcode = varient.barcode;
                     //existingVariant.uom_id = varient.uom_id;
                     //existingVariant.updated_at = DateTime.Now;
@@ -846,6 +941,8 @@ namespace Faahi.Service.im_products
             }
             try
             {
+                Random rnd = new Random();
+
                 var product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
                                 .FirstOrDefaultAsync(a => a.product_id == product_id);
 
@@ -878,6 +975,7 @@ namespace Faahi.Service.im_products
                         existingVariant.base_price = varient?.base_price;
                         existingVariant.barcode = varient.barcode;
                         existingVariant.description_2 = description_2;
+                        existingVariant.uom_name = varient.uom_name;
 
                         foreach (var im_attr in varient.im_VariantAttributes)
                         {
@@ -912,8 +1010,15 @@ namespace Faahi.Service.im_products
                     {
                         varient.variant_id = Guid.CreateVersion7();
                         varient.product_id = product.product_id;
-                        varient.uom_id = varient.uom_id;
+                        varient.uom_name = varient.uom_name;
+
+                        var namePart = Regex.Replace(product.title ?? "", @"\s+", "")
+                      .Substring(0, Math.Min(3, (product.title ?? "").Length))
+                      .ToUpper();
+                        var SKU = namePart + "-";
+                        varient.sku = SKU + rnd.Next(100000, 999999).ToString();
                         varient.sku = varient.sku;
+
                         varient.created_at = DateTime.Now;
                         varient.updated_at = DateTime.Now;
 
@@ -1099,8 +1204,15 @@ namespace Faahi.Service.im_products
         {
             try
             {
-                var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
-                                      .ToListAsync();
+                var jsonResult =(await _context.Database.SqlQueryRaw<string>(
+                    "EXEC dbo.GetAllProductDetails_JSON @opr = @opr",
+                    new SqlParameter("@opr", 3)).ToListAsync()).FirstOrDefault();
+
+                var all_product_details =
+                    System.Text.Json.JsonSerializer.Deserialize<List<im_Products>>(jsonResult);
+
+                //var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
+                //                      .ToListAsync();
                 if (all_product_details == null)
                 {
                     return new ServiceResult<List<im_Products>>

@@ -1,9 +1,13 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.im_products
 {
+    [Index(nameof(variant_id),Name = "variant_id")]
+    [Index(nameof(product_id),Name = "product_id")]
+    [Index(nameof(description_2),Name = "description_2")]
     public class im_ProductVariants
     {
         [Key]
@@ -15,9 +19,9 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? product_id { get; set; }
 
-        [ForeignKey("uom_id")]
-        [Column(TypeName = "uniqueidentifier")]
-        public Guid? uom_id { get; set; }
+        
+        [Column(TypeName = "varchar(20)")]
+        public string? uom_name { get; set; }
 
         [Column(TypeName = "varchar(50)")]
         public string? sku { get; set; } = null;
@@ -40,20 +44,26 @@ namespace Faahi.Model.im_products
         //[Column(TypeName = "decimal(18, 4)")]
         //public Decimal? stock_quantity { get; set; } = null;
 
-        //[Column(TypeName = "decimal(16, 4)")]
-        //public Decimal? weight_kg { get; set; } = null;
+        [Column(TypeName = "decimal(16, 4)")]
+        public Decimal? weight_kg { get; set; } = null;
 
-        //[Column(TypeName = "decimal(16, 4)")]
-        //public Decimal? length_cm { get; set; } = null;
+        [Column(TypeName = "decimal(16, 4)")]
+        public Decimal? length_cm { get; set; } = null;
 
-        //[Column(TypeName = "decimal(16, 4)")]
-        //public Decimal? width_cm { get; set; } = null;
+        [Column(TypeName = "decimal(16, 4)")]
+        public Decimal? width_cm { get; set; } = null;
 
-        //[Column(TypeName = "decimal(16, 4)")]
-        //public Decimal? height_cm { get; set; } = null;
+        [Column(TypeName = "decimal(16, 4)")]
+        public Decimal? height_cm { get; set; } = null;
 
-        //[Column(TypeName = "decimal(16, 4)")]
-        //public Decimal? chargeable_weight_kg { get; set; } = null;
+        [Column(TypeName = "decimal(16, 4)")]
+        public Decimal? chargeable_weight_kg { get; set; } = null;
+
+        [Column(TypeName = "decimal(16, 4)")]
+        public Decimal? average_cost { get; set; } = null;
+
+        [Column(TypeName = "decimal(16, 4)")]
+        public Decimal? last_price { get; set; } = null;
 
         [Column(TypeName = "datetime")]
         public DateTime? created_at { get; set; } = null;

@@ -1,9 +1,13 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.im_products
 {
+    [Index(nameof(image_id),Name = "image_id")]
+    [Index(nameof(product_id),Name = "product_id")]
+    [Index(nameof(variant_id),Name = "variant_id")]
     public class im_ProductImages
     {
         [Key]
