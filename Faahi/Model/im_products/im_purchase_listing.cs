@@ -1,13 +1,17 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Faahi.Model.im_products
 {
+    [Index(nameof(listing_id),Name = "listing_id",IsUnique =true)]
+    [Index(nameof(site_id),Name ="site_id")]
+    [Index(nameof(vendor_id),Name ="vendor_id")]
     public class im_purchase_listing
     {
         [Key]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid listing_id { get; set; }
+        public Guid? listing_id { get; set; }
 
         [ForeignKey("site_id")]
         [Display(Name = "im_site")]
@@ -69,6 +73,15 @@ namespace Faahi.Model.im_products
 
         [Column(TypeName = "decimal(18, 4)")]
         public Decimal? doc_total { get; set; } = null;
+
+        [Column(TypeName ="nvarchar(100)")]
+        public string? local_referance { get; set; } = null;
+
+        //[Column(TypeName = "varchar(100)")]
+        //public string? brand { get; set; } = null;
+
+        //[Column(TypeName = "varchar(200)")]
+        //public string? title { get; set; } = null;
 
         public ICollection<im_purchase_listing_details>? im_purchase_listing_details { get; set; }=null;
 

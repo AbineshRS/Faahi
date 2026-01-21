@@ -29,5 +29,33 @@ namespace Faahi.Controllers.im_products.im_purchase
             var created = await _im_purchase.Create_im_purchase(im_Purchase_Listing);
             return Ok(created);
         }
+        [Authorize]
+        [HttpGet]
+        [Route("im_purchase_list/{site_id}")]
+        public async Task<IActionResult> Purchase_list(Guid site_id)
+        {
+            var result = await _im_purchase.Purchase_list(site_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("im_purchase_details/{listing_id}")]
+        public async Task<IActionResult> im_purchase_details(Guid listing_id)
+        {
+            var result = await _im_purchase.im_purchase_details(listing_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("update_purchase/{listing_id}")]
+        public async Task<ActionResult<im_purchase_listing>> Update_purchase(Guid listing_id, im_purchase_listing im_Purchase_)
+        {
+            if(listing_id==null || im_Purchase_ == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Update_purchase(listing_id, im_Purchase_);
+            return Ok(result);
+        }
     }
 }

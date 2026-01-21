@@ -75,7 +75,7 @@ namespace Faahi.Controllers.im_products.Tags
         }
 
 
-        [Authorize]
+        //[Authorize]
         [HttpPost]
         [Route("create_uom")]
         public async Task<ActionResult<im_UnitsOfMeasure>> Create_uom(im_UnitsOfMeasure im_UnitsOfMeasure)
@@ -118,6 +118,14 @@ namespace Faahi.Controllers.im_products.Tags
             }
             var upadted_umo = await _im_tags.Update_uom(im_UnitsOfMeasure, uom_id);
             return Ok(upadted_umo);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("umo_list")]
+        public async Task<IActionResult> umo_list()
+        {
+            var umo_list = await _im_tags.umo_list();
+            return Ok(umo_list);
         }
         [Authorize]
         [HttpDelete]

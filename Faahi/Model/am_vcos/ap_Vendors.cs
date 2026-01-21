@@ -77,6 +77,10 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "nvarchar(50)")]
         public string? tex_identification_number { get; set; } = null;
 
+        [DefaultValue("'USD'")]
+        [Column(TypeName = "varchar(20)")]
+        public string? default_currency { get; set; } = null;
+
         public ICollection<fin_PartyBankAccounts>? fin_PartyBankAccounts { get; set; } = null;
 
         public ICollection<st_PartyAddresses>? st_PartyAddresses { get; set; } = null;

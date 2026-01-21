@@ -5,7 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Faahi.Model.im_products
 {
-    [Index(nameof(company_id))]
+    [Index(nameof(product_id),Name = "product_id")]
+    [Index(nameof(company_id),Name = "company_id")]
+    [Index(nameof(category_id),Name = "category_id")]
+    [Index(nameof(sub_category_id),Name = "sub_category_id")]
+    [Index(nameof(sub_sub_category_id),Name = "sub_sub_category_id")]
     [Index(nameof(title))]
     public class im_Products
     {
@@ -140,6 +144,11 @@ namespace Faahi.Model.im_products
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]
         public string? status { get; set; } = string.Empty;
+
+        [StringLength(1)]
+        [DefaultValue("T")]
+        [Column(TypeName = "char(1)")]
+        public string? is_varient { get; set; } = string.Empty;
 
         public ICollection<im_ProductVariants>? im_ProductVariants { get; set; } = null;
 

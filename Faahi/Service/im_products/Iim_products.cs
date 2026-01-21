@@ -10,6 +10,8 @@ namespace Faahi.Service.im_products
 
         Task<ServiceResult<im_Products>> Create_Product(im_Products im_Product);
 
+        Task<ServiceResult<List<im_ProductVariants>>> Add_varient(List<im_ProductVariants> im_ProductVariants,Guid product_id);
+
         Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile,Guid product_id);
 
         Task<ActionResult<ServiceResult<string>>> UploadMutiple_image(IFormFile[] formFile,string product_id,string variant_id);

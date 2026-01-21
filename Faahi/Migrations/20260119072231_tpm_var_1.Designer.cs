@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260119072231_tpm_var_1")]
+    partial class tpm_var_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1503,9 +1506,6 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<decimal?>("last_price")
-                        .HasColumnType("decimal(16, 4)");
-
                     b.Property<decimal?>("length_cm")
                         .HasColumnType("decimal(16, 4)");
 
@@ -2190,9 +2190,6 @@ namespace Faahi.Migrations
                     b.Property<decimal?>("other_expenses")
                         .HasColumnType("decimal(18, 4)");
 
-                    b.Property<string>("product_description")
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -2502,17 +2499,17 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal?>("base_price")
+                        .HasColumnType("decimal(18, 4)");
+
+                    b.Property<decimal?>("committed_quantity")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal?>("cost_price")
-                        .HasColumnType("decimal(18, 4)");
-
                     b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("quantity")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid?>("store_id")
                         .HasColumnType("uniqueidentifier");

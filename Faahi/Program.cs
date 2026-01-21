@@ -14,6 +14,7 @@ using Faahi.Service.im_products.im_tags;
 using Faahi.Service.PartyService;
 using Faahi.Service.Store;
 using Faahi.Service.table_key;
+using Faahi.Service.temp_serv;
 using Faahi.Service.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
@@ -108,6 +109,7 @@ builder.Services.AddScoped<Istore,store_service>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<Iavl_countries,avl_countries_service>();
 builder.Services.AddScoped<Iadmin,admin_service>();
+builder.Services.AddScoped<Itemp_service,temp_service>();
 builder.Services.AddMemoryCache();
 
 var wasabiOptions = builder.Configuration.GetSection("Wasabi");
