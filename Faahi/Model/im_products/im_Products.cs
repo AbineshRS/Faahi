@@ -37,6 +37,11 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? sub_sub_category_id { get; set; } = null;
 
+        [ForeignKey("store_id")]
+        [Display(Name = "st_stores")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? store_id { get; set; }
+
         [Column(TypeName = "varchar(200)")]
         public string? title { get; set; } = null;
 

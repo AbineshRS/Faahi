@@ -12,5 +12,15 @@ namespace Faahi.Service.im_products.im_purchase
         Task<ServiceResult<im_purchase_listing>> im_purchase_details(Guid listing_id);
 
         Task<ServiceResult<im_purchase_listing>> Update_purchase(Guid listing_id,im_purchase_listing im_Purchas);
+
+        Task<ServiceResult<im_purchase_listing>> Update_purchase_calculation(Guid listing_id, im_purchase_listing im_Purchas);
+
+        Task<ServiceResult<im_bin_location>>  Add_bin_No(im_bin_location im_Bin_Location);
+
+        Task<ServiceResult<List<im_bin_location>>> Get_bin_Locations(Guid store_id);
+
+        Task<ServiceResult<im_purchase_listing_details>> Delete_im_purchase_listing(Guid detail_id);
+
+        Task<ServiceResult<im_purchase_listing>> Delete_purchase(Guid listing_id);
     }
 }

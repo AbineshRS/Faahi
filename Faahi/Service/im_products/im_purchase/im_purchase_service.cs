@@ -1,7 +1,10 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Model.im_products;
+using MailKit.Net.Imap;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Xml;
 
 namespace Faahi.Service.im_products.im_purchase
 {
@@ -30,13 +33,33 @@ namespace Faahi.Service.im_products.im_purchase
             }
             try
             {
-                var existing_im_purchase = await _context.im_purchase_listing.Include(a=>a.im_purchase_listing_details).FirstOrDefaultAsync(a => a.listing_id == im_Purchase_Listing.listing_id);
+                im_ItemBatches im_ItemBatches = new im_ItemBatches();
+
+                var existing_im_purchase = await _context.im_purchase_listing.Include(a => a.im_purchase_listing_details).FirstOrDefaultAsync(a => a.listing_id == im_Purchase_Listing.listing_id);
                 if (existing_im_purchase == null)
                 {
+
+                    //im_ItemBatches
+                    var table = "im_ItemBatches";
+                    var table_key = await _context.super_abi.FirstOrDefaultAsync(a => a.description == table);
+                    var key = Convert.ToInt16(table_key.next_key);
+
+                    var table_2 = "im_purchase_listing";
+                    var table_key_2 = await _context.am_table_next_key.FindAsync(table_2);
+                    var key_2 = Convert.ToInt16(table_key_2.next_key);
+
+                    var im_site = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_Purchase_Listing.site_id);
+
+                    Decimal sub_total = 0;
+                    Decimal other_expense = 0;
+                    var year = DateTime.Now.Year;
+
+
                     im_Purchase_Listing.listing_id = Guid.CreateVersion7();
                     im_Purchase_Listing.site_id = im_Purchase_Listing.site_id;
+                    im_Purchase_Listing.listing_code = "LOC" + year + "-" + Convert.ToString(key_2 + 1);
                     im_Purchase_Listing.vendor_id = im_Purchase_Listing.vendor_id;
-                    im_Purchase_Listing.created_at = DateTime.Now;
+                    im_Purchase_Listing.created_at = DateOnly.FromDateTime(DateTime.Now);
                     im_Purchase_Listing.edit_user_id = im_Purchase_Listing.edit_user_id;
                     im_Purchase_Listing.payment_mode = im_Purchase_Listing.payment_mode;
                     im_Purchase_Listing.purchase_type = im_Purchase_Listing.purchase_type;
@@ -44,6 +67,7 @@ namespace Faahi.Service.im_products.im_purchase
                     im_Purchase_Listing.supplier_invoice_date = im_Purchase_Listing.supplier_invoice_date;
                     im_Purchase_Listing.currency_code = im_Purchase_Listing.currency_code;
                     im_Purchase_Listing.exchange_rate = im_Purchase_Listing.exchange_rate;
+                    im_Purchase_Listing.plastic_bag = im_Purchase_Listing.plastic_bag;
                     im_Purchase_Listing.sub_total = im_Purchase_Listing.sub_total;
                     im_Purchase_Listing.discount_amount = im_Purchase_Listing.discount_amount;
                     im_Purchase_Listing.freight_amount = im_Purchase_Listing.freight_amount;
@@ -52,7 +76,6 @@ namespace Faahi.Service.im_products.im_purchase
                     im_Purchase_Listing.received_at = im_Purchase_Listing.received_at;
                     im_Purchase_Listing.notes = im_Purchase_Listing.notes;
                     im_Purchase_Listing.status = im_Purchase_Listing.status;
-                    im_Purchase_Listing.doc_total = (im_Purchase_Listing.sub_total - im_Purchase_Listing.discount_amount + im_Purchase_Listing.tax_amount + im_Purchase_Listing.freight_amount + im_Purchase_Listing.other_expenses);
                     foreach (var item in im_Purchase_Listing.im_purchase_listing_details)
                     {
                         item.detail_id = Guid.CreateVersion7();
@@ -66,28 +89,84 @@ namespace Faahi.Service.im_products.im_purchase
                         item.tax_amount = item.tax_amount;
                         item.freight_amount = item.freight_amount;
                         item.other_expenses = item.other_expenses;
-                        item.line_total = item.quantity*item.unit_price;
+                        other_expense += Convert.ToDecimal(item.other_expenses);
+                        item.line_total = item.quantity * item.unit_price;
+                        sub_total += Convert.ToDecimal(item.line_total);
                         //item.line_total = (item.quantity - item.unit_price) - item.discount_amount + item.tax_amount + item.freight_amount + item.other_expenses;
                         item.notes = item.notes;
                         item.expiry_date = item.expiry_date;
                         item.quantity = item.quantity;
+
+                        if (item.expiry_date != null)
+                        {
+                            im_ItemBatches.item_batch_id = Guid.CreateVersion7();
+                            im_ItemBatches.batch_id = key;
+                            im_ItemBatches.company_id = im_site.company_id;
+                            im_ItemBatches.detail_id = item.detail_id;
+                            im_ItemBatches.store_id = im_Purchase_Listing.site_id;
+                            im_ItemBatches.variant_id = item.sub_variant_id;
+                            im_ItemBatches.expiry_date = item.expiry_date;
+                            im_ItemBatches.batch_number = item.batch_no;
+                            im_ItemBatches.received_quantity = item.quantity;
+                            im_ItemBatches.on_hand_quantity = item.quantity;
+                            im_ItemBatches.unit_cost = item.unit_price;
+                            im_ItemBatches.total_cost = item.quantity * item.unit_price;
+                            im_ItemBatches.is_active = "T";
+                            im_ItemBatches.received_date = DateTime.Now;
+                            im_ItemBatches.reference_doc = im_Purchase_Listing.supplier_invoice_no;
+                            im_ItemBatches.notes = im_ItemBatches.notes;
+                            im_ItemBatches.created_at = DateTime.Now;
+                            if (table_key != null)
+                            {
+                                table_key.next_key = key + 1;
+                                _context.super_abi.Update(table_key);
+                                await _context.SaveChangesAsync();
+                            }
+                            _context.im_itemBatches.Add(im_ItemBatches);
+                        }
                     }
+                    im_Purchase_Listing.sub_total = Convert.ToDecimal(sub_total);
+                    im_Purchase_Listing.doc_total = (Convert.ToDecimal(sub_total) - im_Purchase_Listing.discount_amount + im_Purchase_Listing.tax_amount + im_Purchase_Listing.freight_amount + other_expense + im_Purchase_Listing.plastic_bag * im_Purchase_Listing.exchange_rate);
                     _context.im_purchase_listing.Add(im_Purchase_Listing);
+
+
+                    table_key_2.next_key = key_2 + 1;
+                    _context.am_table_next_key.Update(table_key_2);
+                    await _context.SaveChangesAsync();
+                    return new ServiceResult<im_purchase_listing>
+                    {
+                        Success = true,
+                        Status = 1,
+                        Message = "Data saved successfully",
+                        Data = im_Purchase_Listing
+                    };
 
                 }
                 else
                 {
+                    Decimal sub_total = 0;
+                    Decimal other_expense = 0;
+
+                    var im_purchase_sub_total = await _context.im_purchase_listing.FirstOrDefaultAsync(a => a.listing_id == existing_im_purchase.listing_id);
+                    if (im_purchase_sub_total != null)
+                    {
+                        im_purchase_sub_total.sub_total = 0;
+                        im_purchase_sub_total.doc_total = 0;
+                        _context.im_purchase_listing.Update(im_purchase_sub_total);
+                        await _context.SaveChangesAsync();
+                    }
+
                     existing_im_purchase.site_id = im_Purchase_Listing.site_id;
                     existing_im_purchase.vendor_id = im_Purchase_Listing.vendor_id;
-                    existing_im_purchase.created_at = DateTime.Now;
+                    existing_im_purchase.created_at = DateOnly.FromDateTime(DateTime.Now);
                     existing_im_purchase.edit_user_id = im_Purchase_Listing.edit_user_id;
                     existing_im_purchase.payment_mode = im_Purchase_Listing.payment_mode;
                     existing_im_purchase.purchase_type = im_Purchase_Listing.purchase_type;
                     existing_im_purchase.supplier_invoice_no = im_Purchase_Listing.supplier_invoice_no;
                     existing_im_purchase.supplier_invoice_date = im_Purchase_Listing.supplier_invoice_date;
                     existing_im_purchase.currency_code = im_Purchase_Listing.currency_code;
+                    existing_im_purchase.plastic_bag = im_Purchase_Listing.plastic_bag;
                     existing_im_purchase.exchange_rate = im_Purchase_Listing.exchange_rate;
-                    existing_im_purchase.sub_total = im_Purchase_Listing.sub_total;
                     existing_im_purchase.discount_amount = im_Purchase_Listing.discount_amount;
                     existing_im_purchase.freight_amount = im_Purchase_Listing.freight_amount;
                     existing_im_purchase.tax_amount = im_Purchase_Listing.tax_amount;
@@ -95,7 +174,6 @@ namespace Faahi.Service.im_products.im_purchase
                     existing_im_purchase.received_at = im_Purchase_Listing.received_at;
                     existing_im_purchase.notes = im_Purchase_Listing.notes;
                     existing_im_purchase.status = im_Purchase_Listing.status;
-                    existing_im_purchase.doc_total = (im_Purchase_Listing.sub_total - im_Purchase_Listing.discount_amount + im_Purchase_Listing.tax_amount + im_Purchase_Listing.freight_amount + im_Purchase_Listing.other_expenses);
                     foreach (var item in im_Purchase_Listing.im_purchase_listing_details)
                     {
                         var existing_purchase = await _context.im_purchase_listing_details.FirstOrDefaultAsync(a => a.detail_id == item.detail_id);
@@ -111,6 +189,7 @@ namespace Faahi.Service.im_products.im_purchase
                             item.tax_amount = item.tax_amount;
                             item.freight_amount = item.freight_amount;
                             item.other_expenses = item.other_expenses;
+                            item.expiry_date = item.expiry_date;
                             item.product_description = item.product_description;
                             item.line_total = item.quantity * item.unit_price;
 
@@ -120,6 +199,39 @@ namespace Faahi.Service.im_products.im_purchase
                             item.quantity = item.quantity;
                             _context.im_purchase_listing_details.Add(item);
                             existing_im_purchase.im_purchase_listing_details.Add(item);
+
+                            if (item.expiry_date != null)
+                            {
+                                var table = "im_ItemBatches";
+                                var table_key = await _context.super_abi.FirstOrDefaultAsync(a => a.description == table);
+                                var key = Convert.ToInt16(table_key.next_key);
+
+                                var im_site = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_Purchase_Listing.site_id);
+                                im_ItemBatches.item_batch_id = Guid.CreateVersion7();
+                                im_ItemBatches.batch_id = key;
+                                im_ItemBatches.company_id = im_site.company_id;
+                                im_ItemBatches.detail_id = item.detail_id;
+                                im_ItemBatches.store_id = im_Purchase_Listing.site_id;
+                                im_ItemBatches.batch_number = item.batch_no;
+                                im_ItemBatches.variant_id = item.sub_variant_id;
+                                im_ItemBatches.expiry_date = item.expiry_date;
+                                im_ItemBatches.received_quantity = item.quantity;
+                                im_ItemBatches.on_hand_quantity = item.quantity;
+                                im_ItemBatches.unit_cost = item.unit_price;
+                                im_ItemBatches.total_cost = item.quantity * item.unit_price;
+                                im_ItemBatches.is_active = "T";
+                                im_ItemBatches.received_date = DateTime.Now;
+                                im_ItemBatches.reference_doc = im_Purchase_Listing.supplier_invoice_no;
+                                im_ItemBatches.notes = im_ItemBatches.notes;
+                                im_ItemBatches.created_at = DateTime.Now;
+                                if (table_key != null)
+                                {
+                                    table_key.next_key = key + 1;
+                                    _context.super_abi.Update(table_key);
+                                    await _context.SaveChangesAsync();
+                                }
+                                _context.im_itemBatches.Add(im_ItemBatches);
+                            }
 
                         }
                         else
@@ -132,29 +244,67 @@ namespace Faahi.Service.im_products.im_purchase
                             existing_purchase.freight_amount = item.freight_amount;
                             existing_purchase.product_description = item.product_description;
                             existing_purchase.other_expenses = item.other_expenses;
+                            other_expense += Convert.ToDecimal(existing_purchase.other_expenses);
+
                             existing_purchase.quantity = item.quantity;
                             existing_purchase.line_total = item.quantity * item.unit_price;
+                            //sub_total += Convert.ToDecimal( existing_purchase.line_total);
 
                             //item.line_total = (item.quantity - item.unit_price) - item.discount_amount + item.tax_amount + item.freight_amount + item.other_expenses;
                             existing_purchase.notes = item.notes;
                             existing_purchase.expiry_date = item.expiry_date;
                             _context.im_purchase_listing_details.Update(existing_purchase);
+
+                            if (existing_purchase.expiry_date != null)
+                            {
+                                var existing_batches = await _context.im_itemBatches.FirstOrDefaultAsync(a => a.variant_id == existing_purchase.sub_variant_id && a.store_id == existing_im_purchase.site_id);
+                                if (existing_batches != null)
+                                {
+                                    existing_batches.store_id = existing_im_purchase.site_id;
+                                    existing_batches.expiry_date = item.expiry_date;
+                                    existing_batches.batch_number = item.batch_no;
+                                    existing_batches.received_quantity = item.quantity;
+                                    existing_batches.on_hand_quantity = item.quantity;
+                                    existing_batches.unit_cost = item.unit_price;
+                                    existing_batches.total_cost = item.quantity * item.unit_price;
+                                    existing_batches.is_active = "T";
+                                    existing_batches.reference_doc = im_Purchase_Listing.supplier_invoice_no;
+                                    existing_batches.notes = im_ItemBatches.notes;
+                                    _context.im_itemBatches.Update(existing_batches);
+                                    await _context.SaveChangesAsync();
+                                }
+
+                            }
                         }
-                            
+
                         //_context.im_purchase_listing.Add(item);
                     }
                     _context.im_purchase_listing.Update(existing_im_purchase);
+                    await _context.SaveChangesAsync();
+                    var im_purchase = await _context.im_purchase_listing_details.Where(a => a.listing_id == existing_im_purchase.listing_id).ToListAsync();
+                    if (im_purchase.Any())
+                    {
+                        foreach (var purchase in im_purchase)
+                        {
+                            other_expense += Convert.ToDecimal(purchase.other_expenses);
+                            sub_total += Convert.ToDecimal(purchase.line_total);
+
+
+                        }
+                    }
+                    existing_im_purchase.sub_total = Convert.ToDecimal(sub_total);
+                    existing_im_purchase.doc_total = Convert.ToDecimal(sub_total) - im_Purchase_Listing.discount_amount + im_Purchase_Listing.tax_amount + im_Purchase_Listing.freight_amount + other_expense + im_Purchase_Listing.plastic_bag * im_Purchase_Listing.exchange_rate;
+                    _context.im_purchase_listing.Update(existing_im_purchase);
+                    await _context.SaveChangesAsync();
+
+                    return new ServiceResult<im_purchase_listing>
+                    {
+                        Success = true,
+                        Status = 1,
+                        Message = "Data saved successfully",
+                        Data = existing_im_purchase
+                    };
                 }
-
-
-                await _context.SaveChangesAsync();
-                return new ServiceResult<im_purchase_listing>
-                {
-                    Success = true,
-                    Status = 1,
-                    Message = "Data saved successfully",
-                    Data = im_Purchase_Listing
-                };
 
             }
             catch (Exception ex)
@@ -205,7 +355,7 @@ namespace Faahi.Service.im_products.im_purchase
 
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return new ServiceResult<List<im_purchase_listing>>
                 {
@@ -214,7 +364,7 @@ namespace Faahi.Service.im_products.im_purchase
 
                 };
             }
-            
+
         }
 
         public async Task<ServiceResult<im_purchase_listing>> im_purchase_details(Guid listing_id)
@@ -247,7 +397,7 @@ namespace Faahi.Service.im_products.im_purchase
 
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return new ServiceResult<im_purchase_listing>
                 {
@@ -256,7 +406,7 @@ namespace Faahi.Service.im_products.im_purchase
 
                 };
             }
-            
+
 
         }
 
@@ -274,10 +424,12 @@ namespace Faahi.Service.im_products.im_purchase
                         Message = "Update_purchase Not found listing_id"
                     };
                 }
+                Decimal sub_total = 0;
+                Decimal other_expense = 0;
                 var existing_purchase = await _context.im_purchase_listing.Include(a => a.im_purchase_listing_details).FirstOrDefaultAsync(a => a.listing_id == listing_id);
 
                 //Delete
-                var exist_deatils = await _context.im_purchase_listing_details.Where(a=>a.listing_id==existing_purchase.listing_id).ToListAsync();
+                var exist_deatils = await _context.im_purchase_listing_details.Where(a => a.listing_id == existing_purchase.listing_id).ToListAsync();
                 var new_deatil_id = im_Purchase_Listing.im_purchase_listing_details.Select(id => id.detail_id).ToList();
                 var delete_deatils = exist_deatils.Where(a => !new_deatil_id.Contains(a.detail_id)).ToList();
                 if (delete_deatils.Any())
@@ -310,6 +462,7 @@ namespace Faahi.Service.im_products.im_purchase
                     existing_purchase.tax_amount = im_Purchase_Listing.tax_amount;
                     existing_purchase.other_expenses = im_Purchase_Listing.other_expenses;
                     existing_purchase.received_at = im_Purchase_Listing.received_at;
+                    existing_purchase.edited_date_time = DateTime.Now;
                     existing_purchase.notes = im_Purchase_Listing.notes;
                     existing_purchase.status = im_Purchase_Listing.status;
                     existing_purchase.doc_total = (im_Purchase_Listing.sub_total - im_Purchase_Listing.discount_amount + im_Purchase_Listing.tax_amount + im_Purchase_Listing.freight_amount + im_Purchase_Listing.other_expenses);
@@ -327,7 +480,7 @@ namespace Faahi.Service.im_products.im_purchase
                             existing_im_purchase_listing_details.tax_amount = item.tax_amount;
                             existing_im_purchase_listing_details.freight_amount = item.freight_amount;
                             existing_im_purchase_listing_details.other_expenses = item.other_expenses;
-                            existing_im_purchase_listing_details.line_total  = item.quantity * item.unit_price;
+                            existing_im_purchase_listing_details.line_total = item.quantity * item.unit_price;
                             //item.line_total = (item.quantity - item.unit_price) - item.discount_amount + item.tax_amount + item.freight_amount + item.other_expenses;
                             existing_im_purchase_listing_details.notes = item.notes;
                             existing_im_purchase_listing_details.expiry_date = item.expiry_date;
@@ -357,9 +510,27 @@ namespace Faahi.Service.im_products.im_purchase
                             existing_purchase.im_purchase_listing_details.Add(item);
                         }
                     }
+                    _context.im_purchase_listing.Update(existing_purchase);
+                    await _context.SaveChangesAsync();
+
+                    var im_purchase = await _context.im_purchase_listing_details.Where(a => a.listing_id == existing_purchase.listing_id).ToListAsync();
+                    if (im_purchase.Any())
+                    {
+                        foreach (var purchase in im_purchase)
+                        {
+                            other_expense += Convert.ToDecimal(purchase.other_expenses);
+
+                            sub_total += Convert.ToDecimal(purchase.line_total);
+
+                        }
+                    }
+
+                    existing_purchase.sub_total = Convert.ToDecimal(sub_total) - existing_purchase.discount_amount + existing_purchase.tax_amount + existing_purchase.freight_amount + other_expense + existing_purchase.plastic_bag;
+                    existing_purchase.doc_total = (Convert.ToDecimal(sub_total) - existing_purchase.discount_amount + existing_purchase.tax_amount + existing_purchase.freight_amount + other_expense + existing_purchase.plastic_bag * existing_purchase.exchange_rate);
+                    _context.im_purchase_listing.Update(existing_purchase);
+                    await _context.SaveChangesAsync();
                 }
-                _context.im_purchase_listing.Update(existing_purchase);
-                await _context.SaveChangesAsync();
+
                 return new ServiceResult<im_purchase_listing>
                 {
                     Status = 201,
@@ -368,7 +539,7 @@ namespace Faahi.Service.im_products.im_purchase
                     Data = existing_purchase
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogInformation("Error While Update_purchase");
                 return new ServiceResult<im_purchase_listing>
@@ -378,7 +549,284 @@ namespace Faahi.Service.im_products.im_purchase
                     Message = ex.Message
                 };
             }
+
+        }
+
+        public async Task<ServiceResult<im_purchase_listing>> Update_purchase_calculation(Guid listing_id, im_purchase_listing im_Purchase_)
+        {
+            try
+            {
+                if (listing_id == null)
+                {
+                    _logger.LogInformation("Update_purchase_calculation Not found listing_id");
+                    return new ServiceResult<im_purchase_listing>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Update_purchase_calculation Not found listing_id"
+                    };
+                }
+
+                Decimal sub_total = 0;
+                Decimal other_expense = 0;
+
+                if (listing_id == null)
+                {
+                    _logger.LogInformation("Update_purchase_calculation Not found listing_id");
+                    return new ServiceResult<im_purchase_listing>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Update_purchase_calculation Not found listing_id"
+                    };
+                }
+                var existing_purchase = await _context.im_purchase_listing.FirstOrDefaultAsync(a => a.listing_id == listing_id);
+                if (existing_purchase != null)
+                {
+                    existing_purchase.tax_amount = im_Purchase_.tax_amount;
+                    existing_purchase.discount_amount = im_Purchase_.discount_amount;
+                    existing_purchase.plastic_bag = im_Purchase_.plastic_bag;
+                    existing_purchase.freight_amount = im_Purchase_.freight_amount;
+                    _context.im_purchase_listing.Update(existing_purchase);
+                    await _context.SaveChangesAsync();
+                }
+                var im_purchase = await _context.im_purchase_listing_details.Where(a => a.listing_id == listing_id).ToListAsync();
+                if (im_purchase.Any())
+                {
+                    foreach (var purchase in im_purchase)
+                    {
+                        other_expense += Convert.ToDecimal(purchase.other_expenses);
+                        sub_total += Convert.ToDecimal(purchase.line_total);
+                      
+
+                    }
+                }
+                existing_purchase.sub_total = Convert.ToDecimal(sub_total);
+                existing_purchase.doc_total = Convert.ToDecimal(sub_total) - existing_purchase.discount_amount + existing_purchase.tax_amount + existing_purchase.freight_amount + other_expense * existing_purchase.exchange_rate + existing_purchase.plastic_bag;
+                _context.im_purchase_listing.Update(existing_purchase);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_purchase_listing>
+                {
+                    Status = 200,
+                    Success = true,
+                    Data = existing_purchase
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error While Update_purchase_calculation");
+                return new ServiceResult<im_purchase_listing>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
+
+        public async Task<ServiceResult<im_bin_location>> Add_bin_No(im_bin_location im_Bin_Location)
+        {
+            try
+            {
+                if (im_Bin_Location == null)
+                {
+                    _logger.LogInformation("Add_bin_No No data found");
+                    return new ServiceResult<im_bin_location>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Add_bin_No No data found"
+                    };
+                }
+                var existing_bin_location = await _context.im_bin_locations.Where(a => a.bin_code == im_Bin_Location.bin_code).ToListAsync();
+                if (existing_bin_location.Any())
+                {
+                    return new ServiceResult<im_bin_location>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Bin Code already exists"
+                    };
+                }
+
+                im_Bin_Location.bin_location_id = Guid.CreateVersion7();
+                im_Bin_Location.store_id = im_Bin_Location.store_id;
+                im_Bin_Location.company_id = im_Bin_Location.company_id;
+                im_Bin_Location.bin_code = im_Bin_Location.bin_code;
+                _context.im_bin_locations.Add(im_Bin_Location);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_bin_location>
+                {
+                    Status = 201,
+                    Success = true,
+                    Message = "Success",
+                    Data = im_Bin_Location
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error While Add_bin_No");
+                return new ServiceResult<im_bin_location>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
+
+        public async Task<ServiceResult<List<im_bin_location>>> Get_bin_Locations(Guid store_id)
+        {
+            try
+            {
+                if (store_id == null)
+                {
+                    _logger.LogInformation("No id found store_id");
+                    return new ServiceResult<List<im_bin_location>>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Not found ID"
+                    };
+                }
+                var bin_locations = await _context.im_bin_locations.Where(a => a.store_id == store_id).ToListAsync();
+                if (bin_locations.Count == 0)
+                {
+                    _logger.LogInformation("NO data found");
+                    return new ServiceResult<List<im_bin_location>>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Not found"
+                    };
+                }
+                return new ServiceResult<List<im_bin_location>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Data = bin_locations,
+                    Message = ""
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<im_bin_location>>
+                {
+                    Status = 500,
+                    Success = false,
+                };
+            }
+        }
+
+        public async Task<ServiceResult<im_purchase_listing_details>> Delete_im_purchase_listing(Guid detail_id)
+        {
+            try
+            {
+                if (detail_id == null)
+                {
+                    _logger.LogInformation("Delete_im_purchase_listing Not found detail_id");
+                    return new ServiceResult<im_purchase_listing_details>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Delete_im_purchase_listing Not found detail_id"
+                    };
+                }
+                var existing_purchase_listing = await _context.im_purchase_listing_details.FirstOrDefaultAsync(a => a.detail_id == detail_id);
+                if (existing_purchase_listing != null)
+                {
+                    _context.im_purchase_listing_details.Remove(existing_purchase_listing);
+                    await _context.SaveChangesAsync();
+                }
+                var existing_batch = await _context.im_itemBatches.Where(a => a.detail_id == detail_id).ToListAsync();
+                if(existing_batch.Any())
+                {
+                    _context.im_itemBatches.RemoveRange(existing_batch);
+                    await _context.SaveChangesAsync();
+                }
+                var existing_temp_variant = await _context.temp_im_variants.Where(a => a.detail_id == detail_id).ToListAsync();
+                if(existing_temp_variant.Any())
+                {
+                    _context.temp_im_variants.RemoveRange(existing_temp_variant);
+                    await _context.SaveChangesAsync();
+                }
+                return new ServiceResult<im_purchase_listing_details>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Deleted successfully",
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogInformation("Error While Delete_im_purchase_listing");
+                return new ServiceResult<im_purchase_listing_details>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
             
+        }
+
+        public async Task<ServiceResult<im_purchase_listing>> Delete_purchase(Guid listing_id)
+        {
+            try
+            {
+                if (listing_id == null)
+                {
+                    _logger.LogInformation("Delete_purchase Not found listing_id");
+                    return new ServiceResult<im_purchase_listing>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Delete_purchase Not found listing_id"
+                    };
+                }
+                var existing_purchase = await _context.im_purchase_listing.FirstOrDefaultAsync(a => a.listing_id == listing_id);
+                if (existing_purchase != null)
+                {
+
+                    var purchase_details = await _context.im_purchase_listing_details.Where(a => a.listing_id == existing_purchase.listing_id).ToListAsync();
+                    var detailIds = purchase_details.Select(d => d.detail_id).ToList();
+                    if (purchase_details.Any())
+                    {
+                        _context.im_purchase_listing_details.RemoveRange(purchase_details);
+                    }
+                    var item_batches = await _context.im_itemBatches.Where(a => detailIds.Contains(a.detail_id)).ToListAsync();
+                    if (item_batches.Any())
+                    {
+                        _context.im_itemBatches.RemoveRange(item_batches);
+                    }
+                    var temp_variants = await _context.temp_im_variants.Where(a => detailIds.Contains(a.detail_id)).ToListAsync();
+                    if (temp_variants.Any())
+                    {
+                        _context.temp_im_variants.RemoveRange(temp_variants);
+                    }
+                    _context.im_purchase_listing.Remove(existing_purchase);
+                    await _context.SaveChangesAsync();
+                }
+                return new ServiceResult<im_purchase_listing>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Deleted successfully",
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error While Delete_purchase");
+                return new ServiceResult<im_purchase_listing>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
         }
     }
 

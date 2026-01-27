@@ -13,6 +13,11 @@ namespace Faahi.Model.temp_tables
         [Column(TypeName = "uniqueidentifier")]
         public Guid? temp_variant_id { get; set; }
 
+        [ForeignKey("detail_id")]
+        [Display(Name = "im_purchase_listing_details")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? detail_id { get; set; } = null;
+
         [ForeignKey("store_id")]
         [Display(Name = "st_stores")]
         [Column(TypeName = "uniqueidentifier")]

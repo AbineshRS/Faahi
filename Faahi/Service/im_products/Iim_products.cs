@@ -35,6 +35,8 @@ namespace Faahi.Service.im_products
 
         Task<ServiceResult<List<im_Products>>> Get_product_list();
 
+        Task<ServiceResult<List<im_Products>>> Product_search(string search_text,Guid store_id);
+
         Task<ActionResult<ServiceResult<im_Products>>> Delete_product(string product_id);
 
         Task<ServiceResult<im_ProductAttributes>> Create_Attribute(im_ProductAttributes im_ProductAttributes);

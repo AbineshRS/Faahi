@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260126074347_bins_1")]
+    partial class bins_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1245,9 +1248,6 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("batch_id")
-                        .HasColumnType("int");
-
                     b.Property<string>("batch_number")
                         .HasColumnType("nvarchar(50)");
 
@@ -1264,10 +1264,7 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
-                    b.Property<Guid?>("detail_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("expiry_date")
+                    b.Property<DateOnly?>("expiry_date")
                         .HasColumnType("date");
 
                     b.Property<string>("is_active")
@@ -2203,8 +2200,8 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateOnly?>("created_at")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("created_at")
+                        .HasColumnType("datetime");
 
                     b.Property<string>("currency_code")
                         .HasColumnType("varchar(10)");
@@ -2218,17 +2215,11 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("edit_user_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("edited_date_time")
-                        .HasColumnType("datetime");
-
                     b.Property<decimal?>("exchange_rate")
                         .HasColumnType("decimal(18, 4)");
 
                     b.Property<decimal?>("freight_amount")
                         .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("listing_code")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("local_referance")
                         .HasColumnType("nvarchar(100)");
@@ -2633,19 +2624,6 @@ namespace Faahi.Migrations
                     b.ToTable("am_table_next_key");
                 });
 
-            modelBuilder.Entity("Faahi.Model.table_key.super_abi", b =>
-                {
-                    b.Property<string>("description")
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<int?>("next_key")
-                        .HasColumnType("int");
-
-                    b.HasKey("description");
-
-                    b.ToTable("super_abi");
-                });
-
             modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_variant", b =>
                 {
                     b.Property<Guid>("temp_variant_id")
@@ -2657,9 +2635,6 @@ namespace Faahi.Migrations
 
                     b.Property<decimal?>("cost_price")
                         .HasColumnType("decimal(18, 4)");
-
-                    b.Property<Guid?>("detail_id")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");

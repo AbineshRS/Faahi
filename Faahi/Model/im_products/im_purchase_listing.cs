@@ -13,6 +13,9 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? listing_id { get; set; }
 
+        [Column(TypeName ="nvarchar(50)")]
+        public string? listing_code { get; set; } = null;
+
         [ForeignKey("site_id")]
         [Display(Name = "im_site")]
         [Column(TypeName = "uniqueidentifier")]
@@ -23,8 +26,11 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? vendor_id { get; set; }
 
-        [Column(TypeName = "datetime")]
-        public DateTime? created_at { get; set; } = null;
+        [Column(TypeName = "date")]
+        public DateOnly? created_at { get; set; } = null;
+
+        [Column(TypeName ="datetime")]
+        public DateTime? edited_date_time { get; set; } = null;
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid? edit_user_id { get; set; } = null;
@@ -71,11 +77,14 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "varchar(20)")]
         public string? status { get; set; } = null; //('draft','posted','received','void')),
 
-        [Column(TypeName = "decimal(18, 4)")]
+        [Column(TypeName = "decimal(19, 4)")]
         public Decimal? doc_total { get; set; } = null;
 
         [Column(TypeName ="nvarchar(100)")]
         public string? local_referance { get; set; } = null;
+
+        [Column(TypeName ="decimal(6,2)")]
+        public Decimal? plastic_bag { get; set; } = null;
 
         //[Column(TypeName = "varchar(100)")]
         //public string? brand { get; set; } = null;

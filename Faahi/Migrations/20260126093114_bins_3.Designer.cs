@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260126093114_bins_3")]
+    partial class bins_3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1264,10 +1267,7 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
-                    b.Property<Guid?>("detail_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("expiry_date")
+                    b.Property<DateOnly?>("expiry_date")
                         .HasColumnType("date");
 
                     b.Property<string>("is_active")
@@ -2203,8 +2203,8 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateOnly?>("created_at")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("created_at")
+                        .HasColumnType("datetime");
 
                     b.Property<string>("currency_code")
                         .HasColumnType("varchar(10)");
@@ -2218,17 +2218,11 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("edit_user_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("edited_date_time")
-                        .HasColumnType("datetime");
-
                     b.Property<decimal?>("exchange_rate")
                         .HasColumnType("decimal(18, 4)");
 
                     b.Property<decimal?>("freight_amount")
                         .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("listing_code")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("local_referance")
                         .HasColumnType("nvarchar(100)");
@@ -2646,6 +2640,82 @@ namespace Faahi.Migrations
                     b.ToTable("super_abi");
                 });
 
+            modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_ItemBatches", b =>
+                {
+                    b.Property<Guid>("item_batch_id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("batch_id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("batch_number")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("batch_on_hold")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
+
+                    b.Property<decimal?>("batch_promo_price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("company_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("created_at")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateOnly?>("expiry_date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("is_active")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
+
+                    b.Property<DateOnly?>("is_expired")
+                        .HasColumnType("date");
+
+                    b.Property<string>("notes")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("on_hand_quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly?>("promo_from_date")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("promo_to_date")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("received_date")
+                        .HasColumnType("datetime");
+
+                    b.Property<decimal?>("received_quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("reference_doc")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("reserved_quantity")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("store_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("total_cost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("unit_cost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("variant_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("item_batch_id");
+
+                    b.ToTable("temp_im_ItemBatches");
+                });
+
             modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_variant", b =>
                 {
                     b.Property<Guid>("temp_variant_id")
@@ -2657,9 +2727,6 @@ namespace Faahi.Migrations
 
                     b.Property<decimal?>("cost_price")
                         .HasColumnType("decimal(18, 4)");
-
-                    b.Property<Guid?>("detail_id")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");

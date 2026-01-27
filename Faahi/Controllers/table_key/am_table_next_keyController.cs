@@ -79,5 +79,13 @@ namespace Faahi.Controllers.table_key
             var data = await _table_key.delete_key(name);
             return Ok(data);
         }
+
+        [HttpPost]
+        [Route("add_super_table_key")]
+        public async Task<ActionResult<super_abi>> Add_Super_Table_Key(super_abi super_Abi)
+        {
+            var result = await _table_key.Add_Super_Table_Key(super_Abi);
+            return Ok("Super table keys added successfully.");
+        }
     }
 }

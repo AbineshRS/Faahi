@@ -1,4 +1,5 @@
-﻿using Faahi.Model.table_key;
+﻿using Faahi.Dto;
+using Faahi.Model.table_key;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Faahi.Service.table_key
@@ -14,5 +15,7 @@ namespace Faahi.Service.table_key
         Task<am_table_next_key> GetByName(string name);  
         
         Task<am_table_next_key> delete_key(string name);
+
+        Task<ServiceResult<super_abi>> Add_Super_Table_Key(super_abi super_Abi);
     }
 }

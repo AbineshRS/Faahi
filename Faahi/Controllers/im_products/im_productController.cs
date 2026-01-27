@@ -180,6 +180,20 @@ namespace Faahi.Controllers.im_products
             var product_list = await _im_products.Get_product_list();
             return Ok(product_list);
         }
+        //[Authorize]
+        [HttpPost]
+        [Route("product_search/{search}/{store_id}")]
+        public async Task<IActionResult> Product_search(string search,Guid store_id)
+        {
+            if (search == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_products.Product_search(search, store_id);
+
+
+            return Ok(result);
+        }
         [Authorize]
         [HttpDelete]
         [Route("delete_product/{product_id}")]
