@@ -109,6 +109,9 @@ namespace Faahi.Model.st_sellers
         [Column(TypeName = "nvarchar(200)")]
         public string? message_on_invoice { get; set; } = null;
 
+        [Column(TypeName = "nvarchar(100)")]
+        public string? store_code { get; set; } = null;
+
 
         public ICollection<st_StoresAddres>? st_StoresAddres { get; set; } = null;
 

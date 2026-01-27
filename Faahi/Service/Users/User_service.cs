@@ -2,7 +2,9 @@
 using Faahi.Dto;
 using Faahi.Model.am_vcos;
 using Faahi.Model.Shared_tables;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.Numerics;
 
 namespace Faahi.Service.Users
@@ -555,7 +557,14 @@ namespace Faahi.Service.Users
             }
             try
             {
-                var customer = await _context.ap_Vendors.Include(a => a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
+                var jsonresult = _context.Database.SqlQueryRaw<ap_Vendors>(
+                    "EXEC dbo.sp_Getusers @VendorId=@passing_vendor_id,@opr=@opr_parm",
+                    new SqlParameter("@passing_vendor_id",vendor_id),
+                    new SqlParameter("@opr_parm",1)
+                    ).AsEnumerable().FirstOrDefault();
+
+                var customer = JsonConvert.DeserializeObject<ap_Vendors>(JsonConvert.SerializeObject(jsonresult));
+                //var customer = await _context.ap_Vendors.Include(a => a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
                 if (customer == null)
                 {
                     _logger.LogWarning("no data found in ar_customer table");

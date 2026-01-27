@@ -17,6 +17,7 @@ namespace Faahi.Model.im_products
 
         [ForeignKey("listing_id")]
         [Display(Name = "im_purchase_listing")]
+        [Column(TypeName = "uniqueidentifier")]
         public Guid? listing_id { get; set; }
 
         [ForeignKey("product_id")]

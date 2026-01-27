@@ -16,7 +16,12 @@ namespace Faahi.Controllers.Application
 {
     public class ApplicationDbContext : DbContext
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        {
+            this.ChangeTracker.LazyLoadingEnabled = false;
+
+        }
+           
 
         public DbSet<am_users> am_users { get; set; }
 
@@ -118,7 +123,28 @@ namespace Faahi.Controllers.Application
 
         public DbSet<fin_PartyBankAccounts> fin_PartyBankAccounts { get; set; }
 
+
+        public DbSet<im_bin_location> im_bin_locations { get; set; }
+
+        public DbSet<im_ItemBatches> im_itemBatches { get; set; }
+
+        public DbSet<super_abi> super_abi { get; set; }
+
+        //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }
+
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            // Additional configurations can be added here if needed
+            modelBuilder.Entity<im_ItemBatches>().ToTable(tb =>
+            {
+                tb.HasCheckConstraint("CK_im_itemBatches_on_hand_quantity", "[on_hand_quantity] >= 0");
+                tb.HasCheckConstraint("CK_im_itemBatches_expiry_date", "[expiry_date] > GETDATE()");
+                tb.HasCheckConstraint("CK_im_itemBatches_unit_cost", "[unit_cost] >= 0");
+            });
+        }
     }
 
 }
