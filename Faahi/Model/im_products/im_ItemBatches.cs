@@ -43,6 +43,11 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? variant_id { get; set; }=null;
 
+        [ForeignKey("store_variant_inventory_id")]
+        [Display(Name = "im_StoreVariantInventory")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? store_variant_inventory_id { get; set; }=null;
+
         [Column(TypeName = "nvarchar(50)")]
         public string? batch_number { get; set; }
 
@@ -101,6 +106,15 @@ namespace Faahi.Model.im_products
 
         [Column(TypeName = "datetime")]
         public DateTime? created_at { get; set; } = null;
+
+        [Column(TypeName = "varchar(50)")]
+        public string? sku { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(100)")]
+        public string? barcode { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(100)")]
+        public string? product_description { get; set; } = null;
 
 
     }

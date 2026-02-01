@@ -7,9 +7,11 @@ using Faahi.Model.Stores;
 using Faahi.Service.Auth;
 using Faahi.Service.Email;
 using Faahi.View_Model.store;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -1145,6 +1147,53 @@ namespace Faahi.Service.Store
             }
             
 
+
+        }
+        public async Task<ServiceResult<st_stores>> get_sotore_deatils(Guid store_id)
+        {
+            try
+            {
+                if (store_id == null)
+                {
+                    _logger.LogInformation("store_id is Null");
+                    return new ServiceResult<st_stores>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No store_id found"
+                    };
+                }
+                var jsonresult = _context.Database.SqlQueryRaw<string>("EXEC dbo.st_storelist @store_id",
+                    new SqlParameter("@store_id", store_id)).AsEnumerable().FirstOrDefault();
+                var store = JsonConvert.DeserializeObject<st_stores>(jsonresult);
+                if (store == null)
+                {
+                    _logger.LogInformation("NO data found in the Store");
+                    return new ServiceResult<st_stores>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "NO data found in the Store",
+                    };
+                }
+                return new ServiceResult<st_stores>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = store
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Erro found while store_data");
+                return new ServiceResult<st_stores>
+                {
+                    Status = 500,
+                    Success = false,
+                    Data = null
+                };
+
+            }
 
         }
         public async Task<ServiceResult<st_stores>> Delete_store(Guid store_id)

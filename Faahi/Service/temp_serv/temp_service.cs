@@ -54,13 +54,15 @@ namespace Faahi.Service.temp_serv
                         item.cost_price = item.cost_price;
                         item.quantity = item.quantity;
                         _context.temp_im_variants.Add(item);
+                        await _context.SaveChangesAsync();
+
 
                     }
                 }
                 var existing_imPurchase_details = await _context.im_purchase_listing_details.FirstOrDefaultAsync(a => a.detail_id == varient[0].detail_id);
                 if (existing_imPurchase_details != null)
                 {
-                    existing_imPurchase_details.quantity = 0;
+                    //existing_imPurchase_details.quantity = 0;
                     existing_imPurchase_details.unit_price = 0;
                     existing_imPurchase_details.line_total = 0;
                     _context.im_purchase_listing_details.Update(existing_imPurchase_details);

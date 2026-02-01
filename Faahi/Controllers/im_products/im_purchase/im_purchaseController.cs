@@ -108,5 +108,53 @@ namespace Faahi.Controllers.im_products.im_purchase
             return Ok(result);
 
         }
+        [Authorize]
+        [HttpGet]
+        [Route("get_batches/{store_id}")]
+        public async Task<IActionResult> get_batches(Guid store_id)
+        {
+            if (store_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.get_batches(store_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_batches_search/{store_id}/{searchText}")]
+        public async Task<IActionResult> get_batches_search(Guid store_id,string searchText)
+        {
+            if (store_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.get_batches_search(store_id, searchText);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_item_batch/{item_batch_id}")]
+        public async Task<IActionResult> Get_item_batch(Guid item_batch_id)
+        {
+            if (item_batch_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Get_item_batch(item_batch_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("update_item_batch/{item_batch_id}")]
+        public async Task<ActionResult<im_ItemBatches>> update_item_batch(Guid item_batch_id,im_ItemBatches item_batch)
+        {
+            if (item_batch_id == null)
+            {
+                return Ok("No Id found");
+            }
+            var result = await _im_purchase.update_item_batch(item_batch_id, item_batch);
+            return Ok(result);
+        }
     }
 }

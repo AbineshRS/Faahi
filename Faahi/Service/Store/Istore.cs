@@ -38,6 +38,8 @@ namespace Faahi.Service.Store
 
         Task<ServiceResult<st_StoresAddres>> add_sub_address(Guid store_id,st_StoresAddres st_StoresAddres);
 
+        Task<ServiceResult<st_stores>> get_sotore_deatils(Guid store_id);
+
         Task<ServiceResult<st_stores>> Delete_store(Guid store_id);
 
 

@@ -38,6 +38,11 @@ namespace Faahi.Model.temp_tables
         [Column(TypeName = "uniqueidentifier")]
         public Guid? variant_id { get; set; }
 
+        [ForeignKey("store_variant_inventory_id")]
+        [Display(Name = "im_StoreVariantInventory")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? store_variant_inventory_id { get; set; } = null;
+
         [Column(TypeName = "decimal(18, 4)")]
         public Decimal? cost_price { get; set; } = null;
 
