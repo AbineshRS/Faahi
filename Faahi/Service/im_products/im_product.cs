@@ -895,6 +895,7 @@ namespace Faahi.Service.im_products
                 product.fixed_price = im_products.fixed_price;
                 product.published = im_products.published;
                 product.is_varient = im_products.is_varient;
+                product.track_expiry = im_products.track_expiry;
                 product.status = im_products.status;
                 foreach (var varient in im_products.im_ProductVariants)
                 {

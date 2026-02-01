@@ -28,13 +28,17 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? store_id { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(18,4)")]
         public Decimal? on_hand_quantity { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(18,4)")]
         public Decimal? committed_quantity { get; set; }
+
 
         [Column(TypeName = "nvarchar(24)")]
         public string? bin_number { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(50)")]
+        public string? batch_number { get; set; }=null;
     }
 }

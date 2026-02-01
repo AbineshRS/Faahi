@@ -22,11 +22,18 @@ namespace Faahi.Model.im_products
 
         [ForeignKey("product_id")]
         [Display(Name = "im_Products")]
+        [Column(TypeName = "uniqueidentifier")]
         public Guid? product_id { get; set; }
 
         [ForeignKey("sub_variant_id")]
         [Display(Name = "im_product_subvariant")]
+        [Column(TypeName = "uniqueidentifier")]
         public Guid? sub_variant_id { get; set; }
+
+        [ForeignKey("store_variant_inventory_id")]
+        [Display(Name = "im_StoreVariantInventory")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? store_variant_inventory_id { get; set; }
 
         [Column(TypeName ="nvarchar(20)")]
         public string? uom_name { get; set; }
@@ -75,6 +82,11 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "nvarchar(100)")]
         public string? product_description { get; set; } = null;
 
+        [Column(TypeName = "nvarchar(100)")]
+        public string? barcode { get; set; } = null;
+
+        [Column(TypeName = "varchar(50)")]
+        public string? sku { get; set; } = null;
 
 
     }

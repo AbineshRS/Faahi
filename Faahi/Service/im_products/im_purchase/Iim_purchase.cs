@@ -1,5 +1,6 @@
 ﻿using Faahi.Dto;
 using Faahi.Model.im_products;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Faahi.Service.im_products.im_purchase
 {
@@ -22,5 +23,13 @@ namespace Faahi.Service.im_products.im_purchase
         Task<ServiceResult<im_purchase_listing_details>> Delete_im_purchase_listing(Guid detail_id);
 
         Task<ServiceResult<im_purchase_listing>> Delete_purchase(Guid listing_id);
+
+        Task<ServiceResult<List<im_ItemBatches>>> get_batches(Guid store_id);
+
+        Task<ServiceResult<List<im_ItemBatches>>> get_batches_search(Guid store_id,string searchText);
+
+        Task<ServiceResult<im_ItemBatches>> Get_item_batch(Guid item_batch_id);
+
+        Task<ServiceResult<im_ItemBatches>> update_item_batch(Guid item_batch_id,im_ItemBatches item_batch);
     }
 }

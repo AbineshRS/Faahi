@@ -208,6 +208,18 @@ namespace Faahi.Controllers.Store
             var resut = await _istore.add_sub_address(store_id, st_StoresAddres);
             return Ok(resut);
         }
+        //[Authorize]
+        [HttpGet]
+        [Route("get_sotore_deatils/{store_id}")]
+        public async Task<IActionResult> get_sotore_deatils(Guid store_id)
+        {
+            if (store_id == null)
+            {
+                return Ok("No Id founs");
+            }
+            var result = await _istore.get_sotore_deatils(store_id);
+            return Ok(result);
+        }
         [Authorize]
         [HttpPost]
         [Route("delete_store/{store_id}")]

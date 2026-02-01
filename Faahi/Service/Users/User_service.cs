@@ -2,6 +2,7 @@
 using Faahi.Dto;
 using Faahi.Model.am_vcos;
 using Faahi.Model.Shared_tables;
+using Faahi.Model.st_sellers;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -557,13 +558,14 @@ namespace Faahi.Service.Users
             }
             try
             {
-                var jsonresult = _context.Database.SqlQueryRaw<ap_Vendors>(
+                var jsonresult = _context.Database.SqlQueryRaw<string>(
                     "EXEC dbo.sp_Getusers @VendorId=@passing_vendor_id,@opr=@opr_parm",
                     new SqlParameter("@passing_vendor_id",vendor_id),
                     new SqlParameter("@opr_parm",1)
                     ).AsEnumerable().FirstOrDefault();
 
-                var customer = JsonConvert.DeserializeObject<ap_Vendors>(JsonConvert.SerializeObject(jsonresult));
+                var customer = JsonConvert.DeserializeObject<ap_Vendors>(jsonresult);
+
                 //var customer = await _context.ap_Vendors.Include(a => a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
                 if (customer == null)
                 {
@@ -627,6 +629,7 @@ namespace Faahi.Service.Users
                 Data = customers
             };
         }
+        
         public async Task<ServiceResult<List<ap_Vendors>>> Get_all_vendors(Guid company_id)
         {
             if (company_id == null)
