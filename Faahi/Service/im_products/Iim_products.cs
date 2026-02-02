@@ -42,5 +42,9 @@ namespace Faahi.Service.im_products
         Task<ServiceResult<im_ProductAttributes>> Create_Attribute(im_ProductAttributes im_ProductAttributes);
 
         Task<ServiceResult<List<im_ProductAttributes>>> Get_attribute(Guid company_id);
+
+        Task<ServiceResult<im_Products>> barcode_exist(string barcode,Guid store_id);
+
+        Task<ServiceResult<im_product>> product_transfer_store(Guid product_id,Guid store_id);
     }
 }

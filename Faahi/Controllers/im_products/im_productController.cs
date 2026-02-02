@@ -231,9 +231,33 @@ namespace Faahi.Controllers.im_products
             var result = await _im_products.Get_attribute(company_id);
             return Ok(result);
         }
+        [Authorize]
+        [HttpGet]
+        [Route("barcode_exist/{barcode}/{store_id}")]
+        public async Task<IActionResult> barcode_exist(string barcode,Guid store_id)
+        {
+            if (barcode == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_products.barcode_exist(barcode, store_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("product_transfer_store/{product_id}/{store_id}")]
+        public async Task<IActionResult> product_transfer_store(Guid product_id,Guid store_id)
+        {
+            if (product_id == null)
+            {
+                return Ok("NO product_id found");
+            }
+            var result = await _im_products.product_transfer_store(product_id, store_id);
+            return Ok(result);
+        }
 
 
-        
+
         [HttpPost("encript/{id}")]
         public IActionResult EncryptId(string id)
         {
