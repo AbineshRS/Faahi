@@ -1084,6 +1084,111 @@ namespace Faahi.Service.im_products.im_purchase
             }
             
         }
+        public async Task<ServiceResult<im_purchase_listing>> Add_purchase_listing_excel(im_purchase_listing im_Purchase_Listing)
+        {
+
+            try
+            {
+                if (im_Purchase_Listing == null)
+                {
+                    _logger.LogInformation("NO data found to insert");
+                    return new ServiceResult<im_purchase_listing>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No data found to insert"
+                    };
+                }
+                Decimal sub_total = 0;
+                Decimal other_expense = 0;
+
+                var table_2 = "im_purchase_listing";
+                var table_key_2 = await _context.am_table_next_key.FindAsync(table_2);
+                var key_2 = Convert.ToInt16(table_key_2.next_key);
+                var year = DateTime.Now.Year;
+
+                im_Purchase_Listing.listing_id = Guid.CreateVersion7();
+                im_Purchase_Listing.listing_code = im_Purchase_Listing.listing_code + year + "-" + Convert.ToString(key_2 + 1);
+                im_Purchase_Listing.vendor_id = im_Purchase_Listing.vendor_id;
+                im_Purchase_Listing.site_id = im_Purchase_Listing.site_id;
+                im_Purchase_Listing.payment_mode = im_Purchase_Listing.payment_mode;
+                im_Purchase_Listing.purchase_type = im_Purchase_Listing.purchase_type;
+                im_Purchase_Listing.supplier_invoice_no = im_Purchase_Listing.supplier_invoice_no;
+                im_Purchase_Listing.supplier_invoice_date = im_Purchase_Listing.supplier_invoice_date;
+                im_Purchase_Listing.currency_code = im_Purchase_Listing.currency_code;
+                im_Purchase_Listing.exchange_rate = im_Purchase_Listing.exchange_rate;
+                im_Purchase_Listing.discount_amount = im_Purchase_Listing.discount_amount;
+                im_Purchase_Listing.freight_amount = im_Purchase_Listing.freight_amount;
+                im_Purchase_Listing.tax_amount = im_Purchase_Listing.tax_amount;
+                im_Purchase_Listing.other_expenses = im_Purchase_Listing.other_expenses;
+                im_Purchase_Listing.local_referance = im_Purchase_Listing.local_referance;
+                im_Purchase_Listing.plastic_bag = im_Purchase_Listing.plastic_bag;
+                im_Purchase_Listing.status = im_Purchase_Listing.status;
+                im_Purchase_Listing.notes = im_Purchase_Listing.notes;
+                im_Purchase_Listing.tax_amount = im_Purchase_Listing.tax_amount;
+                foreach (var item in im_Purchase_Listing.im_purchase_listing_details)
+                {
+                    var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.sku == item.sku);
+                    var im_store_varient = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.variant_id == im_varient.variant_id && a.store_id == im_Purchase_Listing.site_id);
+
+                    item.detail_id = Guid.CreateVersion7();
+                    item.listing_id = im_Purchase_Listing.listing_id;
+                    item.product_id = im_varient.product_id;
+                    item.sub_variant_id = im_varient.variant_id;
+                    item.quantity = item.quantity;
+                    item.unit_price = item.unit_price;
+                    item.discount_amount = item.discount_amount;
+                    item.tax_amount = item.tax_amount;
+                    item.freight_amount = item.freight_amount;
+                    item.other_expenses = item.other_expenses;
+                    item.line_total = item.quantity * item.unit_price;
+
+                    item.notes = item.notes;
+                    item.varient_quantity = item.varient_quantity;
+                    item.batch_no = item.batch_no;
+                    item.bin_no = item.bin_no;
+                    item.uom_name = item.uom_name;
+                    item.barcode = item.barcode;
+                    item.sku = item.sku;
+                    item.product_description = item.product_description;
+                    item.store_variant_inventory_id = im_store_varient.store_variant_inventory_id;
+
+                    other_expense += Convert.ToDecimal(item.other_expenses);
+                    sub_total += Convert.ToDecimal(item.line_total);
+                    _context.im_purchase_listing_details.Add(item);
+
+                }
+                im_Purchase_Listing.sub_total = Convert.ToDecimal(sub_total);
+                im_Purchase_Listing.doc_total = Convert.ToDecimal(sub_total) - im_Purchase_Listing.discount_amount + im_Purchase_Listing.tax_amount + im_Purchase_Listing.freight_amount + other_expense + im_Purchase_Listing.plastic_bag * im_Purchase_Listing.exchange_rate;
+
+                table_key_2.next_key = key_2 + 1;
+                _context.am_table_next_key.Update(table_key_2);
+                 _context.im_purchase_listing.Add(im_Purchase_Listing);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_purchase_listing>
+                {
+                    Status = 201,
+                    Success = true,
+                    Message = "Inserted",
+                    Data = im_Purchase_Listing
+
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Erro while Add_purchase_listing_excel");
+                return new ServiceResult<im_purchase_listing>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+            
+
+        }
 
     }
 

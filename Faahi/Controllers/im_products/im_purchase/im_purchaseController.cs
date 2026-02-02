@@ -156,5 +156,18 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.update_item_batch(item_batch_id, item_batch);
             return Ok(result);
         }
+        [Authorize]
+        [HttpPost]
+        [Route("Add_purchase_listing_excel")]
+        public async Task<ActionResult<im_purchase_listing>> Add_purchase_listing_excel(im_purchase_listing im_Purchase_Listing)
+        {
+            if(im_Purchase_Listing == null)
+            {
+                return Ok("No data found");
+
+            }
+            var result = await _im_purchase.Add_purchase_listing_excel(im_Purchase_Listing);
+            return Ok(result);
+        }
     }
 }
