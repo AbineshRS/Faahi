@@ -1472,6 +1472,134 @@ namespace Faahi.Service.im_products
             };
         }
 
-        
+        public async Task<ServiceResult<im_Products>> barcode_exist(string barcode,Guid store_id)
+        {
+            try
+            {
+                if (barcode == null)
+                {
+                    _logger.LogInformation("No data found in barcode");
+                    return new ServiceResult<im_Products>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No data found in barcode"
+                    };
+                }
+                var existing_barcode = await _context.im_Products.Include(a => a.im_ProductVariants).FirstOrDefaultAsync(a=>a.im_ProductVariants.Any(v=>v.barcode==barcode));
+                if (existing_barcode == null)
+                {
+                    _logger.LogInformation("No infromation found");
+                    return new ServiceResult<im_Products>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No infromation found"
+                    };
+                }
+                if (existing_barcode != null)
+                {
+                    var im_prodct_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.barcode == barcode);
+                    var im_store = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.variant_id == im_prodct_varient.variant_id && a.store_id == store_id);
+                    if (im_store!=null)
+                    {
+                        return new ServiceResult<im_Products>
+                        {
+                            Status = 300,
+                            Success = false,
+                            Message = "Already inseted product"
+                        };
+                    }
+
+                }
+                return new ServiceResult<im_Products>
+                {
+                    Status = 200,
+                    Message = "",
+                    Success = true,
+                    Data = existing_barcode
+
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogInformation("Error while barcode_exist");
+                return new ServiceResult<im_Products>
+                {
+                    Status = 500,
+                    Message = ex.Message,
+                    Success = false,
+                };
+            }
+            
+            
+        }
+
+        public async Task<ServiceResult<im_product>> product_transfer_store(Guid product_id,Guid store_id)
+        {
+            try
+            {
+                if (product_id == null)
+                {
+                    return new ServiceResult<im_product>
+                    {
+                        Message = "NO product_id found",
+                        Success = false,
+                        Status = 400,
+                    };
+                }
+                var existing_prodct = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).
+                    Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).
+                    FirstOrDefaultAsync(a => a.product_id == product_id);
+                foreach (var im_varint in existing_prodct.im_ProductVariants)
+                {
+                    foreach (var store_inv in im_varint.im_StoreVariantInventory)
+                    {
+                        var existing_store = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == store_inv.store_variant_inventory_id);
+                        if (im_varint.variant_id==existing_store.variant_id && existing_prodct.company_id == existing_store.company_id &&existing_store.store_id==store_id)
+                        {
+                            return new ServiceResult<im_product>
+                            {
+                                Status = 300,
+                                Message = "The prodct is already exist",
+                                Success = false
+
+                            };
+                        }
+                        store_inv.store_variant_inventory_id = Guid.CreateVersion7();
+                        store_inv.variant_id = im_varint.variant_id;
+                        store_inv.company_id = existing_store.company_id;
+                        store_inv.store_id = store_id;
+                        store_inv.on_hand_quantity = store_inv.on_hand_quantity;
+                        store_inv.committed_quantity = store_inv.committed_quantity;
+                        store_inv.bin_number = existing_store.bin_number;
+                        _context.im_StoreVariantInventory.Add(store_inv);
+                        im_varint.im_StoreVariantInventory.Add(store_inv);
+                    }
+                }
+                _context.im_Products.Update(existing_prodct);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_product>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Updated"
+                };
+            }
+            catch(Exception ex)
+            {
+                return new ServiceResult<im_product>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+
+                };
+            }
+            
+
+        }
+
+
     }
 }
