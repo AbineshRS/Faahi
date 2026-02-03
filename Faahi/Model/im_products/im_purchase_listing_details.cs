@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -62,8 +63,8 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "varchar(400)")]
         public string? notes { get; set; } = null;
 
-        [Column(TypeName = "datetime")]
-        public DateTime? expiry_date { get; set; } = null;
+        [Column(TypeName = "date")]
+        public DateOnly? expiry_date { get; set; } = null;
 
         [StringLength(1)]
         [DefaultValue("F")]
@@ -87,6 +88,17 @@ namespace Faahi.Model.im_products
 
         [Column(TypeName = "varchar(50)")]
         public string? sku { get; set; } = null;
+
+        [NotMapped]
+        public string? Category { get; set; } = null;
+
+        [NotMapped]
+        public string? Sub_Category { get; set; } = null;
+
+        [NotMapped]
+        public string? Sub_sub_Category { get; set; } = null;
+
+        
 
 
     }

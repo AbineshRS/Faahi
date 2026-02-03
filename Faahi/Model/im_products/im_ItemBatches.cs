@@ -52,7 +52,7 @@ namespace Faahi.Model.im_products
         public string? batch_number { get; set; }
 
         [Column(TypeName = "date")]
-        public DateTime? expiry_date { get; set; }
+        public DateOnly? expiry_date { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public Decimal? received_quantity { get; set; }
