@@ -169,5 +169,16 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.Add_purchase_listing_excel(im_Purchase_Listing);
             return Ok(result);
         }
+        [HttpGet]
+        [Route("get_product_data/{product_id}")]
+        public async Task<IActionResult> Get_product_data(Guid product_id)
+        {
+            if (product_id == null)
+            {
+                return Ok("No product_id found");
+            }
+            var result = await _im_purchase.Get_product_data(product_id);
+            return Ok(result);
+        }
     }
 }

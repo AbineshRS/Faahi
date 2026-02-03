@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Faahi.Model.im_products
 {
@@ -90,6 +91,7 @@ namespace Faahi.Model.im_products
         public string? description_2 { get; set; } = null;
 
         [ForeignKey("product_id")]
+        [JsonIgnore]
         public im_Products? im_Product { get; set; }
 
 

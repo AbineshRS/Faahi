@@ -124,7 +124,7 @@ namespace Faahi.Controllers.im_products
             var all_product_details = await _im_products.all_product_details(company_id);
             return Ok(all_product_details);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_Product_details/{product_id}")]
         public async Task<IActionResult> Get_product_details(Guid product_id)

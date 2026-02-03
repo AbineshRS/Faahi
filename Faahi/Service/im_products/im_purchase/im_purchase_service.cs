@@ -1297,7 +1297,7 @@ namespace Faahi.Service.im_products.im_purchase
                                     sub_category_id = Guid.NewGuid(),
                                     created_at = DateTime.Now,
                                     updated_at = DateTime.Now,
-                                    status = "active",
+                                    status = "T",
                                     is_varient = "F"
                                 };
                                 var table = "im_ProductVariants";
@@ -1449,6 +1449,21 @@ namespace Faahi.Service.im_products.im_purchase
 
             
 
+        }
+        public async Task<ServiceResult<im_Products>> Get_product_data(Guid product_id)
+        {
+            if (product_id == null)
+            {
+                return new ServiceResult<im_Products>
+                {
+                    Status = 400,
+                };
+            }
+            var im_product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).FirstOrDefaultAsync(a => a.product_id == product_id);
+            return new ServiceResult<im_Products>
+            {
+                Data = im_product,
+            };
         }
 
     }
