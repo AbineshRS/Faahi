@@ -9,6 +9,7 @@ using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
 using Faahi.Model.table_key;
+using Faahi.Model.tax_class_table;
 using Faahi.Model.temp_tables;
 using Microsoft.EntityFrameworkCore;
 
@@ -129,6 +130,8 @@ namespace Faahi.Controllers.Application
         public DbSet<im_ItemBatches> im_itemBatches { get; set; }
 
         public DbSet<super_abi> super_abi { get; set; }
+
+        public DbSet<tx_TaxClasses> tx_TaxClasses { get; set; }
 
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }

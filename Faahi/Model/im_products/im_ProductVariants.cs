@@ -89,6 +89,10 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "nvarchar(255)")]
         public string? description_2 { get; set; } = null;
 
+        [ForeignKey("product_id")]
+        public im_Products? im_Product { get; set; }
+
+
         public ICollection<im_VariantAttributes>? im_VariantAttributes { get; set; } = null;
         public ICollection<im_StoreVariantInventory>? im_StoreVariantInventory { get; set; } = null;
         public ICollection<im_ProductImages>? im_ProductImages { get; set; } = null;
