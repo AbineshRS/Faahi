@@ -17,17 +17,17 @@ namespace Faahi.Model.im_products
         [ForeignKey("value_id")]
         [Display(Name = "im_AttributeValues")]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? value_id { get; set; }
+        public Guid? value_id { get; set; } = null;
 
         [ForeignKey("variant_id")]
         [Display(Name = "im_ProductVariants")]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? variant_id { get; set; }
+        public Guid? variant_id { get; set; } = null;
 
         [ForeignKey("attribute_id")]
         [Display(Name = "im_ProductAttributes")]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? attribute_id { get; set; }
+        public Guid? attribute_id { get; set; } = null;
 
 
     }

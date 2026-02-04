@@ -103,13 +103,13 @@ namespace Faahi.Controllers.im_products
         //[Authorize]
         [HttpGet]
         [Route("get_company_product/{company_id}")]
-        public async Task<IActionResult> get_company_product(string company_id)
+        public async Task<IActionResult> get_company_product(Guid company_id, [FromQuery] string? searchText, [FromQuery] Guid? categoryId)
         {
             if(company_id == null)
             {
                 return Ok("NO id found");
             }
-            var all_product_details = await _im_products.get_company_product(company_id);
+            var all_product_details = await _im_products.get_company_product(company_id, searchText, categoryId);
             return Ok(all_product_details);
         }
         //[Authorize]
@@ -253,6 +253,14 @@ namespace Faahi.Controllers.im_products
                 return Ok("NO product_id found");
             }
             var result = await _im_products.product_transfer_store(product_id, store_id);
+            return Ok(result);
+        }
+        [HttpDelete]
+        [Route("Delete_product_data/{product_id}")]
+        public async Task<IActionResult> Delete_product_data(Guid product_id)
+        {
+            if (product_id == null) { return Ok("NO product_id found"); }
+            var result = await _im_products.Delete_product_data(product_id);
             return Ok(result);
         }
 

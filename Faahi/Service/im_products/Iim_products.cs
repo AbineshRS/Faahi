@@ -21,7 +21,7 @@ namespace Faahi.Service.im_products
 
         Task<ActionResult<ServiceResult<string>>> Upload_vedio(IFormFile[] formFile,string product_id,string variant_id);
        
-        Task<ServiceResult<string>> get_company_product(string company_id);
+        Task<ServiceResult<List<im_Products>>> get_company_product(Guid company_id,string searchText,Guid? categoryId);
 
         Task<ServiceResult<List<im_Products>>> all_product_details(Guid company_id);
 
@@ -46,5 +46,7 @@ namespace Faahi.Service.im_products
         Task<ServiceResult<im_Products>> barcode_exist(string barcode,Guid store_id);
 
         Task<ServiceResult<im_product>> product_transfer_store(Guid product_id,Guid store_id);
+
+        Task<ServiceResult<im_Products>> Delete_product_data(Guid product_id);
     }
 }
