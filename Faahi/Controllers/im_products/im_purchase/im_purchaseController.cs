@@ -180,5 +180,6 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.Get_product_data(product_id);
             return Ok(result);
         }
+      
     }
 }

@@ -10,6 +10,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -442,10 +443,14 @@ namespace Faahi.Service.im_products
 
                 foreach (var img in oldImages)
                 {
+                    if (img.image_url == null)
+                    {
+                        _context.im_ProductImages.Remove(img);
+                        _context.SaveChanges();
+                    }
                     //var oldKey = new Uri(img.image_url).AbsolutePath.TrimStart('/');
                     //await _s3Client.DeleteObjectAsync(bucketName, oldKey);
-                    //_context.im_ProductImages.Remove(img);
-                    //_context.SaveChanges();
+
                 }
 
 
@@ -701,29 +706,40 @@ namespace Faahi.Service.im_products
 
         }
 
-        public async Task<ServiceResult<string>> get_company_product(string company_id)
+        public async Task<ServiceResult<List<im_Products>>> get_company_product(Guid company_id,string searchText,Guid? categoryId)
         {
             if (company_id == null)
             {
-                return new ServiceResult<string>
+                return new ServiceResult<List<im_Products >>
                 {
                     Success = false,
                     Message = "not found"
                 };
             }
             var jsonResult = (await _context.Database.SqlQueryRaw<string>(
-                    "EXEC dbo.GetAllProductDetails_JSON @CompanyId = @CompanyId, @opr = @opr",
+                    "EXEC dbo.GetAllProductDetails_JSON @CompanyId = @CompanyId, @searchText=@searchText,@CategoryId=@CategoryId, @opr = @opr",
                      new SqlParameter("@CompanyId", company_id),
-                    new SqlParameter("@opr", 3)).ToListAsync()).FirstOrDefault();
+                     new SqlParameter("@searchText", (object?)searchText ?? DBNull.Value),
+                     new SqlParameter("@CategoryId", (object?)categoryId ?? DBNull.Value),
+                     new SqlParameter("@opr", 3)).ToListAsync()).FirstOrDefault();
             //var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_PriceTiers)
             //                          .ThenInclude(a => a.im_ProductVariantPrices).ThenInclude(a => a.im_ProductImages).FirstOrDefaultAsync(a => a.company_id == company_id);
-            var jsonData = JsonConvert.SerializeObject(all_product_details);
-            var encryptedData = EncryptionHelper.EncryptString(jsonData);
-            return new ServiceResult<string>
+            if (jsonResult == null)
+            {
+                return new ServiceResult<List<im_Products>>
+                {
+                    Status = 400,
+                    Success = false,
+                    Message = "No data found"
+                };
+            }
+            var products = JsonConvert.DeserializeObject<List<im_Products>>(jsonResult);
+
+            return new ServiceResult<List<im_Products>>
             {
                 Success = true,
                 Message = "successfully",
-                Data = encryptedData
+                Data = products
             };
         }
 
@@ -1028,6 +1044,11 @@ namespace Faahi.Service.im_products
                             {
                                 existingAttr.attribute_id = im_attr.attribute_id;
                                 existingAttr.value_id = im_attr.value_id;
+
+                                if (existingAttr.value_id == null)
+                                {
+                                    _context.im_VariantAttributes.Remove(existingAttr);
+                                }
                             }
                             else
                             {
@@ -1598,6 +1619,49 @@ namespace Faahi.Service.im_products
             }
             
 
+        }
+        public async Task<ServiceResult<im_Products>> Delete_product_data(Guid product_id)
+        {
+            if (product_id == null)
+            {
+                return new ServiceResult<im_Products>
+                {
+                    Status = 400,
+                };
+            }
+            var im_product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes)
+                .Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages).
+                FirstOrDefaultAsync(a => a.product_id == product_id);
+            if (im_product != null)
+            {
+                foreach(var varient in im_product.im_ProductVariants)
+                {
+
+                    foreach(var attribute in varient.im_VariantAttributes)
+                    {
+                        _context.im_VariantAttributes.Remove(attribute);
+                    }
+                    foreach(var store_var in varient.im_StoreVariantInventory)
+                    {
+                        _context.im_StoreVariantInventory.Remove(store_var);
+                    }
+                    foreach(var images in varient.im_ProductImages)
+                    {
+                        _context.im_ProductImages.Remove(images);
+                    }
+
+
+                    _context.im_ProductVariants.Remove(varient);
+                }
+                
+
+            }
+            _context.im_Products.Remove(im_product);
+            await _context.SaveChangesAsync();
+            return new ServiceResult<im_Products>
+            {
+                Status = 200
+            };
         }
 
 

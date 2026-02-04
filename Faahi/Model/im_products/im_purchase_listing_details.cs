@@ -98,6 +98,9 @@ namespace Faahi.Model.im_products
         [NotMapped]
         public string? Sub_sub_Category { get; set; } = null;
 
+        [NotMapped]
+        public string? tax_class_name { get; set; } = null;
+
         
 
 
