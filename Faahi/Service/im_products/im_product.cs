@@ -85,7 +85,6 @@ namespace Faahi.Service.im_products
                     im_varint.product_id = im_Product.product_id;
                     im_varint.uom_name = im_varint.uom_name;
                     im_varint.description_2 = im_varint.description_2;
-                    im_varint.im_Product = null;
 
                     im_varint.sku = st_store.store_code + "-" + Convert.ToString(key + 1);
                     if (am_table != null)
@@ -903,7 +902,6 @@ namespace Faahi.Service.im_products
                     //var table = "im_ProductVariants";
                     //var am_table = await _context.am_table_next_key.FindAsync(table);
                     //var key = Convert.ToInt16(am_table.next_key);
-                    varient.im_Product = null;
 
 
                     var existingVariant = product.im_ProductVariants.FirstOrDefault(v => v.variant_id == varient.variant_id);
@@ -1001,7 +999,6 @@ namespace Faahi.Service.im_products
                     //var table = "im_ProductVariants";
                     //var am_table = await _context.am_table_next_key.FindAsync(table);
                     //var key = Convert.ToInt16(am_table.next_key);
-                    varient.im_Product = null;
 
                     var existingVariant = product.im_ProductVariants.FirstOrDefault(v => v.variant_id == varient.variant_id);
                     if(existingVariant != null)
