@@ -1142,8 +1142,7 @@ namespace Faahi.Service.im_products.im_purchase
                     foreach (var item in im_Purchase_Listing.im_purchase_listing_details)
                     {
                         //ADD new Product
-                        var existingVariant = await _context.im_ProductVariants.Include(v => v.im_Product).Include(v => v.im_StoreVariantInventory)
-         .FirstOrDefaultAsync(v => v.sku == item.sku);
+                       
                         var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.sku == item.sku);
                         var im_store_varient = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.variant_id == im_varient.variant_id && a.store_id == im_Purchase_Listing.site_id);
 
@@ -1282,19 +1281,23 @@ namespace Faahi.Service.im_products.im_purchase
                         }
                         else
                         {
-                            var existingVariant = await _context.im_ProductVariants.Include(v => v.im_Product).Include(v => v.im_StoreVariantInventory)
-                            .FirstOrDefaultAsync(v => v.sku == item.sku);
-                            if (existingVariant == null)
+                            var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.sku == item.sku);
+                            var im_product_cat = await _context.im_ProductCategories.FirstOrDefaultAsync(a => a.category_name == item.Category);
+                            var im_product_sub_cat = await _context.im_ProductCategories.FirstOrDefaultAsync(a => a.category_name == item.Sub_Category);
+                            var im_product_sub_sub_cat = await _context.im_ProductCategories.FirstOrDefaultAsync(a => a.category_name == item.Sub_sub_Category);
+                           
+                            if (im_varient == null)
                             {
                                 var newProduct = new im_Products
                                 {
                                     product_id = Guid.CreateVersion7(),
                                     description = item.product_description,
-                                    brand = "Default Brand",
+                                    brand = "Abinesh",
                                     store_id = im_Purchase_Listing.site_id,
                                     company_id = Guid.NewGuid(),
-                                    category_id = Guid.NewGuid(),
-                                    sub_category_id = Guid.NewGuid(),
+                                    category_id = im_product_cat?.category_id,
+                                    sub_category_id = im_product_sub_cat?.category_id,
+                                    sub_sub_category_id=im_product_sub_sub_cat?.category_id,
                                     created_at = DateTime.Now,
                                     updated_at = DateTime.Now,
                                     status = "T",
@@ -1304,6 +1307,7 @@ namespace Faahi.Service.im_products.im_purchase
                                 var am_table = await _context.am_table_next_key.FindAsync(table);
                                 var key = Convert.ToInt16(am_table.next_key);
                                 var im_site = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_Purchase_Listing.site_id);
+                                
                                 var variant = new im_ProductVariants
                                 {
 
@@ -1331,79 +1335,93 @@ namespace Faahi.Service.im_products.im_purchase
                                     committed_quantity = 0,
                                     bin_number = item.bin_no
                                 };
-
+                                var images = new im_ProductImages
+                                {
+                                    image_id = Guid.CreateVersion7(),
+                                    product_id = newProduct.product_id,
+                                    variant_id = variant.variant_id,
+                                    image_url = null,
+                                    is_primary = null,
+                                    display_order = null,
+                                    uploaded_at = DateTime.Now,
+                                };
+                                variant.im_ProductImages = new List<im_ProductImages> { images };
                                 variant.im_StoreVariantInventory = new List<im_StoreVariantInventory> { inventory };
                                 newProduct.im_ProductVariants = new List<im_ProductVariants> { variant };
 
                                 await _context.im_Products.AddAsync(newProduct);
                                 await _context.SaveChangesAsync();
                             }
-                            var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.sku == item.sku);
-                            var im_store_varient = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.variant_id == im_varient.variant_id && a.store_id == im_Purchase_Listing.site_id);
-
-                            item.detail_id = Guid.CreateVersion7();
-                            item.listing_id = im_Purchase_Listing.listing_id;
-                            item.product_id = im_varient.product_id;
-                            item.sub_variant_id = im_varient.variant_id;
-                            item.quantity = item.quantity;
-                            item.unit_price = item.unit_price;
-                            item.discount_amount = item.discount_amount;
-                            item.tax_amount = item.tax_amount;
-                            item.freight_amount = item.freight_amount;
-                            item.other_expenses = item.other_expenses;
-                            item.line_total = item.quantity * item.unit_price;
-                            item.notes = item.notes;
-                            item.varient_quantity = item.varient_quantity;
-                            item.batch_no = item.batch_no;
-                            item.bin_no = item.bin_no;
-                            item.expiry_date = item.expiry_date;
-                            item.uom_name = item.uom_name;
-                            item.barcode = item.barcode;
-                            item.sku = item.sku;
-                            item.product_description = item.product_description;
-                            item.store_variant_inventory_id = im_store_varient.store_variant_inventory_id;
-                            if (item.expiry_date != null)
+                            else
                             {
-                                var table = "im_ItemBatches";
-                                var table_key = await _context.super_abi.FirstOrDefaultAsync(a => a.description == table);
-                                var key = Convert.ToInt16(table_key.next_key);
+                                var im_store_varient = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.variant_id == im_varient.variant_id && a.store_id == im_Purchase_Listing.site_id);
 
-                                var im_site = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_Purchase_Listing.site_id);
-                                im_ItemBatches.item_batch_id = Guid.CreateVersion7();
-                                im_ItemBatches.batch_id = key;
-                                im_ItemBatches.company_id = im_site.company_id;
-                                im_ItemBatches.detail_id = item.detail_id;
-                                im_ItemBatches.store_id = im_Purchase_Listing.site_id;
-                                im_ItemBatches.store_variant_inventory_id = item.store_variant_inventory_id;
-                                im_ItemBatches.batch_number = item.batch_no;
-                                im_ItemBatches.variant_id = item.sub_variant_id;
-                                im_ItemBatches.expiry_date = item.expiry_date;
-                                im_ItemBatches.received_quantity = item.quantity;
-                                im_ItemBatches.on_hand_quantity = item.quantity;
-                                im_ItemBatches.product_description = item.product_description;
-                                im_ItemBatches.unit_cost = item.unit_price;
-                                im_ItemBatches.total_cost = item.quantity * item.unit_price;
-                                im_ItemBatches.is_active = "T";
-                                im_ItemBatches.received_date = DateTime.Now;
-                                im_ItemBatches.reference_doc = im_Purchase_Listing.supplier_invoice_no;
-                                im_ItemBatches.notes = im_ItemBatches.notes;
-                                im_ItemBatches.notes = im_ItemBatches.notes;
-                                im_ItemBatches.barcode = item.barcode;
-                                im_ItemBatches.sku = item.sku;
-                                im_ItemBatches.created_at = DateTime.Now;
-                                if (table_key != null)
+                                item.detail_id = Guid.CreateVersion7();
+                                item.listing_id = im_Purchase_Listing.listing_id;
+                                item.product_id = im_varient.product_id;
+                                item.sub_variant_id = im_varient.variant_id;
+                                item.quantity = item.quantity;
+                                item.unit_price = item.unit_price;
+                                item.discount_amount = item.discount_amount;
+                                item.tax_amount = item.tax_amount;
+                                item.freight_amount = item.freight_amount;
+                                item.other_expenses = item.other_expenses;
+                                item.line_total = item.quantity * item.unit_price;
+                                item.notes = item.notes;
+                                item.varient_quantity = item.varient_quantity;
+                                item.batch_no = item.batch_no;
+                                item.bin_no = item.bin_no;
+                                item.expiry_date = item.expiry_date;
+                                item.uom_name = item.uom_name;
+                                item.barcode = item.barcode;
+                                item.sku = item.sku;
+                                item.product_description = item.product_description;
+                                item.store_variant_inventory_id = im_store_varient.store_variant_inventory_id;
+                                if (item.expiry_date != null)
                                 {
-                                    table_key.next_key = key + 1;
-                                    _context.super_abi.Update(table_key);
-                                    await _context.SaveChangesAsync();
-                                }
-                                _context.im_itemBatches.Add(im_ItemBatches);
-                            }
+                                    var table = "im_ItemBatches";
+                                    var table_key = await _context.super_abi.FirstOrDefaultAsync(a => a.description == table);
+                                    var key = Convert.ToInt16(table_key.next_key);
 
-                            other_expense += Convert.ToDecimal(item.other_expenses);
-                            sub_total += Convert.ToDecimal(item.line_total);
-                            _context.im_purchase_listing_details.Add(item);
-                            existing_im_purchase.im_purchase_listing_details.Add(item);
+                                    var im_site = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_Purchase_Listing.site_id);
+                                    im_ItemBatches.item_batch_id = Guid.CreateVersion7();
+                                    im_ItemBatches.batch_id = key;
+                                    im_ItemBatches.company_id = im_site.company_id;
+                                    im_ItemBatches.detail_id = item.detail_id;
+                                    im_ItemBatches.store_id = im_Purchase_Listing.site_id;
+                                    im_ItemBatches.store_variant_inventory_id = item.store_variant_inventory_id;
+                                    im_ItemBatches.batch_number = item.batch_no;
+                                    im_ItemBatches.variant_id = item.sub_variant_id;
+                                    im_ItemBatches.expiry_date = item.expiry_date;
+                                    im_ItemBatches.received_quantity = item.quantity;
+                                    im_ItemBatches.on_hand_quantity = item.quantity;
+                                    im_ItemBatches.product_description = item.product_description;
+                                    im_ItemBatches.unit_cost = item.unit_price;
+                                    im_ItemBatches.total_cost = item.quantity * item.unit_price;
+                                    im_ItemBatches.is_active = "T";
+                                    im_ItemBatches.received_date = DateTime.Now;
+                                    im_ItemBatches.reference_doc = im_Purchase_Listing.supplier_invoice_no;
+                                    im_ItemBatches.notes = im_ItemBatches.notes;
+                                    im_ItemBatches.notes = im_ItemBatches.notes;
+                                    im_ItemBatches.barcode = item.barcode;
+                                    im_ItemBatches.sku = item.sku;
+                                    im_ItemBatches.created_at = DateTime.Now;
+                                    if (table_key != null)
+                                    {
+                                        table_key.next_key = key + 1;
+                                        _context.super_abi.Update(table_key);
+                                        await _context.SaveChangesAsync();
+                                    }
+                                    _context.im_itemBatches.Add(im_ItemBatches);
+                                }
+
+                                other_expense += Convert.ToDecimal(item.other_expenses);
+                                sub_total += Convert.ToDecimal(item.line_total);
+                                _context.im_purchase_listing_details.Add(item);
+                                existing_im_purchase.im_purchase_listing_details.Add(item);
+                            }
+                            //var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.sku == item.sku);
+                            
                         }
                     }
                     _context.im_purchase_listing.Update(existing_im_purchase);
