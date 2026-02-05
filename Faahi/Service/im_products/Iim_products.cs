@@ -20,7 +20,10 @@ namespace Faahi.Service.im_products
 
 
         Task<ActionResult<ServiceResult<string>>> Upload_vedio(IFormFile[] formFile,string product_id,string variant_id);
-       
+
+        Task<ServiceResult<im_purchase_listing>> Add_product_excel(List<im_Products> im_Products,Guid listing_id);
+
+
         Task<ServiceResult<List<im_Products>>> get_company_product(Guid company_id,string searchText,Guid? categoryId);
 
         Task<ServiceResult<List<im_Products>>> all_product_details(Guid company_id);
