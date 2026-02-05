@@ -100,6 +100,18 @@ namespace Faahi.Controllers.im_products
             var uploadmutiple = await _im_products.Upload_vedio(formFiles, product_id, variant_id);
             return Ok(uploadmutiple);
         }
+        [Authorize]
+        [HttpPost]
+        [Route("Add_product_excel/{listing_id}")]
+        public async Task<ActionResult<im_Products>> Add_product_excel(List<im_Products> im_Products,Guid listing_id)
+        {
+            if(im_Products==null || im_Products.Count() == 0)
+            {
+                return Ok("No product found");
+            }
+            var result = await _im_products.Add_product_excel(im_Products, listing_id);
+            return Ok(result);
+        }
         //[Authorize]
         [HttpGet]
         [Route("get_company_product/{company_id}")]

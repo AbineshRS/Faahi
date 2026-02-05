@@ -36,6 +36,24 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? store_variant_inventory_id { get; set; }
 
+        [ForeignKey("category_id")]
+        [Display(Name = "im_ProductCategories")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? category_id { get; set; }
+
+        [ForeignKey("category_id")]
+        [Display(Name = "im_ProductCategories")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? sub_category_id { get; set; }
+
+        [ForeignKey("parent_id")]
+        [Display(Name = "im_ProductCategories")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? sub_sub_category_id { get; set; } = null;
+
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? tax_class_id { get; set; } = null;
+
         [Column(TypeName ="nvarchar(20)")]
         public string? uom_name { get; set; }
 
@@ -88,6 +106,16 @@ namespace Faahi.Model.im_products
 
         [Column(TypeName = "varchar(50)")]
         public string? sku { get; set; } = null;
+
+        [StringLength (1)]
+        [DefaultValue("F")]
+        [Column(TypeName ="char(1)")]
+        public string? new_item { get; set; } = null;
+
+
+        [Column(TypeName = "decimal(18, 4)")]
+        public Decimal? base_price { get; set; } = null;
+
 
         [NotMapped]
         public string? Category { get; set; } = null;

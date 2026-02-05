@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260205114156_exc")]
+    partial class exc
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2308,9 +2311,6 @@ namespace Faahi.Migrations
                     b.Property<string>("barcode")
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal?>("base_price")
-                        .HasColumnType("decimal(18, 4)");
-
                     b.Property<string>("batch_no")
                         .HasColumnType("nvarchar(100)");
 
@@ -2342,10 +2342,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("listing_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("new_item")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
                     b.Property<string>("notes")
                         .HasColumnType("varchar(400)");
 
@@ -2363,6 +2359,10 @@ namespace Faahi.Migrations
 
                     b.Property<string>("sku")
                         .HasColumnType("varchar(50)");
+
+                    b.Property<string>("status")
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
 
                     b.Property<Guid?>("store_variant_inventory_id")
                         .HasColumnType("uniqueidentifier");

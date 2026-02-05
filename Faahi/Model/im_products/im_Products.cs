@@ -155,6 +155,50 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "char(1)")]
         public string? is_varient { get; set; } = string.Empty;
 
+        //Excel 
+        //[NotMapped]
+        //public string? Category { get; set; } = null;
+
+        //[NotMapped]
+        //public string? Sub_Category { get; set; } = null;
+
+        //[NotMapped]
+        //public string? Sub_sub_Category { get; set; } = null;
+
+        //[NotMapped]
+        //public string? tax_class_name { get; set; } = null;
+
+        //[NotMapped]
+        //public Guid? listing_id { get; set; } = null;
+
+        //[NotMapped]
+        //public Decimal? cost { get; set; }
+
+        //[NotMapped]
+        //public Decimal? Qty { get; set; }
+
+        //[NotMapped]
+        //public string? Unit_of_Measure { get; set; }
+
+        //[NotMapped]
+        //public string? Other_charge { get; set; }
+
+        //[NotMapped]
+        //public DateOnly? expiry_date { get; set; }
+
+        //[NotMapped]
+        //public string? Batch_no { get; set; }
+
+        //[NotMapped]
+        //public string? Bin_no { get; set; }
+
+        //[NotMapped]
+        //public Guid? vendor_id { get; set; }
+
+        //[NotMapped]
+        //public string? listing_code { get; set; }
+      
+
         public ICollection<im_ProductVariants>? im_ProductVariants { get; set; } = null;
 
     }
