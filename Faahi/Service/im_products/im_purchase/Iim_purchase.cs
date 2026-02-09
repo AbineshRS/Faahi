@@ -32,7 +32,7 @@ namespace Faahi.Service.im_products.im_purchase
 
         Task<ServiceResult<im_ItemBatches>> update_item_batch(Guid item_batch_id,im_ItemBatches item_batch);
 
-        Task<ServiceResult<im_purchase_listing>> Add_purchase_listing_excel(im_purchase_listing im_Purchase_Listing);
+        Task<ServiceResult<im_purchase_listing>> Add_purchase_listing_excel(im_purchase_listing im_Purchase_Listing );
 
         Task<ServiceResult<im_Products>> Get_product_data(Guid product_id);
 
