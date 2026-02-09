@@ -133,6 +133,14 @@ namespace Faahi.Controllers.Application
 
         public DbSet<tx_TaxClasses> tx_TaxClasses { get; set; }
 
+        public DbSet<im_InventoryTransactions> im_InventoryTransactions { get; set; }
+
+
+
+
+
+
+
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }
 
@@ -147,6 +155,13 @@ namespace Faahi.Controllers.Application
                 tb.HasCheckConstraint("CK_im_itemBatches_expiry_date", "[expiry_date] > GETDATE()");
                 tb.HasCheckConstraint("CK_im_itemBatches_unit_cost", "[unit_cost] >= 0");
             });
+
+            //modelBuilder.Entity<im_InventoryTransactions>().ToTable(tb =>
+            //{
+            //    tb.HasCheckConstraint("CK_im_InventoryTransactions_sub_total", "[sub_total]>=0");
+            //    tb.HasCheckConstraint("CK_im_InventoryTransactions_doc_totall", "[doc_total]>=0");
+
+            //});
         }
     }
 

@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260207065621_varient_qty_1")]
+    partial class varient_qty_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1239,67 +1242,6 @@ namespace Faahi.Migrations
                     b.ToTable("im_InventoryLedger");
                 });
 
-            modelBuilder.Entity("Faahi.Model.im_products.im_InventoryTransactions", b =>
-                {
-                    b.Property<Guid>("transaction_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("batch_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("created_date_time")
-                        .HasColumnType("datetime");
-
-                    b.Property<Guid?>("listing_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("quantity_change")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("remarks")
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("source_doc_type")
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("total_cost")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<DateTime?>("trans_date")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("trans_reason")
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("trans_type")
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<decimal?>("unit_cost")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<Guid?>("variant_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("transaction_id");
-
-                    b.HasIndex("batch_id");
-
-                    b.HasIndex("variant_id");
-
-                    b.HasIndex(new[] { "listing_id" }, "IX_listing_id");
-
-                    b.HasIndex(new[] { "store_id" }, "IX_store_id");
-
-                    b.HasIndex(new[] { "transaction_id" }, "IX_transaction_id")
-                        .IsUnique();
-
-                    b.ToTable("im_InventoryTransactions");
-                });
-
             modelBuilder.Entity("Faahi.Model.im_products.im_ItemBatches", b =>
                 {
                     b.Property<Guid>("item_batch_id")
@@ -2303,9 +2245,6 @@ namespace Faahi.Migrations
                     b.Property<decimal?>("freight_amount")
                         .HasColumnType("decimal(18, 4)");
 
-                    b.Property<decimal?>("gst")
-                        .HasColumnType("decimal(6,2)");
-
                     b.Property<string>("listing_code")
                         .HasColumnType("nvarchar(50)");
 
@@ -2452,7 +2391,10 @@ namespace Faahi.Migrations
                     b.Property<string>("uom_name")
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<decimal?>("variant_qty")
+                    b.Property<string>("variant_qty")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal?>("varient_quantity")
                         .HasColumnType("decimal(18,4)");
 
                     b.HasKey("detail_id");
@@ -2918,33 +2860,6 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.im_products.im_ProductAttributes", null)
                         .WithMany("im_AttributeValues")
                         .HasForeignKey("im_ProductAttributesattribute_id");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_InventoryTransactions", b =>
-                {
-                    b.HasOne("Faahi.Model.im_products.im_ItemBatches", "im_ItemBatches")
-                        .WithMany()
-                        .HasForeignKey("batch_id");
-
-                    b.HasOne("Faahi.Model.im_products.im_purchase_listing", "Listing")
-                        .WithMany()
-                        .HasForeignKey("listing_id");
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "stores")
-                        .WithMany()
-                        .HasForeignKey("store_id");
-
-                    b.HasOne("Faahi.Model.im_products.im_ProductVariants", "im_ProductVariants")
-                        .WithMany()
-                        .HasForeignKey("variant_id");
-
-                    b.Navigation("Listing");
-
-                    b.Navigation("im_ItemBatches");
-
-                    b.Navigation("im_ProductVariants");
-
-                    b.Navigation("stores");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_PriceTiers", b =>

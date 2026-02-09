@@ -90,7 +90,7 @@ namespace Faahi.Model.im_products
         public string? is_varient { get; set; } = null;
 
         [Column(TypeName ="decimal(18,4)")]
-        public Decimal? varient_quantity { get; set; } = null;
+        public Decimal? variant_qty { get; set; } = null;
 
         [Column(TypeName ="nvarchar(100)")]
         public string? batch_no { get; set; } = null;
