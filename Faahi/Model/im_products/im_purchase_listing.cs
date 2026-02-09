@@ -86,6 +86,9 @@ namespace Faahi.Model.im_products
         [Column(TypeName ="decimal(6,2)")]
         public Decimal? plastic_bag { get; set; } = null;
 
+        [Column(TypeName ="decimal(6,2)")]
+        public Decimal? gst { get; set; } = null;
+
         //[Column(TypeName = "varchar(100)")]
         //public string? brand { get; set; } = null;
 

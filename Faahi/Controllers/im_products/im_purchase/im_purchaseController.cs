@@ -180,6 +180,18 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.Get_product_data(product_id);
             return Ok(result);
         }
+        //[Authorize]
+        [HttpGet]
+        [Route("get_purchase_list/{searchText}")]
+        public async Task<IActionResult> Get_purchase_list(string searchText)
+        {
+            if(searchText == null)
+            {
+                return Ok("No searchText found");
+            }
+            var result = await _im_purchase.Get_purchase_list(searchText);
+            return Ok(result);
+        }
       
     }
 }

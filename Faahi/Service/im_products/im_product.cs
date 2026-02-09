@@ -39,6 +39,8 @@ namespace Faahi.Service.im_products
 
         public async Task<ServiceResult<im_Products>> Create_Product(im_Products im_Product)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
+
             if (im_Product == null)
             {
                 _logger.LogWarning("Create_Product: No data was inserted");
@@ -141,6 +143,8 @@ namespace Faahi.Service.im_products
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
 
                 return new ServiceResult<im_Products>
                 {
@@ -152,6 +156,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_Product: An error occurred while creating the product");
                 return new ServiceResult<im_Products>
                 {
@@ -714,137 +719,177 @@ namespace Faahi.Service.im_products
 
         public async Task<ServiceResult<im_purchase_listing>> Add_product_excel(List<im_Products> im_Products, Guid listing_id)
         {
-            if (im_Products.Count == 0 || listing_id == null)
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                return new ServiceResult<im_purchase_listing>
+                if (im_Products.Count == 0 || listing_id == null)
                 {
-                    Status = 400,
-                    Message = "NO data found",
-                    Success = false
-                };
-            }
-            var im_Purchase = await _context.im_purchase_listing.Include(a => a.im_purchase_listing_details).FirstOrDefaultAsync(a => a.listing_id == listing_id);
-            if (im_Purchase != null)
-            {
-
-                var im_purchase_deatil = await _context.im_purchase_listing_details.Where(a => a.listing_id == im_Purchase.listing_id && a.new_item == "T").ToListAsync();
-
-                for (int i = 0; i < im_Products.Count; i++)
-                {
-                    var im_Product = im_Products[i];
-                    var detail = im_purchase_deatil[i];
-                  
-
-                    Random rnd = new Random();
-                    var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_Purchase.site_id);
-
-                    st_store.store_code = st_store.store_code;
-
-
-                    im_Product.product_id = Guid.CreateVersion7();
-                    detail.product_id = im_Product.product_id;
-                    im_Product.company_id = im_Product.company_id;
-                    im_Product.category_id = detail.category_id;
-                    im_Product.sub_category_id = detail.sub_category_id;
-                    im_Product.sub_sub_category_id = detail.sub_sub_category_id;
-                    im_Product.tax_class_id = detail.tax_class_id;
-                    im_Product.store_id = im_Product.store_id;
-                    im_Product.title = im_Product.title;
-                    im_Product.description = im_Product.description;
-                    im_Product.brand = im_Product.brand;
-                    im_Product.vendor_Code = im_Product.vendor_Code;
-                    im_Product.created_at = DateTime.Now;
-                    im_Product.updated_at = DateTime.Now;
-                    im_Product.dutyP = im_Product.dutyP;
-                    im_Product.featured_item = im_Product.featured_item;
-                    im_Product.ignore_direct = im_Product.ignore_direct;
-                    im_Product.ignore_direct = im_Product.ignore_direct;
-                    im_Product.restrict_HS = im_Product.restrict_HS;
-                    im_Product.status = im_Product.status;
-                    im_Product.is_varient = im_Product.is_varient;
-                    foreach (var im_varint in im_Product.im_ProductVariants)
+                    return new ServiceResult<im_purchase_listing>
                     {
-                        var table = "im_ProductVariants";
-                        var am_table = await _context.am_table_next_key.FindAsync(table);
-                        var key = Convert.ToInt16(am_table.next_key);
+                        Status = 400,
+                        Message = "NO data found",
+                        Success = false
+                    };
+                }
+                var im_Purchase = await _context.im_purchase_listing.Include(a => a.im_purchase_listing_details).FirstOrDefaultAsync(a => a.listing_id == listing_id);
+                if (im_Purchase != null)
+                {
+
+                    var im_purchase_deatil = await _context.im_purchase_listing_details.Where(a => a.listing_id == im_Purchase.listing_id && a.new_item == "T").ToListAsync();
+
+                    for (int i = 0; i < im_Products.Count; i++)
+                    {
+                        var im_Product = im_Products[i];
+                        var detail = im_purchase_deatil[i];
+
+                        var item_batch = await _context.im_itemBatches.FirstOrDefaultAsync(a => a.detail_id == detail.detail_id);
+                        Random rnd = new Random();
+                        var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_Purchase.site_id);
+
+                        st_store.store_code = st_store.store_code;
 
 
-                        im_varint.variant_id = Guid.CreateVersion7();
-                        detail.sub_variant_id = im_varint.variant_id;
-                        im_varint.product_id = im_Product.product_id;
-                        im_varint.uom_name = im_varint.uom_name;
-                        im_varint.description_2 = im_varint.description_2;
-                        im_varint.base_price = detail.base_price;
-
-                        im_varint.sku = st_store.store_code + "-" + Convert.ToString(key + 1);
-                        //im_purchase_deatil.sku = im_varint.sku;
-                        if (am_table != null)
+                        im_Product.product_id = Guid.CreateVersion7();
+                        detail.product_id = im_Product.product_id;
+                        im_Product.company_id = im_Product.company_id;
+                        im_Product.category_id = detail.category_id;
+                        im_Product.sub_category_id = detail.sub_category_id;
+                        im_Product.sub_sub_category_id = detail.sub_sub_category_id;
+                        im_Product.tax_class_id = detail.tax_class_id;
+                        im_Product.store_id = im_Product.store_id;
+                        im_Product.title = im_Product.title;
+                        im_Product.description = im_Product.description;
+                        im_Product.brand = im_Product.brand;
+                        im_Product.vendor_Code = im_Product.vendor_Code;
+                        im_Product.created_at = DateTime.Now;
+                        im_Product.updated_at = DateTime.Now;
+                        im_Product.dutyP = im_Product.dutyP;
+                        im_Product.featured_item = im_Product.featured_item;
+                        im_Product.ignore_direct = im_Product.ignore_direct;
+                        im_Product.ignore_direct = im_Product.ignore_direct;
+                        im_Product.restrict_HS = im_Product.restrict_HS;
+                        im_Product.status = im_Product.status;
+                        im_Product.is_varient = im_Product.is_varient;
+                        if (detail.expiry_date != null)
                         {
-                            am_table.next_key = key + 1;
-                            _context.am_table_next_key.Update(am_table);
-                            await _context.SaveChangesAsync();
+                            im_Product.track_expiry = "T";
+
                         }
-
-                        if (im_varint.barcode == null || im_varint.barcode == "" || im_varint.barcode == "0")
+                        foreach (var im_varint in im_Product.im_ProductVariants)
                         {
-                            string first3 = Regex.Replace(im_Product.title ?? "", @"\s+", "")
-                                             .Substring(0, Math.Min(3, (im_Product.title ?? "").Length))
-                                             .ToUpper();
-                            string randomNumber = rnd.Next(100000, 999999).ToString();
+                            var table = "im_ProductVariants";
+                            var am_table = await _context.am_table_next_key.FindAsync(table);
+                            var key = Convert.ToInt16(am_table.next_key);
 
-                            im_varint.barcode = $"{first3}{randomNumber}";
 
-                        }
-                        else
-                        {
-                            im_varint.barcode = im_varint.barcode;
-                        }
-                        im_varint.created_at = DateTime.Now;
-                        im_varint.updated_at = DateTime.Now;
-
-                        if (im_Product.is_varient == "T")
-                        {
-                            foreach (var varient_attrbut in im_varint.im_VariantAttributes)
+                            im_varint.variant_id = Guid.CreateVersion7();
+                            detail.sub_variant_id = im_varint.variant_id;
+                            if (item_batch != null)
                             {
-                                varient_attrbut.varient_attribute_id = Guid.CreateVersion7();
+                                item_batch.variant_id = im_varint.variant_id;
 
-                                varient_attrbut.value_id = varient_attrbut.value_id;
-                                varient_attrbut.attribute_id = varient_attrbut.attribute_id;
-                                varient_attrbut.variant_id = im_varint.variant_id;
+                            }
+                            im_varint.product_id = im_Product.product_id;
+                            im_varint.uom_name = im_varint.uom_name;
+                            im_varint.description_2 = im_varint.description_2;
+                            im_varint.base_price = detail.base_price;
+
+                            im_varint.sku = st_store.store_code + "-" + Convert.ToString(key + 1);
+                            if (item_batch != null)
+                            {
+                                item_batch.sku = im_varint.sku;
+
+                            }
+                            //im_purchase_deatil.sku = im_varint.sku;
+                            if (am_table != null)
+                            {
+                                am_table.next_key = key + 1;
+                                _context.am_table_next_key.Update(am_table);
+                                await _context.SaveChangesAsync();
+                            }
+
+                            if (im_varint.barcode == null || im_varint.barcode == "" || im_varint.barcode == "0")
+                            {
+                                string first3 = Regex.Replace(im_Product.title ?? "", @"\s+", "")
+                                                 .Substring(0, Math.Min(3, (im_Product.title ?? "").Length))
+                                                 .ToUpper();
+                                string randomNumber = rnd.Next(100000, 999999).ToString();
+
+                                im_varint.barcode = $"{first3}{randomNumber}";
+
+                            }
+                            else
+                            {
+                                im_varint.barcode = im_varint.barcode;
+                            }
+                            im_varint.created_at = DateTime.Now;
+                            im_varint.updated_at = DateTime.Now;
+
+                            if (im_Product.is_varient == "T")
+                            {
+                                foreach (var varient_attrbut in im_varint.im_VariantAttributes)
+                                {
+                                    varient_attrbut.varient_attribute_id = Guid.CreateVersion7();
+
+                                    varient_attrbut.value_id = varient_attrbut.value_id;
+                                    varient_attrbut.attribute_id = varient_attrbut.attribute_id;
+                                    varient_attrbut.variant_id = im_varint.variant_id;
+                                }
+                            }
+
+                            foreach (var store_inv in im_varint.im_StoreVariantInventory)
+                            {
+                                store_inv.store_variant_inventory_id = Guid.CreateVersion7();
+                                detail.store_variant_inventory_id = store_inv.store_variant_inventory_id;
+                                if (item_batch != null)
+                                {
+                                    item_batch.store_variant_inventory_id = store_inv.store_variant_inventory_id;
+
+                                }
+                                store_inv.variant_id = im_varint.variant_id;
+                                store_inv.company_id = store_inv.company_id;
+                                store_inv.store_id = store_inv.store_id;
+                                store_inv.on_hand_quantity = store_inv.on_hand_quantity;
+                                store_inv.committed_quantity = store_inv.committed_quantity;
+                                store_inv.bin_number = store_inv.bin_number;
                             }
                         }
-
-                        foreach (var store_inv in im_varint.im_StoreVariantInventory)
+                        //_context.im_purchase_listing_details.Update(im_purchase_deatil);
+                        _context.im_Products.Add(im_Product);
+                        if (item_batch != null)
                         {
-                            store_inv.store_variant_inventory_id = Guid.CreateVersion7();
-                            detail.store_variant_inventory_id = store_inv.store_variant_inventory_id;
-                            store_inv.variant_id = im_varint.variant_id;
-                            store_inv.company_id = store_inv.company_id;
-                            store_inv.store_id = store_inv.store_id;
-                            store_inv.on_hand_quantity = store_inv.on_hand_quantity;
-                            store_inv.committed_quantity = store_inv.committed_quantity;
-                            store_inv.bin_number = store_inv.bin_number;
+                            _context.im_itemBatches.Update(item_batch);
+
                         }
+                        _context.im_purchase_listing_details.Update(detail);
+                        await _context.SaveChangesAsync();
+
+
+
+
                     }
-                    //_context.im_purchase_listing_details.Update(im_purchase_deatil);
-                    _context.im_Products.Add(im_Product);
-
-                   
-                    _context.im_purchase_listing_details.Update(detail);
                     await _context.SaveChangesAsync();
-
-
-                   
-
+                    await transaction.CommitAsync();
                 }
-                await _context.SaveChangesAsync();
-
+                return new ServiceResult<im_purchase_listing>
+                {
+                    Status = 201,
+                    Data = im_Purchase
+                };
             }
-            return new ServiceResult<im_purchase_listing>
+            catch(Exception ex)
             {
-                Status = 201,
-                Data = im_Purchase
-            };
+                await transaction.RollbackAsync();
+
+                _logger.LogInformation("Errow While Add_product_excel");
+                return new ServiceResult<im_purchase_listing>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+            
 
         }
 
