@@ -63,11 +63,12 @@ namespace Faahi.Service.im_products
                 im_Product.category_id = im_Product.category_id;
                 im_Product.sub_category_id = im_Product.sub_category_id;
                 im_Product.sub_sub_category_id = im_Product.sub_sub_category_id;
+                im_Product.tax_class_id = im_Product.tax_class_id;
                 im_Product.store_id = im_Product.store_id;
                 im_Product.title = im_Product.title;
                 im_Product.description = im_Product.description;
                 im_Product.brand = im_Product.brand;
-                im_Product.vendor_Code = im_Product.vendor_Code;
+                im_Product.vendor_id = im_Product.vendor_id;
                 im_Product.created_at = DateTime.Now;
                 im_Product.updated_at = DateTime.Now;
                 im_Product.dutyP = im_Product.dutyP;
@@ -77,6 +78,12 @@ namespace Faahi.Service.im_products
                 im_Product.restrict_HS = im_Product.restrict_HS;
                 im_Product.status = im_Product.status;
                 im_Product.is_varient = im_Product.is_varient;
+                im_Product.has_free_item = im_Product.has_free_item;
+                im_Product.stock_flag = im_Product.stock_flag;
+                im_Product.allow_below_zero = im_Product.allow_below_zero;
+                im_Product.fixed_price = im_Product.fixed_price;
+                im_Product.item_kit = im_Product.item_kit;
+                im_Product.on_hold = im_Product.on_hold;
 
                 foreach (var im_varint in im_Product.im_ProductVariants)
                 {
@@ -739,6 +746,16 @@ namespace Faahi.Service.im_products
 
                     for (int i = 0; i < im_Products.Count; i++)
                     {
+                        if (i >= im_purchase_deatil.Count)
+                        {
+                            await transaction.CommitAsync();
+                            return new ServiceResult<im_purchase_listing>
+                            {
+                                Status = 400,
+                                Success = false,
+                                Message = "Purchase detail index out of range"
+                            };
+                        }
                         var im_Product = im_Products[i];
                         var detail = im_purchase_deatil[i];
 
@@ -760,16 +777,21 @@ namespace Faahi.Service.im_products
                         im_Product.title = im_Product.title;
                         im_Product.description = im_Product.description;
                         im_Product.brand = im_Product.brand;
-                        im_Product.vendor_Code = im_Product.vendor_Code;
+                        im_Product.vendor_id = im_Product.vendor_id;
                         im_Product.created_at = DateTime.Now;
                         im_Product.updated_at = DateTime.Now;
                         im_Product.dutyP = im_Product.dutyP;
                         im_Product.featured_item = im_Product.featured_item;
                         im_Product.ignore_direct = im_Product.ignore_direct;
-                        im_Product.ignore_direct = im_Product.ignore_direct;
                         im_Product.restrict_HS = im_Product.restrict_HS;
                         im_Product.status = im_Product.status;
                         im_Product.is_varient = im_Product.is_varient;
+                        im_Product.has_free_item = im_Product.has_free_item;
+                        im_Product.stock_flag = im_Product.stock_flag;
+                        im_Product.allow_below_zero = im_Product.allow_below_zero;
+                        im_Product.fixed_price = im_Product.fixed_price;
+                        im_Product.item_kit = im_Product.item_kit;
+                        im_Product.on_hold = im_Product.on_hold;
                         if (detail.expiry_date != null)
                         {
                             im_Product.track_expiry = "T";
@@ -1088,6 +1110,7 @@ namespace Faahi.Service.im_products
                 //st_store.store_code = st_store.store_code;
                 product.title = im_products.title;
                 product.description = im_products.description;
+                product.tax_class_id = im_products.tax_class_id;
                 product.brand = im_products.brand;
                 product.updated_at = DateTime.Now;
                 product.stock_flag = im_products.stock_flag;
@@ -1098,6 +1121,7 @@ namespace Faahi.Service.im_products
                 product.fixed_price = im_products.fixed_price;
                 product.published = im_products.published;
                 product.is_varient = im_products.is_varient;
+                product.vendor_id = im_products.vendor_id;
                 product.track_expiry = im_products.track_expiry;
                 product.status = im_products.status;
                 foreach (var varient in im_products.im_ProductVariants)
@@ -1186,6 +1210,7 @@ namespace Faahi.Service.im_products
                 product.category_id = im_Products.category_id;
                 product.sub_category_id = im_Products.sub_category_id;
                 product.sub_sub_category_id = im_Products.sub_sub_category_id;
+                product.tax_class_id = im_Products.tax_class_id;
                 product.description = im_Products.description;
                 product.brand = im_Products.brand;
                 product.updated_at = DateTime.Now;
@@ -1196,6 +1221,7 @@ namespace Faahi.Service.im_products
                 product.allow_below_zero = im_Products.allow_below_zero;
                 product.fixed_price = im_Products.fixed_price;
                 product.published = im_Products.published;
+                product.vendor_id = im_Products.vendor_id;
                 product.status = im_Products.status;
                 foreach (var varient in im_Products.im_ProductVariants)
                 {
