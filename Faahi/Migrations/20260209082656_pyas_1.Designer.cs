@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260209082656_pyas_1")]
+    partial class pyas_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1767,18 +1770,10 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<string>("item_kit")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
                     b.Property<string>("kitchen_type")
                         .HasColumnType("varchar(32)");
 
                     b.Property<string>("low_stock_alert")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<string>("on_hold")
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
@@ -1827,7 +1822,7 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("updated_at")
                         .HasColumnType("datetime");
 
-                    b.Property<Guid?>("vendor_id")
+                    b.Property<Guid?>("vendor_Code")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("product_id");
@@ -2581,7 +2576,7 @@ namespace Faahi.Migrations
             modelBuilder.Entity("Faahi.Model.sales.so_payment_type", b =>
                 {
                     b.Property<string>("PayTypeCode")
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<decimal?>("Bank_pcnt")
                         .HasColumnType("decimal(14,2)");
@@ -2589,8 +2584,12 @@ namespace Faahi.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(35)");
 
-                    b.Property<int?>("Order")
-                        .HasColumnType("int");
+                    b.Property<int>("Order")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Order");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Order"));
 
                     b.Property<string>("card_type")
                         .HasMaxLength(1)

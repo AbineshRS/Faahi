@@ -1136,15 +1136,18 @@ namespace Faahi.Service.im_products.im_purchase
                     };
                 }
                 var existing_item = await _context.im_itemBatches.FirstOrDefaultAsync(a => a.item_batch_id == item_batch_id);
+                var store_inv = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == existing_item.store_variant_inventory_id); 
                 if (existing_item != null)
                 {
                     existing_item.expiry_date = im_ItemBatches.expiry_date;
                     existing_item.batch_number = im_ItemBatches.batch_number;
+                    store_inv.batch_number = existing_item.batch_number;
                     existing_item.batch_promo_price = im_ItemBatches.batch_promo_price;
                     existing_item.promo_from_date = im_ItemBatches.promo_from_date;
                     existing_item.promo_to_date = im_ItemBatches.promo_to_date;
                     existing_item.batch_on_hold = im_ItemBatches.batch_on_hold;
                     _context.im_itemBatches.Update(existing_item);
+                    _context.im_StoreVariantInventory.Update(store_inv);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
                 }

@@ -5,6 +5,7 @@ using Faahi.Model.co_business;
 using Faahi.Model.countries;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
+using Faahi.Model.sales;
 using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
@@ -135,7 +136,7 @@ namespace Faahi.Controllers.Application
 
         public DbSet<im_InventoryTransactions> im_InventoryTransactions { get; set; }
 
-
+        public DbSet<so_payment_type> so_Payment_Types { get; set; }
 
 
 
@@ -154,6 +155,13 @@ namespace Faahi.Controllers.Application
                 tb.HasCheckConstraint("CK_im_itemBatches_on_hand_quantity", "[on_hand_quantity] >= 0");
                 tb.HasCheckConstraint("CK_im_itemBatches_expiry_date", "[expiry_date] > GETDATE()");
                 tb.HasCheckConstraint("CK_im_itemBatches_unit_cost", "[unit_cost] >= 0");
+            });
+
+            modelBuilder.Entity<so_payment_type>(entity =>
+            {
+                entity.ToTable("so_payment_type");
+                entity.HasKey(sp => new { sp.PayTypeCode });
+                entity.Property(sp => sp.is_avilable).HasDefaultValue("T");
             });
 
             //modelBuilder.Entity<im_InventoryTransactions>().ToTable(tb =>

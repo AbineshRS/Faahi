@@ -61,7 +61,7 @@ namespace Faahi.Model.im_products
         //public string? HS_CODE { get; set; } = null;
 
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? vendor_Code { get; set; } = null;
+        public Guid? vendor_id { get; set; } = null;
 
         [Column(TypeName = "varchar(32)")]
         public string? kitchen_type { get; set; } = null;
@@ -75,10 +75,10 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "decimal(16, 4)")]
         public Decimal? dutyP { get; set; } = null;
 
-        //[StringLength(1)]
-        //[DefaultValue("F")]
-        //[Column(TypeName = "char(1)")]
-        //public string? katta { get; set; } = string.Empty;
+        [StringLength(1)]
+        [DefaultValue("F")]
+        [Column(TypeName = "char(1)")]
+        public string? item_kit { get; set; } = string.Empty;
 
         [StringLength(1)]
         [DefaultValue("F")]
@@ -141,7 +141,7 @@ namespace Faahi.Model.im_products
         public string? restrict_HS { get; set; } = string.Empty;
 
         [StringLength(1)]
-        [DefaultValue("Y")]
+        [DefaultValue("F")]
         [Column(TypeName = "char(1)")]
         public string? stock_flag { get; set; }  = string.Empty;
 
@@ -154,6 +154,11 @@ namespace Faahi.Model.im_products
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]
         public string? is_varient { get; set; } = string.Empty;
+
+        [StringLength(1)]
+        [DefaultValue("T")]
+        [Column(TypeName = "char(1)")]
+        public string? on_hold { get; set; } = string.Empty;
 
         //Excel 
         //[NotMapped]
