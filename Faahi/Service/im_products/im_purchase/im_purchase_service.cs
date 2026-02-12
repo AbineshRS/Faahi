@@ -92,7 +92,8 @@ namespace Faahi.Service.im_products.im_purchase
                         item.store_variant_inventory_id = item.store_variant_inventory_id;
                         item.uom_name = item.uom_name;
                         item.unit_price = item.unit_price;
-                        item.product_description = item.product_description;
+                        item.Product_title = item.Product_title;
+                        item.Product_Brand = item.Product_Brand;
                         item.discount_amount = item.discount_amount;
                         item.tax_amount = item.tax_amount;
                         item.barcode = item.barcode;
@@ -129,7 +130,8 @@ namespace Faahi.Service.im_products.im_purchase
                             im_ItemBatches.notes = im_ItemBatches.notes;
                             im_ItemBatches.barcode = item.barcode;
                             im_ItemBatches.sku = item.sku;
-                            im_ItemBatches.product_description = item.product_description;
+                            im_ItemBatches.product_description = item.Product_title;
+                           
                             im_ItemBatches.created_at = DateTime.Now;
                             if (table_key != null)
                             {
@@ -215,7 +217,8 @@ namespace Faahi.Service.im_products.im_purchase
                             item.freight_amount = item.freight_amount;
                             item.other_expenses = item.other_expenses;
                             item.expiry_date = item.expiry_date;
-                            item.product_description = item.product_description;
+                            item.Product_title = item.Product_title;
+                            item.Product_Brand = item.Product_Brand;
                             item.variant_qty = item.variant_qty;
                             item.line_total = item.quantity * item.unit_price;
 
@@ -244,6 +247,7 @@ namespace Faahi.Service.im_products.im_purchase
                                 im_ItemBatches.expiry_date = item.expiry_date;
                                 im_ItemBatches.received_quantity = item.quantity;
                                 im_ItemBatches.on_hand_quantity = item.quantity;
+                                im_ItemBatches.product_description = item.Product_title;
                                 im_ItemBatches.unit_cost = item.unit_price;
                                 im_ItemBatches.total_cost = item.quantity * item.unit_price;
                                 im_ItemBatches.is_active = "T";
@@ -274,7 +278,8 @@ namespace Faahi.Service.im_products.im_purchase
                             existing_purchase.freight_amount = item.freight_amount;
                             existing_purchase.batch_no = item.batch_no;
 
-                            existing_purchase.product_description = item.product_description;
+                            existing_purchase.Product_title = item.Product_title;
+                            existing_purchase.Product_Brand = item.Product_Brand;
                             existing_purchase.other_expenses = item.other_expenses;
                             other_expense += Convert.ToDecimal(existing_purchase.other_expenses);
 
@@ -473,22 +478,7 @@ namespace Faahi.Service.im_products.im_purchase
 
                 //Delete
                 var exist_deatils = await _context.im_purchase_listing_details.Where(a => a.listing_id == existing_purchase.listing_id).ToListAsync();
-                var new_deatil_id = im_Purchase_Listing.im_purchase_listing_details.Select(id => id.detail_id).ToList();
-                var delete_deatils = exist_deatils.Where(a => !new_deatil_id.Contains(a.detail_id)).ToList();
-                if (delete_deatils.Any())
-                {
-                    _context.im_purchase_listing_details.RemoveRange(delete_deatils);
-
-                    var deletedProductIds = delete_deatils.Select(d => d.detail_id).Distinct().ToList();
-                    var temp_variants = await _context.temp_im_variants.Where(tv => deletedProductIds.Contains(tv.detail_id)).ToListAsync();
-
-                    if (temp_variants.Any())
-                    {
-                        _context.temp_im_variants.RemoveRange(temp_variants);
-                    }
-                    await _context.SaveChangesAsync();
-
-                }
+               
 
                 if (existing_purchase != null)
                 {
@@ -520,7 +510,8 @@ namespace Faahi.Service.im_products.im_purchase
                             existing_im_purchase_listing_details.product_id = item.product_id;
                             //existing_im_purchase_listing_details.sub_variant_id = item.sub_variant_id;
                             existing_im_purchase_listing_details.uom_name = item.uom_name;
-                            existing_im_purchase_listing_details.product_description = item.product_description;
+                            //existing_im_purchase_listing_details.Product_title = item.Product_title;
+                            //existing_im_purchase_listing_details.Product_Brand = item.Product_Brand;
                             existing_im_purchase_listing_details.unit_price = item.unit_price;
                             existing_im_purchase_listing_details.discount_amount = item.discount_amount;
                             existing_im_purchase_listing_details.tax_amount = item.tax_amount;
@@ -547,7 +538,8 @@ namespace Faahi.Service.im_products.im_purchase
                             item.product_id = item.product_id;
                             item.sub_variant_id = item.sub_variant_id;
                             item.uom_name = item.uom_name;
-                            item.product_description = item.product_description;
+                            item.Product_title = item.Product_title;
+                            item.Product_Brand = item.Product_Brand;
                             item.unit_price = item.unit_price;
                             item.discount_amount = item.discount_amount;
                             item.tax_amount = item.tax_amount;
@@ -1278,7 +1270,8 @@ namespace Faahi.Service.im_products.im_purchase
                         {
                             item.new_item = "F";
                         }
-                        item.product_description = item.product_description;
+                        item.Product_title = item.Product_title;
+                        item.Product_Brand = item.Product_Brand;
                         item.store_variant_inventory_id = store_variant_inventory_id;
                         if (item.expiry_date != null)
                         {
@@ -1302,7 +1295,7 @@ namespace Faahi.Service.im_products.im_purchase
                             im_ItemBatches.notes = im_ItemBatches.notes;
                             im_ItemBatches.barcode = item.barcode;
                             im_ItemBatches.sku = item.sku;
-                            im_ItemBatches.product_description = item.product_description;
+                            im_ItemBatches.product_description = item.Product_title;
                             im_ItemBatches.created_at = DateTime.Now;
                             if (table_key != null)
                             {
@@ -1357,7 +1350,8 @@ namespace Faahi.Service.im_products.im_purchase
                             existing_purchase_deatils.notes = item.notes;
                             existing_purchase_deatils.batch_no = item.batch_no;
                             existing_purchase_deatils.bin_no = item.bin_no;
-                            existing_purchase_deatils.product_description = item.product_description;
+                            existing_purchase_deatils.Product_title = item.Product_title;
+                            existing_purchase_deatils.Product_Brand = item.Product_Brand;
                             existing_purchase_deatils.uom_name = item.uom_name;
                             existing_purchase_deatils.barcode = item.barcode;
                             existing_purchase_deatils.sku = item.sku;
@@ -1378,7 +1372,7 @@ namespace Faahi.Service.im_products.im_purchase
                                     existing_batches.unit_cost = item.unit_price;
                                     existing_batches.total_cost = item.quantity * item.unit_price;
                                     existing_batches.is_active = "T";
-                                    existing_batches.product_description = item.product_description;
+                                    existing_batches.product_description = item.Product_title;
                                     existing_batches.reference_doc = im_Purchase_Listing.supplier_invoice_no;
                                     existing_batches.notes = im_ItemBatches.notes;
                                     existing_batches.product_description = existing_batches.product_description;
@@ -1444,7 +1438,8 @@ namespace Faahi.Service.im_products.im_purchase
                             {
                                 item.new_item = "F";
                             }
-                            item.product_description = item.product_description;
+                            item.Product_title = item.Product_title;
+                            item.Product_Brand = item.Product_Brand;
                             item.store_variant_inventory_id = store_variant_inventory_id;
                             if (item.expiry_date != null)
                             {
@@ -1463,7 +1458,7 @@ namespace Faahi.Service.im_products.im_purchase
                                 im_ItemBatches.expiry_date = item.expiry_date;
                                 im_ItemBatches.received_quantity = item.quantity;
                                 im_ItemBatches.on_hand_quantity = item.quantity;
-                                im_ItemBatches.product_description = item.product_description;
+                                im_ItemBatches.product_description = item.Product_title;
                                 im_ItemBatches.unit_cost = item.unit_price;
                                 im_ItemBatches.total_cost = item.quantity * item.unit_price;
                                 im_ItemBatches.is_active = "T";
