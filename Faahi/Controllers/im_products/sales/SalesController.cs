@@ -78,14 +78,14 @@ namespace Faahi.Controllers.im_products.sales
         }
         //[Authorize]
         [HttpGet]
-        [Route("get_item_batches_list/{variant_id}/{requiredQuantity}")]
-        public async Task<IActionResult> Get_item_batches_list(Guid variant_id, decimal requiredQuantity)
+        [Route("get_item_batches_list/{variant_id}")]
+        public async Task<IActionResult> Get_item_batches_list(Guid variant_id)
         {
             if(variant_id == null)
             {
                 return Ok("NO data found");
             }
-            var result = await _isalse.Get_item_batches_list(variant_id, requiredQuantity);
+            var result = await _isalse.Get_item_batches_list(variant_id);
             return Ok(result);
         }
     }

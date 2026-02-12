@@ -99,7 +99,10 @@ namespace Faahi.Model.im_products
         public string? bin_no { get; set; } = null;
 
         [Column(TypeName = "nvarchar(100)")]
-        public string? product_description { get; set; } = null;
+        public string? Product_Brand { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(100)")]
+        public string? Product_title { get; set; } = null;
 
         [Column(TypeName = "nvarchar(100)")]
         public string? barcode { get; set; } = null;

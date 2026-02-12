@@ -238,7 +238,7 @@ namespace Faahi.Service.im_products.sales
             };
 
         }
-        public async Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches_list(Guid variant_id, decimal requiredQuantity)
+        public async Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches_list(Guid variant_id)
         {
             if (variant_id == null)
             {
@@ -254,21 +254,37 @@ namespace Faahi.Service.im_products.sales
 
 
 
-            var expery_count = await _context.im_itemBatches.Where(a => a.variant_id == variant_id && a.expiry_date > today && a.on_hand_quantity >= 0).OrderBy(a => a.expiry_date).ToListAsync();
-            Decimal? remainingQty = requiredQuantity;
+            var expiryBatches = await _context.im_itemBatches.Where(a => a.variant_id == variant_id && a.expiry_date > today && a.on_hand_quantity >= 0).OrderBy(a => a.expiry_date).ToListAsync();
+            //decimal remainingQty = requiredQuantity;
 
-            List<im_ItemBatches> itemBatches = new List<im_ItemBatches>();
-            foreach (var item in expery_count)
-            {
-                if (remainingQty <= 0)
-                    break;
+            //List<im_ItemBatches> itemBatches = new List<im_ItemBatches>();
+            //foreach (var batch in expiryBatches)
+            //{
+            //    if (remainingQty <= 0)
+            //        break;
 
-                decimal usedQty = Math.Min(item.on_hand_quantity ?? 0, remainingQty ?? 0);
-                item.on_hand_quantity = usedQty;
-                itemBatches.Add(item);
+            //    decimal availableQty = batch.on_hand_quantity ?? 0;
 
-                remainingQty -= usedQty;
-            }
+            //    if (availableQty <= 0)
+            //        continue;
+
+            //    decimal usedQty = 0;
+
+            //    if (availableQty >= remainingQty)
+            //    {
+            //        usedQty = remainingQty;
+            //    }
+            //    else
+            //    {
+            //        usedQty = availableQty;
+            //    }
+
+            //    batch.on_hand_quantity = usedQty;
+
+            //    itemBatches.Add(batch);
+
+            //    remainingQty -= usedQty;
+            //}
 
 
 
@@ -277,7 +293,7 @@ namespace Faahi.Service.im_products.sales
                 Status = 200,
                 Message = "Success",
                 Success = true,
-                Data = itemBatches
+                Data = expiryBatches
 
             };
 

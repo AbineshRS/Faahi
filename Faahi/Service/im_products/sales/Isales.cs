@@ -15,6 +15,6 @@ namespace Faahi.Service.im_products.sales
         Task<ServiceResult<so_payment_type>> Update_payment(string payTypeCode, so_payment_type so_Payment_);
 
         Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches(Guid variant_id);
-        Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches_list(Guid variant_id, decimal requiredQuantity);
+        Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches_list(Guid variant_id);
     }
 }

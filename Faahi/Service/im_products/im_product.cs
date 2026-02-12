@@ -774,9 +774,9 @@ namespace Faahi.Service.im_products
                         im_Product.sub_sub_category_id = detail.sub_sub_category_id;
                         im_Product.tax_class_id = detail.tax_class_id;
                         im_Product.store_id = im_Product.store_id;
-                        im_Product.title = im_Product.title;
+                        im_Product.title = detail.Product_title;
                         im_Product.description = im_Product.description;
-                        im_Product.brand = im_Product.brand;
+                        im_Product.brand = detail.Product_Brand;
                         im_Product.vendor_id = im_Product.vendor_id;
                         im_Product.created_at = DateTime.Now;
                         im_Product.updated_at = DateTime.Now;
