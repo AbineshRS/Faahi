@@ -233,7 +233,25 @@ namespace Faahi.Controllers.Store
 
             return Ok(resut);
         }
-
+        [HttpPost]
+        [Route("add_templates")]
+        public async Task<ActionResult<st_invoice_template>> Add_templates(st_invoice_template st_template)
+        {
+            if (st_template == null)
+            {
+                return Ok("");
+            }
+            var result = await _istore.Add_templates(st_template);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_templates")]
+        public async Task<IActionResult> Get_templates()
+        {
+            var result = await _istore.Get_templates();
+            return Ok(result);
+        }
     }
 
 }

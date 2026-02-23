@@ -42,6 +42,10 @@ namespace Faahi.Service.Store
 
         Task<ServiceResult<st_stores>> Delete_store(Guid store_id);
 
+        Task<ServiceResult<st_invoice_template>> Add_templates(st_invoice_template st_Invoice_Template);
+
+        Task<ServiceResult<List<st_invoice_template>>> Get_templates();
+
 
 
     }

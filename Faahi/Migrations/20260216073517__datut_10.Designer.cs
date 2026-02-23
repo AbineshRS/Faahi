@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260216073517__datut_10")]
+    partial class _datut_10
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -585,26 +588,6 @@ namespace Faahi.Migrations
                     b.ToTable("st_UserStoreAccess");
                 });
 
-            modelBuilder.Entity("Faahi.Model.Stores.st_invoice_template", b =>
-                {
-                    b.Property<Guid>("invoices_temp_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("invoices_temp_description")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("invoices_temp_name")
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("type_name")
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("invoices_temp_id");
-
-                    b.ToTable("st_Invoice_Templates");
-                });
-
             modelBuilder.Entity("Faahi.Model.Stores.st_store_currencies", b =>
                 {
                     b.Property<Guid>("store_currency_id")
@@ -1124,10 +1107,6 @@ namespace Faahi.Migrations
                         .IsRequired()
                         .HasColumnType("varchar(100)");
 
-                    b.Property<string>("currency_code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(8)");
-
                     b.Property<string>("currency_name")
                         .IsRequired()
                         .HasColumnType("varchar(100)");
@@ -1284,9 +1263,6 @@ namespace Faahi.Migrations
                     b.Property<string>("remarks")
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<Guid?>("sales_line_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("source_doc_type")
                         .HasColumnType("varchar(20)");
 
@@ -1314,8 +1290,6 @@ namespace Faahi.Migrations
                     b.HasKey("transaction_id");
 
                     b.HasIndex("batch_id");
-
-                    b.HasIndex("sales_line_id");
 
                     b.HasIndex("variant_id");
 
@@ -2712,9 +2686,6 @@ namespace Faahi.Migrations
                     b.Property<int?>("number_of_pax")
                         .HasColumnType("int");
 
-                    b.Property<string>("payment_mode")
-                        .HasColumnType("nvarchar(30)");
-
                     b.Property<Guid?>("payment_term_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -3486,10 +3457,6 @@ namespace Faahi.Migrations
                         .WithMany()
                         .HasForeignKey("listing_id");
 
-                    b.HasOne("Faahi.Model.sales.so_SalesLines", "SalesLines")
-                        .WithMany()
-                        .HasForeignKey("sales_line_id");
-
                     b.HasOne("Faahi.Model.st_sellers.st_stores", "stores")
                         .WithMany()
                         .HasForeignKey("store_id");
@@ -3499,8 +3466,6 @@ namespace Faahi.Migrations
                         .HasForeignKey("variant_id");
 
                     b.Navigation("Listing");
-
-                    b.Navigation("SalesLines");
 
                     b.Navigation("im_ItemBatches");
 

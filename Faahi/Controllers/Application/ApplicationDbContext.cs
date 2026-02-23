@@ -138,7 +138,11 @@ namespace Faahi.Controllers.Application
 
         public DbSet<so_payment_type> so_Payment_Types { get; set; }
 
+        public DbSet<so_SalesHeaders> so_SalesHeaders { get; set; }
 
+        public DbSet<so_SalesLines> so_SalesLines {  get; set; }
+
+        public DbSet<st_invoice_template> st_Invoice_Templates { get; set; }
 
 
 
@@ -164,12 +168,81 @@ namespace Faahi.Controllers.Application
                 entity.Property(sp => sp.is_avilable).HasDefaultValue("T");
             });
 
-            //modelBuilder.Entity<im_InventoryTransactions>().ToTable(tb =>
-            //{
-            //    tb.HasCheckConstraint("CK_im_InventoryTransactions_sub_total", "[sub_total]>=0");
-            //    tb.HasCheckConstraint("CK_im_InventoryTransactions_doc_totall", "[doc_total]>=0");
+            modelBuilder.Entity<so_SalesHeaders>(entity =>
+            {
+                entity.Property(e => e.sub_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.service_charge_percent).HasColumnType("decimal(6,2)").HasDefaultValue("0");  
+                entity.Property(e => e.discount_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.service_charge).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.tax_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.grand_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_plastic_bag).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_taxable_value).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_zero_value).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_exempted_value).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_charge_customer).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_plastic_bag_tax).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.sub_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.discount_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.tax_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.grand_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_taxable_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_zero_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_exempted_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                //entity.Property(e => e.total_charge_customer_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.service_charge_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_plastic_bag_tax_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.total_charge_bank_marchant).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.transaction_cost).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.amount_paid_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.change_given_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.change_given_doc).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.balance_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.status).HasColumnType("varchar(20)").HasDefaultValue("OPEN");
+                entity.Property(e => e.sales_mode).HasColumnType("varchar(25)").HasDefaultValue("GENERAL");
+                entity.Property(e => e.doc_type).HasColumnType("varchar(10)").HasDefaultValue("SALE");
+                entity.Property(e => e.sales_on_hold).HasColumnType("char(1)").HasDefaultValue("F");
+ 
+                    
+                entity.ToTable(tb =>
+                {
+                    tb.HasCheckConstraint(
+                        "CK_so_SalesHeaders_Totals_NonNegative",
+                        "sub_total >= 0 AND discount_total >= 0 AND tax_total >= 0 AND grand_total >= 0 AND sub_total_base >= 0 AND discount_total_base >= 0 AND tax_total_base >= 0 AND grand_total_base >= 0"
+                    );
+                });
+            });
 
-            //});
+            modelBuilder.Entity<so_SalesLines>(entity =>
+            {
+                entity.Property(e => e.sales_line_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.quantity).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.line_discount_amount).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.unit_price).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.discount_amount).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.discount_percent).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.tax_amount).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.detected_qty).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.original_price_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.returned_quantity).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.original_quantity).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.fx_rate_to_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.unit_price_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.discount_amount_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.tax_amount_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.unit_discount_amount_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.line_total_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.line_total).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(e => e.track_expiry).HasColumnType("char(1)").HasDefaultValue("F");
+                entity.Property(e => e.stock_item).HasColumnType("char(1)").HasDefaultValue("F");
+
+                entity.ToTable(tb =>
+                {
+                    tb.HasCheckConstraint("CK_so_SalesLines_Amounts",
+                        "unit_price >= 0 AND discount_amount >= 0 AND tax_amount >= 0 AND discount_percent >= 0 AND fx_rate_to_base > 0");
+                });
+            });
+
         }
     }
 

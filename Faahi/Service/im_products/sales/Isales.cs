@@ -1,6 +1,7 @@
 ﻿using Faahi.Dto;
 using Faahi.Model.im_products;
 using Faahi.Model.sales;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Faahi.Service.im_products.sales
 {
@@ -16,5 +17,13 @@ namespace Faahi.Service.im_products.sales
 
         Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches(Guid variant_id);
         Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches_list(Guid variant_id);
+
+        Task<ActionResult<ServiceResult<so_SalesHeaders>>> Add_sales(so_SalesHeaders so_SalesHeaders);
+
+        Task<ServiceResult<List<so_SalesHeaders>>> Get_sales(Guid company_id);
+
+        Task<ServiceResult<so_SalesHeaders>> Get_sales_salesId(Guid salesId);
+
+        Task<ServiceResult<so_SalesHeaders>> Update_sales(Guid salesId, so_SalesHeaders so_SalesHeaders);
     }
 }

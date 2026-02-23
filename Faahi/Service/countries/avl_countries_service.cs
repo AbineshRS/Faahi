@@ -226,8 +226,10 @@ namespace Faahi.Service.countries
                         continue;
 
                     // Usually first currency is primary
-                    var firstCurrency = country.currencies.First().Value;
+                    var firstCurrencyEntry = country.currencies.First();
 
+                    var currencyCode = firstCurrencyEntry.Key;     // INR, USD, MVR
+                    var firstCurrency = firstCurrencyEntry.Value;  // name + symbol
                     // Check if country already exists (avoid duplicates)
                     var existing = await _context.fx_Currencies
                         .FirstOrDefaultAsync(x => x.country_code == country.cca2);
@@ -241,7 +243,7 @@ namespace Faahi.Service.countries
                     fx_Currencies.country_code = country.cca2;
                     fx_Currencies.currency_name = firstCurrency.name;
                     fx_Currencies.currency_symbol = firstCurrency.symbol;
-
+                    fx_Currencies.currency_code = currencyCode; 
                     // ✅ Initialize the timezones list before looping
                     fx_Currencies.fx_timezones = new List<fx_timezones>();
 
@@ -306,7 +308,7 @@ namespace Faahi.Service.countries
         }
         public async Task<ServiceResult<List<fx_Currencies>>> get_all_Countries()
         {
-            var countrys = await _context.fx_Currencies.Include(a=>a.fx_timezones).ToListAsync();
+            var countrys = await _context.fx_Currencies.OrderBy(a=>a.country_name).Include(a=>a.fx_timezones).ToListAsync();
             if (countrys == null)
             {
                 return new ServiceResult<List<fx_Currencies>> { Success = false };
