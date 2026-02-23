@@ -5,6 +5,7 @@ using Faahi.Model.co_business;
 using Faahi.Model.countries;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
+using Faahi.Model.pos_tables;
 using Faahi.Model.sales;
 using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
@@ -144,6 +145,12 @@ namespace Faahi.Controllers.Application
 
         public DbSet<st_invoice_template> st_Invoice_Templates { get; set; }
 
+        public DbSet<pos_SalePayments> pos_SalePayments { get; set; }
+
+        public DbSet<pos_DrawerSessions> pos_DrawerSessions { get; set; }
+
+        public DbSet<pos_DrawerCountDetails> pos_DrawerCountDetails { get; set; }
+             
 
 
         //TEMPTABLES
@@ -243,6 +250,34 @@ namespace Faahi.Controllers.Application
                 });
             });
 
+            modelBuilder.Entity<pos_SalePayments>(entity =>
+            {
+                entity.Property(a => a.sale_payment_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.line_no).HasColumnType("int").HasDefaultValue(1);
+                entity.Property(a => a.change_given).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.is_voided).HasColumnType("char(1)").HasDefaultValue("F");
+            });
+
+            modelBuilder.Entity<pos_DrawerSessions>(entity =>
+            {
+                entity.Property(a => a.drawer_session_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.opening_float).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.opened_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.status).HasColumnType("char(1)").HasDefaultValue("O");
+
+            });
+            modelBuilder.Entity<pos_DrawerCountDetails>(entity =>
+            {
+                entity.Property(a => a.drawer_count_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.expected_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.counted_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.difference_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+
+
+            });
         }
     }
 
