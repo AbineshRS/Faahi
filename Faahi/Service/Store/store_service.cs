@@ -727,6 +727,7 @@ namespace Faahi.Service.Store
                     storeList = _context.st_stores.AsEnumerable()
                           .Where(a => storeIds.Contains(a.store_id) && a.status=="T")
                           .ToList();
+
                 }
 
                 return new ServiceResult<List<st_stores>>
@@ -1234,6 +1235,68 @@ namespace Faahi.Service.Store
                 };
             }
 
+        }
+
+        public async Task<ServiceResult<st_invoice_template>> Add_templates(st_invoice_template st_Invoice_Template)
+        {
+            if(st_Invoice_Template == null)
+            {
+                _logger.LogInformation("Add_templates not found");
+                return new ServiceResult<st_invoice_template>
+                {
+                    Status = 400,
+                    Success = false,
+                    Message = ""
+                };
+            }
+            st_Invoice_Template.invoices_temp_id = Guid.CreateVersion7();
+            st_Invoice_Template.invoices_temp_name= st_Invoice_Template.invoices_temp_name;
+            st_Invoice_Template.invoices_temp_description = st_Invoice_Template.invoices_temp_description;
+            _context.st_Invoice_Templates.Add(st_Invoice_Template);
+            await _context.SaveChangesAsync();
+            return new ServiceResult<st_invoice_template>
+            {
+                Status = 200,
+                Message = "Updated",
+                Success = true,
+                Data= st_Invoice_Template
+            };
+        }
+
+        public async Task<ServiceResult<List<st_invoice_template>>> Get_templates()
+        {
+            try
+            {
+                var templates = await _context.st_Invoice_Templates.OrderBy(a=>a.invoices_temp_name).ToListAsync();
+                if (templates.Count == 0)
+                {
+                    return new ServiceResult<List<st_invoice_template>>
+                    {
+                        Status = 300,
+                        Message = "No data found",
+                        Success = false
+                    };
+                }
+                return new ServiceResult<List<st_invoice_template>>
+                {
+                    Status = 200,
+                    Message = "success",
+                    Success = true,
+                    Data = templates
+                };
+
+            }
+            catch(Exception ex)
+            {
+                return new ServiceResult<List<st_invoice_template>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+
+                };
+            }
+            
         }
     }
 

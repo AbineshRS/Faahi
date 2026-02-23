@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260221052507_so_head_2")]
+    partial class so_head_2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -597,9 +600,6 @@ namespace Faahi.Migrations
                     b.Property<string>("invoices_temp_name")
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<string>("type_name")
-                        .HasColumnType("nvarchar(20)");
-
                     b.HasKey("invoices_temp_id");
 
                     b.ToTable("st_Invoice_Templates");
@@ -1123,10 +1123,6 @@ namespace Faahi.Migrations
                     b.Property<string>("country_name")
                         .IsRequired()
                         .HasColumnType("varchar(100)");
-
-                    b.Property<string>("currency_code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(8)");
 
                     b.Property<string>("currency_name")
                         .IsRequired()
@@ -2711,9 +2707,6 @@ namespace Faahi.Migrations
 
                     b.Property<int?>("number_of_pax")
                         .HasColumnType("int");
-
-                    b.Property<string>("payment_mode")
-                        .HasColumnType("nvarchar(30)");
 
                     b.Property<Guid?>("payment_term_id")
                         .HasColumnType("uniqueidentifier");

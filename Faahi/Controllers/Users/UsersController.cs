@@ -103,6 +103,18 @@ namespace Faahi.Controllers.Users
         }
         [Authorize]
         [HttpGet]
+        [Route("get_all_customer_search/{company_id}/{search_text}")]
+        public async Task<IActionResult> get_all_customer_search(Guid company_id,string search_text)
+        {
+            if (string.IsNullOrEmpty(search_text))
+            {
+                return Ok("No search_text");
+            }
+            var result = await _iuser.get_all_customer_search(company_id,search_text);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
         [Route("get_all_vendors/{company_id}")]
         public async Task<ActionResult<ap_Vendors>> Get_all_vendors(Guid company_id)
         {

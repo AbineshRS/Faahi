@@ -1,4 +1,5 @@
 ﻿using Faahi.Model.am_vcos;
+using Faahi.Model.sales;
 using Faahi.Model.st_sellers;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
@@ -14,7 +15,7 @@ namespace Faahi.Model.im_products
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column(TypeName ="uniqueidentifier")]
-        public Guid? transaction_id { get; set; }
+        public Guid transaction_id { get; set; }
 
 
         [ForeignKey(nameof(listing_id))]
@@ -23,6 +24,12 @@ namespace Faahi.Model.im_products
 
         [Column(TypeName ="uniqueidentifier")]
         public Guid? listing_id { get;  set; }
+
+        [ForeignKey(nameof(sales_line_id))]
+        public so_SalesLines ? SalesLines { get; set; } = null;
+
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? sales_line_id { get; set; }
 
 
         [ForeignKey(nameof(store_id))]

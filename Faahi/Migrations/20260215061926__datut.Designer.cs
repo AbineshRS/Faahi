@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260215061926__datut")]
+    partial class _datut
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -585,26 +588,6 @@ namespace Faahi.Migrations
                     b.ToTable("st_UserStoreAccess");
                 });
 
-            modelBuilder.Entity("Faahi.Model.Stores.st_invoice_template", b =>
-                {
-                    b.Property<Guid>("invoices_temp_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("invoices_temp_description")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("invoices_temp_name")
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("type_name")
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("invoices_temp_id");
-
-                    b.ToTable("st_Invoice_Templates");
-                });
-
             modelBuilder.Entity("Faahi.Model.Stores.st_store_currencies", b =>
                 {
                     b.Property<Guid>("store_currency_id")
@@ -1124,10 +1107,6 @@ namespace Faahi.Migrations
                         .IsRequired()
                         .HasColumnType("varchar(100)");
 
-                    b.Property<string>("currency_code")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(8)");
-
                     b.Property<string>("currency_name")
                         .IsRequired()
                         .HasColumnType("varchar(100)");
@@ -1284,9 +1263,6 @@ namespace Faahi.Migrations
                     b.Property<string>("remarks")
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<Guid?>("sales_line_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("source_doc_type")
                         .HasColumnType("varchar(20)");
 
@@ -1314,8 +1290,6 @@ namespace Faahi.Migrations
                     b.HasKey("transaction_id");
 
                     b.HasIndex("batch_id");
-
-                    b.HasIndex("sales_line_id");
 
                     b.HasIndex("variant_id");
 
@@ -2619,31 +2593,23 @@ namespace Faahi.Migrations
                     b.Property<int?>("age")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("amount_paid_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("amount_paid_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("balance_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("balance_base")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("base_currency_code")
                         .HasColumnType("nvarchar(10)");
 
-                    b.Property<Guid?>("business_id")
+                    b.Property<decimal?>("change_given_base")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("change_given_doc")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("change_given_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("change_given_doc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
 
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
@@ -2657,23 +2623,17 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("datetime")
                         .HasColumnType("datetime");
 
-                    b.Property<decimal>("discount_total")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("discount_total")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("discount_total_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("discount_total_base")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("doc_currency_code")
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("doc_type")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("varchar(10)")
-                        .HasDefaultValue("SALE");
+                        .HasColumnType("varchar(10)");
 
                     b.Property<DateOnly?>("due_date")
                         .HasColumnType("date");
@@ -2681,21 +2641,17 @@ namespace Faahi.Migrations
                     b.Property<DateOnly?>("fx_rate_date")
                         .HasColumnType("date");
 
-                    b.Property<decimal>("fx_rate_to_base")
+                    b.Property<decimal?>("fx_rate_to_base")
                         .HasColumnType("decimal(18,6)");
 
                     b.Property<string>("fx_source")
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<decimal>("grand_total")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("grand_total")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("grand_total_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("grand_total_base")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("id_card_no")
                         .HasColumnType("nvarchar(20)");
@@ -2711,9 +2667,6 @@ namespace Faahi.Migrations
 
                     b.Property<int?>("number_of_pax")
                         .HasColumnType("int");
-
-                    b.Property<string>("payment_mode")
-                        .HasColumnType("nvarchar(30)");
 
                     b.Property<Guid?>("payment_term_id")
                         .HasColumnType("uniqueidentifier");
@@ -2731,51 +2684,35 @@ namespace Faahi.Migrations
                         .HasColumnType("datetime");
 
                     b.Property<string>("sales_mode")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("varchar(25)")
-                        .HasDefaultValue("GENERAL");
+                        .HasColumnType("nvarchar(25)");
 
-                    b.Property<long?>("sales_no")
+                    b.Property<long>("sales_no")
                         .HasColumnType("bigint");
 
                     b.Property<string>("sales_on_hold")
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(1)
-                        .HasColumnType("char(1)")
-                        .HasDefaultValue("F");
+                        .HasColumnType("char(1)");
 
-                    b.Property<decimal>("service_charge")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("service_charge")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("service_charge_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("service_charge_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("service_charge_percent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(6,2)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("service_charge_percent")
+                        .HasColumnType("decimal(6,2)");
 
                     b.Property<string>("status")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("varchar(20)")
-                        .HasDefaultValue("OPEN");
+                        .HasColumnType("varchar(20)");
 
                     b.Property<Guid>("store_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("sub_total")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("sub_total")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("sub_total_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("sub_total_base")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("table_no")
                         .HasColumnType("nvarchar(10)");
@@ -2783,82 +2720,54 @@ namespace Faahi.Migrations
                     b.Property<decimal?>("tax_percent")
                         .HasColumnType("decimal(6,2)");
 
-                    b.Property<decimal>("tax_total")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("tax_total")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("tax_total_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("tax_total_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_charge_bank_marchant")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_charge_bank_marchant")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_charge_customer")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_charge_customer")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal?>("total_charge_customer_base")
                         .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_exempted_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_exempted_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_exempted_value")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_exempted_value")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_plastic_bag")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_plastic_bag")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_plastic_bag_tax")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_plastic_bag_tax")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_plastic_bag_tax_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_plastic_bag_tax_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_taxable_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_taxable_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_taxable_value")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_taxable_value")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_zero_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_zero_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("total_zero_value")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("total_zero_value")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("transaction_cost")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
+                    b.Property<decimal?>("transaction_cost")
+                        .HasColumnType("decimal(18,4)");
 
                     b.HasKey("sales_id");
 
-                    b.HasIndex(new[] { "business_id" }, "IX_business_id");
+                    b.HasIndex(new[] { "company_id" }, "IX_company_id");
 
                     b.HasIndex(new[] { "customer_id" }, "IX_customer_id");
 
@@ -2866,7 +2775,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "invoice_no" }, "IX_invoice_no");
 
-                    b.HasIndex(new[] { "sales_date" }, "IX_sales_date");
+                    b.HasIndex(new[] { "sales_date" }, "IX_sales_date ");
 
                     b.HasIndex(new[] { "sales_id" }, "IX_sales_id")
                         .IsUnique();
@@ -2885,8 +2794,7 @@ namespace Faahi.Migrations
                 {
                     b.Property<Guid>("sales_line_id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("barcode")
                         .HasColumnType("nvarchar(100)");
@@ -2903,7 +2811,7 @@ namespace Faahi.Migrations
                     b.Property<string>("batch_name")
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<Guid?>("business_id")
+                    b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("consignment_billed")
@@ -2919,25 +2827,14 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
-                    b.Property<decimal>("detected_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("discount_amount")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("discount_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("discount_amount_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("discount_amount_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
-
-                    b.Property<decimal>("discount_percent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("discount_percent")
+                        .HasColumnType("decimal(6,2)");
 
                     b.Property<string>("doc_currency_code")
                         .HasColumnType("nvarchar(10)");
@@ -2948,10 +2845,8 @@ namespace Faahi.Migrations
                     b.Property<DateOnly?>("expiry_date")
                         .HasColumnType("date");
 
-                    b.Property<decimal>("fx_rate_to_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("fx_rate_to_base")
+                        .HasColumnType("decimal(18,6)");
 
                     b.Property<string>("insurance_code")
                         .HasColumnType("nvarchar(50)");
@@ -2959,30 +2854,17 @@ namespace Faahi.Migrations
                     b.Property<string>("item_description")
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<decimal>("line_discount_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("line_discount_amount")
+                        .HasColumnType("decimal(16,2)");
 
-                    b.Property<decimal>("line_total")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("line_total_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("line_total_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("original_price_base")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("original_price_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
-
-                    b.Property<decimal>("original_quantity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("original_quantity")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");
@@ -2990,80 +2872,57 @@ namespace Faahi.Migrations
                     b.Property<string>("product_sku")
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<decimal>("quantity")
+                    b.Property<decimal?>("quantity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                        .HasDefaultValue(0);
 
                     b.Property<string>("remarks")
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<decimal>("returned_quantity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("returned_quantity")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid?>("sales_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("stock_item")
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(1)
-                        .HasColumnType("char(1)")
-                        .HasDefaultValue("F");
+                        .HasColumnType("char(1)");
 
                     b.Property<Guid>("store_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("store_variant_inventory_id")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<decimal?>("tax_amount")
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("tax_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
-
-                    b.Property<decimal>("tax_amount_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("tax_amount_base")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("tax_class")
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("track_expiry")
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(1)
-                        .HasColumnType("char(1)")
-                        .HasDefaultValue("F");
+                        .HasColumnType("char(1)");
 
-                    b.Property<decimal>("unit_discount_amount_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("unit_discount_amount_base")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<decimal>("unit_price")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                        .HasColumnType("decimal(18,4)");
 
-                    b.Property<decimal>("unit_price_base")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValueSql("0");
+                    b.Property<decimal?>("unit_price_base")
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<Guid?>("variant_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("sales_line_id");
 
-                    b.HasIndex("batch_id");
-
-                    b.HasIndex("store_variant_inventory_id");
-
                     b.HasIndex(new[] { "barcode" }, "IX_barcode");
 
-                    b.HasIndex(new[] { "business_id" }, "IX_business_id");
+                    b.HasIndex(new[] { "company_id" }, "IX_company_id");
 
                     b.HasIndex(new[] { "product_id" }, "IX_product_id");
 
@@ -3486,10 +3345,6 @@ namespace Faahi.Migrations
                         .WithMany()
                         .HasForeignKey("listing_id");
 
-                    b.HasOne("Faahi.Model.sales.so_SalesLines", "SalesLines")
-                        .WithMany()
-                        .HasForeignKey("sales_line_id");
-
                     b.HasOne("Faahi.Model.st_sellers.st_stores", "stores")
                         .WithMany()
                         .HasForeignKey("store_id");
@@ -3499,8 +3354,6 @@ namespace Faahi.Migrations
                         .HasForeignKey("variant_id");
 
                     b.Navigation("Listing");
-
-                    b.Navigation("SalesLines");
 
                     b.Navigation("im_ItemBatches");
 
@@ -3576,7 +3429,7 @@ namespace Faahi.Migrations
                 {
                     b.HasOne("Faahi.Model.co_business.co_business", "co_business")
                         .WithMany()
-                        .HasForeignKey("business_id");
+                        .HasForeignKey("company_id");
 
                     b.HasOne("Faahi.Model.Shared_tables.st_Parties", "st_Parties")
                         .WithMany()
@@ -3597,13 +3450,9 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.sales.so_SalesLines", b =>
                 {
-                    b.HasOne("Faahi.Model.im_products.im_ItemBatches", "im_ItemBatches")
-                        .WithMany()
-                        .HasForeignKey("batch_id");
-
                     b.HasOne("Faahi.Model.co_business.co_business", "co_business")
                         .WithMany()
-                        .HasForeignKey("business_id");
+                        .HasForeignKey("company_id");
 
                     b.HasOne("Faahi.Model.im_products.im_Products", "im_Products")
                         .WithMany()
@@ -3619,23 +3468,15 @@ namespace Faahi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Faahi.Model.im_products.im_StoreVariantInventory", "im_StoreVariantInventory")
-                        .WithMany()
-                        .HasForeignKey("store_variant_inventory_id");
-
                     b.HasOne("Faahi.Model.im_products.im_ProductVariants", "im_ProductVariants")
                         .WithMany()
                         .HasForeignKey("variant_id");
 
                     b.Navigation("co_business");
 
-                    b.Navigation("im_ItemBatches");
-
                     b.Navigation("im_ProductVariants");
 
                     b.Navigation("im_Products");
-
-                    b.Navigation("im_StoreVariantInventory");
 
                     b.Navigation("so_SalesHeaders");
 

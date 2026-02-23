@@ -564,10 +564,10 @@ namespace Faahi.Service.Users
                     new SqlParameter("@opr_parm",1)
                     ).AsEnumerable().FirstOrDefault();
 
-                var customer = JsonConvert.DeserializeObject<ap_Vendors>(jsonresult);
+                var vendor = JsonConvert.DeserializeObject<ap_Vendors>(jsonresult);
 
                 //var customer = await _context.ap_Vendors.Include(a => a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
-                if (customer == null)
+                if (vendor == null)
                 {
                     _logger.LogWarning("no data found in ar_customer table");
                     return new ServiceResult<ap_Vendors>
@@ -583,7 +583,7 @@ namespace Faahi.Service.Users
                     Success = true,
                     Status = 1,
                     Message = "success",
-                    Data = customer
+                    Data = vendor
                 };
             }
             catch (Exception ex)
@@ -629,7 +629,60 @@ namespace Faahi.Service.Users
                 Data = customers
             };
         }
-        
+
+        public async Task<ServiceResult<List<ar_Customers>>> get_all_customer_search(Guid company_id,string search_text)
+        {
+            try
+            {
+                if (company_id == null || search_text == null)
+                {
+                    _logger.LogInformation("No data found");
+                    return new ServiceResult<List<ar_Customers>>
+                    {
+                        Status = 300,
+                        Message = "No data found",
+                        Success = false,
+                    };
+                }
+
+                var jsonresult = _context.Database.SqlQueryRaw<string>(
+                    "EXEC dbo.sp_Getusers @company_id=@company_id,@search_text=@search_text,@opr=@opr",
+                    new SqlParameter("@company_id", company_id),
+                    new SqlParameter("@search_text", search_text),
+                    new SqlParameter("@opr",2)).AsEnumerable().FirstOrDefault();
+                var customer = JsonConvert.DeserializeObject<List<ar_Customers>>(jsonresult);
+                if(customer == null)
+                {
+                    return new ServiceResult<List<ar_Customers>>
+                    {
+                        Status = 300,
+                        Message = "No data found",
+                        Success = false,
+                    };
+                }
+                return new ServiceResult<List<ar_Customers>>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = customer
+                };
+                     
+
+            }
+            catch(Exception ex)
+            {
+                _logger.LogInformation("Error While get_all_customer_search");
+                return new ServiceResult<List<ar_Customers>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+            
+        }
+
+
         public async Task<ServiceResult<List<ap_Vendors>>> Get_all_vendors(Guid company_id)
         {
             if (company_id == null)
