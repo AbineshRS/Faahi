@@ -28,7 +28,7 @@ namespace Faahi.Model.pos_tables
         public Faahi.Model.co_business.co_business? co_Business { get; set; }
 
         [Column(TypeName = "uniqueidentifier")]
-        public Guid business_id { get; set; }
+        public Guid? business_id { get; set; }
 
         [ForeignKey(nameof(store_id))]
         [JsonIgnore]
@@ -42,13 +42,15 @@ namespace Faahi.Model.pos_tables
         public so_SalesHeaders? sales_headers { get; set; }
 
         [Column(TypeName = "uniqueidentifier")]
-        public Guid sale_id { get;set; }
+        public Guid? sale_id { get;set; }
 
-        //[ForeignKey(nameof(payment_method_id))]
-        //public so_payment_type? payment_type { get; set; }
+        [ForeignKey(nameof(payment_method_id))]
+        [JsonIgnore]
+
+        public so_payment_type? payment_type { get; set; }
 
         [Column(TypeName = "uniqueidentifier")]
-        public Guid payment_method_id { get; set; }
+        public Guid? payment_method_id { get; set; }
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid? terminal_id { get; set; }=null;
@@ -73,14 +75,14 @@ namespace Faahi.Model.pos_tables
         public Decimal? fx_rate { get; set; } = null;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0.0)]
+        [DefaultValue(typeof(decimal), "0")]
         public Decimal amount { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
         public Decimal? base_amount { get; set; } = null;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0.0)]
+        [DefaultValue(typeof(decimal), "0")]
         public Decimal change_given { get; set; } = 0m;
 
         [Column(TypeName = "nvarchar(100)")]

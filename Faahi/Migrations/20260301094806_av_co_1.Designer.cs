@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260301094806_av_co_1")]
+    partial class av_co_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -960,7 +963,7 @@ namespace Faahi.Migrations
                     b.Property<string>("dialling_code")
                         .HasColumnType("varchar(16)");
 
-                    b.Property<decimal?>("exchange_rate")
+                    b.Property<decimal?>("exchnage_rate")
                         .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("flag")
@@ -2937,13 +2940,6 @@ namespace Faahi.Migrations
                     b.Property<string>("invoice_no")
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("is_mutiple_payment")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)")
-                        .HasDefaultValue("F");
-
                     b.Property<Guid?>("membership_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -2974,14 +2970,11 @@ namespace Faahi.Migrations
                     b.Property<string>("quick_customer")
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<string>("quot_no")
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<string>("reference_no")
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<DateOnly?>("sales_date")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("sales_date")
+                        .HasColumnType("datetime");
 
                     b.Property<string>("sales_mode")
                         .ValueGeneratedOnAdd()

@@ -1,4 +1,6 @@
-﻿using Faahi.Model.co_business;
+﻿using Faahi.Model.am_vcos;
+using Faahi.Model.co_business;
+using Faahi.Model.pos_tables;
 using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
 using Microsoft.EntityFrameworkCore;
@@ -48,10 +50,14 @@ namespace Faahi.Model.sales
         [ForeignKey(nameof(customer_id))]
         [JsonIgnore]
 
-        public st_Parties? st_Parties { get; set; }
+        public ar_Customers? ar_Customers { get; set; }
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid? payment_term_id { get; set; } = null;
+
+        [ForeignKey(nameof(payment_term_id))]
+        [JsonIgnore]
+        public so_payment_type? So_Payment_Type { get; set; }
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid? membership_id { get; set; } = null;
@@ -67,10 +73,13 @@ namespace Faahi.Model.sales
         public string? invoice_no { get; set; } = null;
 
         [Column(TypeName = "nvarchar(50)")]
+        public string? quot_no { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(50)")]
         public string? purchase_order_no { get; set; } = null;
 
-        [Column(TypeName = "datetime")]
-        public DateTime? sales_date { get; set; } = null;
+        [Column(TypeName = "date")]
+        public DateOnly? sales_date { get; set; } = null;
 
         [Column(TypeName ="varchar(10)")]
         [DefaultValue("SALE")] // -- SALE / RETURN / QUOTE
@@ -218,6 +227,15 @@ namespace Faahi.Model.sales
         [Column(TypeName = "decimal(18,4)")]
         public Decimal balance_base { get; set; } = 0;
 
+        [Column(TypeName = "nvarchar(30)")]
+        public string? qo_validity { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(30)")]
+        public string? qo_delivery { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(50)")]
+        public string? qo_attention { get; set; } = null;
+
         [Column(TypeName = "nvarchar(255)")]
         public string? notes { get; set; } = null;
 
@@ -230,6 +248,10 @@ namespace Faahi.Model.sales
         [Column(TypeName = "nvarchar(50)")]
         public string? created_by { get; set; }
 
+        [Column(TypeName = "char(1)")]
+        [DefaultValue("F")]
+        [StringLength(1)]
+        public string is_mutiple_payment { get; set; } = "F";
 
         [Column(TypeName = "varchar(20)")]
         [DefaultValue("OPEN")]
@@ -238,6 +260,10 @@ namespace Faahi.Model.sales
 
         public ICollection<so_SalesLines>? so_SalesLines { get; set; } = null;
 
+        [NotMapped]
+        public ICollection<pos_SalePayments>? pos_SalePayments { get; set; } = null;
 
+        [NotMapped]
+        public string? contact_name { get; set; } = null;
     }
 }

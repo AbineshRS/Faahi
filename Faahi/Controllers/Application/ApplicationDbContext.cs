@@ -170,8 +170,7 @@ namespace Faahi.Controllers.Application
 
             modelBuilder.Entity<so_payment_type>(entity =>
             {
-                entity.ToTable("so_payment_type");
-                entity.HasKey(sp => new { sp.PayTypeCode });
+                entity.Property(a => a.payment_type_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
                 entity.Property(sp => sp.is_avilable).HasDefaultValue("T");
             });
 
@@ -209,6 +208,7 @@ namespace Faahi.Controllers.Application
                 entity.Property(e => e.sales_mode).HasColumnType("varchar(25)").HasDefaultValue("GENERAL");
                 entity.Property(e => e.doc_type).HasColumnType("varchar(10)").HasDefaultValue("SALE");
                 entity.Property(e => e.sales_on_hold).HasColumnType("char(1)").HasDefaultValue("F");
+                entity.Property(e => e.is_mutiple_payment).HasColumnType("char(1)").HasDefaultValue("F");
  
                     
                 entity.ToTable(tb =>
@@ -268,6 +268,7 @@ namespace Faahi.Controllers.Application
                 entity.Property(a => a.status).HasColumnType("char(1)").HasDefaultValue("O");
 
             });
+
             modelBuilder.Entity<pos_DrawerCountDetails>(entity =>
             {
                 entity.Property(a => a.drawer_count_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();

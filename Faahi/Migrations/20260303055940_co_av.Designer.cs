@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260303055940_co_av")]
+    partial class co_av
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2980,8 +2983,8 @@ namespace Faahi.Migrations
                     b.Property<string>("reference_no")
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<DateOnly?>("sales_date")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("sales_date")
+                        .HasColumnType("datetime");
 
                     b.Property<string>("sales_mode")
                         .ValueGeneratedOnAdd()

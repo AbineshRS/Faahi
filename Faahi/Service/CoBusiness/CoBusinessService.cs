@@ -1130,6 +1130,8 @@ namespace Faahi.Service.CoBusiness
                 co_Avl_Countries.dialling_code = countryDetails.DialCode;
                 co_Avl_Countries.currency_code = countryDetails.CurrencyCode;
                 co_Avl_Countries.currency_name = countryDetails.CurrencyName;
+                co_Avl_Countries.exchange_rate = co_Avl_Countries.exchange_rate;
+                co_Avl_Countries.company_id = co_Avl_Countries.company_id;
                 co_Avl_Countries.serv_available = "T";
 
                 await _context.co_avl_countries.AddAsync(co_Avl_Countries);
@@ -1230,7 +1232,7 @@ namespace Faahi.Service.CoBusiness
 
             return null;
         }
-        public async Task<ServiceResult<List<co_avl_countries>>> CurrencyList()
+        public async Task<ServiceResult<List<co_avl_countries>>> CurrencyList(Guid company_id)
         {
             if (_context.co_avl_countries == null)
             {
@@ -1241,7 +1243,7 @@ namespace Faahi.Service.CoBusiness
                     Message = "no data found"
                 };
             }
-            var currency_list = await _context.co_avl_countries.ToListAsync();
+            var currency_list = await _context.co_avl_countries.Where(a=>a.company_id==company_id).ToListAsync();
             return new ServiceResult<List<co_avl_countries>>
             {
                 Success = true,

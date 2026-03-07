@@ -91,7 +91,7 @@ namespace Faahi.Model.im_products
         public string? description_2 { get; set; } = null;
 
 
-
+     
 
         public ICollection<im_VariantAttributes>? im_VariantAttributes { get; set; } = null;
         public ICollection<im_StoreVariantInventory>? im_StoreVariantInventory { get; set; } = null;
