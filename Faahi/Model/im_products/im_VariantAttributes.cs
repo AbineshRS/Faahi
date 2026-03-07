@@ -29,6 +29,18 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? attribute_id { get; set; } = null;
 
+        [NotMapped]
+        [Column(TypeName = "nvarchar(100)")]
+        public string? name { get; set; }
+
+        [NotMapped]
+        [Column(TypeName = "nvarchar(255)")]
+        public string? value { get; set; }
+
+        [NotMapped]
+        [Column(TypeName = "nvarchar(255)")]
+        public string? color_name { get; set; } = null;
+
 
     }
 }

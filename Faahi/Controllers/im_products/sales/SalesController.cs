@@ -42,26 +42,26 @@ namespace Faahi.Controllers.im_products.sales
         }
         [Authorize]
         [HttpGet]
-        [Route("get_payemnt/{payTypeCode}")]
-        public async Task<IActionResult> Get_payment(string payTypeCode)
+        [Route("get_payemnt/{payment_type_id}")]
+        public async Task<IActionResult> Get_payment(Guid payment_type_id)
         {
-            if(payTypeCode == null)
+            if (payment_type_id == null)
             {
                 return Ok("payTypeCode is null");
             }
-            var result = await _isalse.Get_payment(payTypeCode);
+            var result = await _isalse.Get_payment(payment_type_id);
             return Ok(result);
         }
         [Authorize]
         [HttpPost]
-        [Route("update_payemnt/{payTypeCode}")]
-        public async Task<ActionResult> Update_payemnt(string payTypeCode,so_payment_type so_Payment_Type)
+        [Route("update_payemnt/{payment_type_id}")]
+        public async Task<ActionResult> Update_payemnt(Guid payment_type_id, so_payment_type so_Payment_Type)
         {
-            if(so_Payment_Type == null)
+            if (so_Payment_Type == null)
             {
                 return Ok("No data found");
             }
-            var result = await _isalse.Update_payment(payTypeCode, so_Payment_Type);
+            var result = await _isalse.Update_payment(payment_type_id, so_Payment_Type);
             return Ok(result);
         }
         [Authorize]
@@ -69,7 +69,7 @@ namespace Faahi.Controllers.im_products.sales
         [Route("get_item_batches/{variant_id}")]
         public async Task<IActionResult> Get_item_batches(Guid variant_id)
         {
-            if(variant_id == null)
+            if (variant_id == null)
             {
                 return Ok("NO data found");
             }
@@ -81,7 +81,7 @@ namespace Faahi.Controllers.im_products.sales
         [Route("get_item_batches_list/{variant_id}")]
         public async Task<IActionResult> Get_item_batches_list(Guid variant_id)
         {
-            if(variant_id == null)
+            if (variant_id == null)
             {
                 return Ok("NO data found");
             }
@@ -134,6 +134,98 @@ namespace Faahi.Controllers.im_products.sales
                 return Ok("No salesId found");
             }
             var result = await _isalse.Update_sales(salesId, so_SalesHeaders);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_sales_report_by_date/{store_id}/{start_date}/{end_date}")]
+        public async Task<IActionResult> Get_sales_report_by_date(Guid store_id, DateOnly? start_date, DateOnly? end_date)
+        {
+            if (store_id == null)
+            {
+                return Ok("No store_id found");
+            }
+            var result = await _isalse.Get_sales_report_by_date(store_id, start_date, end_date);
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpGet]
+        [Route("get_sales_deatiled_by_date/{store_id}/{start_date}/{end_date}")]
+        public async Task<IActionResult> Get_sales_detailed_by_date(Guid store_id, DateOnly? start_date, DateOnly? end_date)
+        {
+            if (store_id == null)
+            {
+                return Ok("No store_id found");
+            }
+            var result = await _isalse.Get_sales_detailed_by_date(store_id, start_date, end_date);
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpGet]
+        [Route("get_sales_deatiled_by_dayreport/{store_id}/{start_date}/{end_date}")]
+        public async Task<IActionResult> Get_sales_detailed_by_day_report(Guid store_id, DateOnly? start_date, DateOnly? end_date)
+        {
+            if (store_id == null)
+            {
+                return Ok("No store_id found");
+            }
+            var result = await _isalse.Get_sales_detailed_by_day_report(store_id, start_date, end_date);
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpGet]
+        [Route("get_sales_deatiled_by_customer/{store_id}")]
+        public async Task<IActionResult> Get_sales_detailed_by_customer(Guid store_id, string? customer, DateOnly? start_date, DateOnly? end_date)
+        {
+            if (store_id == null)
+            {
+                return Ok("No store_id found");
+            }
+            var result = await _isalse.Get_sales_detailed_by_customer(store_id,customer ,start_date, end_date);
+            return Ok(result);
+        }
+        [HttpGet]
+        [Route("get_sales_deatiled_by_product/{store_id}")]
+        public async Task<IActionResult> Get_sales_detailed_by_product(Guid store_id, string? ProductSku, DateOnly? start_date, DateOnly? end_date)
+        {
+            if (store_id == null)
+            {
+                return Ok("No store_id found");
+            }
+            var result = await _isalse.Get_sales_detailed_by_product(store_id, ProductSku, start_date, end_date);
+            return Ok(result);
+        }
+        [HttpGet]
+        [Route("Get_sales_tax_report/{store_id}/{start_date}/{end_date}")]
+        public async Task<IActionResult> Get_sales_tax_report(Guid store_id, DateOnly? start_date, DateOnly? end_date)
+        {
+            if (store_id == null)
+            {
+                return Ok("No store_id found");
+            }
+            var result = await _isalse.Get_sales_tax_report(store_id, start_date, end_date);
+            return Ok(result);
+        }
+        [HttpGet]
+        [Route("Get_sales_out_standing/{store_id}/{start_date}/{end_date}")]
+        public async Task<IActionResult> Get_sales_out_standing(Guid store_id, DateOnly? start_date, DateOnly? end_date)
+        {
+            if (store_id == null)
+            {
+                return Ok("No store_id found");
+            }
+            var result = await _isalse.Get_sales_out_standing(store_id, start_date, end_date);
+            return Ok(result);
+        }
+        [HttpGet]
+        [Route("Get_sales_hourly_base/{store_id}/{start_date}/{end_date}")]
+        public async Task<IActionResult> Get_sales_hourly_base(Guid store_id, DateOnly? start_date, DateOnly? end_date)
+        {
+            if (store_id == null)
+            {
+                return Ok("No store_id found");
+            }
+            var result = await _isalse.Get_sales_hourly_base(store_id, start_date, end_date);
             return Ok(result);
         }
     }

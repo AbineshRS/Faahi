@@ -30,8 +30,8 @@ namespace Faahi.Model.pos_tables
         [Column(TypeName = "uniqueidentifier")]
         public Guid business_id { get; set; }
 
-        //[ForeignKey(nameof(payment_method_id))]
-        //public so_payment_type? payment_type { get; set; }
+        [ForeignKey(nameof(payment_method_id))]
+        public so_payment_type? payment_type { get; set; }
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid payment_method_id { get; set; }

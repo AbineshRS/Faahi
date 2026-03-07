@@ -162,12 +162,12 @@ namespace Faahi.Controllers.Cobusiness
             var currency = await _co_businessService.CreateAvailableCountry(co_Avl_Countries);
             return Ok(currency);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
-        [Route("currency_list")]
-        public async Task<IActionResult> CurrencyList()
+        [Route("currency_list/{company_id}")]
+        public async Task<IActionResult> CurrencyList(Guid company_id)
         {
-            var currency_list = await _co_businessService.CurrencyList();
+            var currency_list = await _co_businessService.CurrencyList(company_id);
             return Ok(currency_list);
         }
         [Authorize]

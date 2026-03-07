@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Dto.Product_dto;
 using Faahi.Model.im_products;
+using Faahi.Model.st_sellers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -193,16 +194,25 @@ namespace Faahi.Service.im_products
 
                 var im_product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
                 .FirstOrDefaultAsync(a => a.product_id == product_id);
+                var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_product.store_id);
+
                 foreach (var item in im_ProductVariants)
                 {
+                    var table = "im_ProductVariants";
+                    var am_table = await _context.am_table_next_key.FindAsync(table);
+                    var key = Convert.ToInt16(am_table.next_key);
+
                     item.variant_id = Guid.CreateVersion7();
                     item.product_id = product_id;
                     item.uom_name = item.uom_name;
-                    var namePart = Regex.Replace(im_product.title ?? "", @"\s+", "")
-                            .Substring(0, Math.Min(3, (im_product.title ?? "").Length))
-                            .ToUpper();
-                    var SKU = namePart + "-";
-                    item.sku = SKU;
+                   
+                    item.sku = st_store.store_code + "-" + Convert.ToString(key + 1); ;
+                    if (am_table != null)
+                    {
+                        am_table.next_key = key + 1;
+                        _context.am_table_next_key.Update(am_table);
+                        await _context.SaveChangesAsync();
+                    }
                     if (item.barcode == null || item.barcode == "" || item.barcode == "0")
                     {
                         string first3 = Regex.Replace(im_product.title ?? "", @"\s+", "")

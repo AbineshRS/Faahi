@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260224091101__pay_types_2")]
+    partial class _pay_types_2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -945,9 +948,6 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("company_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("country_code")
                         .HasColumnType("varchar(16)");
 
@@ -959,9 +959,6 @@ namespace Faahi.Migrations
 
                     b.Property<string>("dialling_code")
                         .HasColumnType("varchar(16)");
-
-                    b.Property<decimal?>("exchange_rate")
-                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("flag")
                         .HasColumnType("varchar(150)");
@@ -2755,7 +2752,7 @@ namespace Faahi.Migrations
                     b.Property<decimal?>("base_amount")
                         .HasColumnType("decimal(18,4)");
 
-                    b.Property<Guid?>("business_id")
+                    b.Property<Guid>("business_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("change_given")
@@ -2795,7 +2792,7 @@ namespace Faahi.Migrations
                     b.Property<string>("notes")
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<Guid?>("payment_method_id")
+                    b.Property<Guid>("payment_method_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("receipt_no")
@@ -2804,7 +2801,7 @@ namespace Faahi.Migrations
                     b.Property<string>("reference_no")
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid?>("sale_id")
+                    b.Property<Guid>("sale_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("shift_id")
@@ -2937,13 +2934,6 @@ namespace Faahi.Migrations
                     b.Property<string>("invoice_no")
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("is_mutiple_payment")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)")
-                        .HasDefaultValue("F");
-
                     b.Property<Guid?>("membership_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -2962,26 +2952,14 @@ namespace Faahi.Migrations
                     b.Property<string>("purchase_order_no")
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("qo_attention")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("qo_delivery")
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("qo_validity")
-                        .HasColumnType("nvarchar(30)");
-
                     b.Property<string>("quick_customer")
                         .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("quot_no")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("reference_no")
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<DateOnly?>("sales_date")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("sales_date")
+                        .HasColumnType("datetime");
 
                     b.Property<string>("sales_mode")
                         .ValueGeneratedOnAdd()
@@ -3880,15 +3858,21 @@ namespace Faahi.Migrations
                 {
                     b.HasOne("Faahi.Model.co_business.co_business", "co_Business")
                         .WithMany()
-                        .HasForeignKey("business_id");
+                        .HasForeignKey("business_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Faahi.Model.sales.so_payment_type", "payment_type")
                         .WithMany()
-                        .HasForeignKey("payment_method_id");
+                        .HasForeignKey("payment_method_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Faahi.Model.sales.so_SalesHeaders", "sales_headers")
                         .WithMany()
-                        .HasForeignKey("sale_id");
+                        .HasForeignKey("sale_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
                         .WithMany()

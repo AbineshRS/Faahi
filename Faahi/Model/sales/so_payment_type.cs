@@ -7,14 +7,18 @@ namespace Faahi.Model.sales
 {
     public class so_payment_type
     {
-        [Column(TypeName ="nvarchar(20)")]
-        public string? PayTypeCode { get;set;}
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public Guid payment_type_id { get; set; }
 
-        [ForeignKey(nameof(company_id))]
+        [Column(TypeName = "nvarchar(20)")]
+        public string? PayTypeCode { get; set; }
+
+        [ForeignKey(nameof(business_id))]
         public Faahi.Model.co_business.co_business? co_business { get; set; } = null;
 
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? company_id { get; set; } = null;
+        public Guid? business_id { get; set; } = null;
 
         [Column(TypeName = "nvarchar(35)")]
         public string? Description { get; set; } = null;
