@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312054554_next_keys_1")]
+    partial class next_keys_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1717,9 +1720,6 @@ namespace Faahi.Migrations
                         .HasColumnType("decimal(16, 4)");
 
                     b.Property<decimal?>("length_cm")
-                        .HasColumnType("decimal(16, 4)");
-
-                    b.Property<decimal?>("minimum_selling")
                         .HasColumnType("decimal(16, 4)");
 
                     b.Property<Guid?>("product_id")
@@ -3895,16 +3895,11 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.table_key.am_table_next_key", b =>
                 {
-                    b.Property<Guid>("next_key_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("name")
-                        .IsRequired()
                         .HasColumnType("varchar(255)");
+
+                    b.Property<Guid>("business_id")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("next_key")
                         .HasColumnType("int");
@@ -3912,7 +3907,7 @@ namespace Faahi.Migrations
                     b.Property<string>("site_code")
                         .HasColumnType("varchar(16)");
 
-                    b.HasKey("next_key_id");
+                    b.HasKey("name");
 
                     b.ToTable("am_table_next_key");
                 });
@@ -3928,22 +3923,6 @@ namespace Faahi.Migrations
                     b.HasKey("description");
 
                     b.ToTable("super_abi");
-                });
-
-            modelBuilder.Entity("Faahi.Model.table_key.super_admin_keys", b =>
-                {
-                    b.Property<string>("name")
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<int>("next_key")
-                        .HasColumnType("int");
-
-                    b.Property<string>("site_code")
-                        .HasColumnType("varchar(16)");
-
-                    b.HasKey("name");
-
-                    b.ToTable("super_admin_keys");
                 });
 
             modelBuilder.Entity("Faahi.Model.tax_class_table.tx_TaxClasses", b =>

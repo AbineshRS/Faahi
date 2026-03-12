@@ -1,9 +1,11 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Migrations;
 using Faahi.Model.table_key;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Faahi.Service.table_key
 {
@@ -23,6 +25,7 @@ namespace Faahi.Service.table_key
             }
             am_table_next_key key = new am_table_next_key();
             key.name = _Next_Key.name;
+            key.business_id = _Next_Key.business_id;
             key.next_key = _Next_Key.next_key;
             key.site_code = _Next_Key.site_code;
             _context.am_table_next_key.Add(key);
@@ -47,6 +50,7 @@ namespace Faahi.Service.table_key
             var existing = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_Next_Key.name);
             existing.name = table_Next_Key.name;
             existing.next_key = table_Next_Key.next_key;
+            existing.business_id = table_Next_Key.business_id;
             existing.site_code = table_Next_Key.site_code;
             await _context.SaveChangesAsync();
 
@@ -60,6 +64,15 @@ namespace Faahi.Service.table_key
             }
             var existing = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == name);
 
+            return existing;
+        }
+        public async Task<am_table_next_key> GetNextKey_company(Guid business_id, string name)
+        {
+            if (business_id == null)
+            {
+                return null;
+            }
+            var existing = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.business_id == business_id && a.name == name);
             return existing;
         }
         public async Task<am_table_next_key> delete_key(string name)
@@ -105,5 +118,40 @@ namespace Faahi.Service.table_key
                 };
             }
         }
+
+        public async Task<ServiceResult<super_admin_keys>> Add_Super_Table_Key(super_admin_keys super_admin_keys)
+        {
+            try
+            {
+                if (super_admin_keys == null)
+                {
+                    return new ServiceResult<super_admin_keys>
+                    {
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                super_admin_keys.name = super_admin_keys.name;
+                super_admin_keys.next_key = super_admin_keys.next_key;
+                super_admin_keys.site_code = super_admin_keys.site_code;
+                _context.super_admin_keys.Add(super_admin_keys);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<super_admin_keys>
+                {
+                    Success = true,
+                    Data = super_admin_keys,
+                    Message = "Super admin key added successfully"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<super_admin_keys>
+                {
+                    Success = false,
+                    Message = $"An error occurred: {ex.Message}"
+                };
+            }
+        }
     }
 }
+

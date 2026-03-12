@@ -89,7 +89,7 @@ namespace Faahi.Service.im_products
                 foreach (var im_varint in im_Product.im_ProductVariants)
                 {
                     var table = "im_ProductVariants";
-                    var am_table = await _context.am_table_next_key.FindAsync(table);
+                    var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a=>a.name==table && a.business_id==im_Product.company_id);
                     var key = Convert.ToInt16(am_table.next_key);
 
 
@@ -199,7 +199,7 @@ namespace Faahi.Service.im_products
                 foreach (var item in im_ProductVariants)
                 {
                     var table = "im_ProductVariants";
-                    var am_table = await _context.am_table_next_key.FindAsync(table);
+                    var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a=>a.name==table&& a.business_id==im_product.company_id);
                     var key = Convert.ToInt16(am_table.next_key);
 
                     item.variant_id = Guid.CreateVersion7();
@@ -810,7 +810,7 @@ namespace Faahi.Service.im_products
                         foreach (var im_varint in im_Product.im_ProductVariants)
                         {
                             var table = "im_ProductVariants";
-                            var am_table = await _context.am_table_next_key.FindAsync(table);
+                            var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a=>a.name==table&& a.business_id== im_Product.company_id);
                             var key = Convert.ToInt16(am_table.next_key);
 
 
@@ -1705,7 +1705,23 @@ namespace Faahi.Service.im_products
                 )
         .AsEnumerable()
         .FirstOrDefault();
+            if (jsonResult == null)
+            {
+                return new ServiceResult<List<im_ProductAttributes>>
+                {
+                    Status = 300,
+                    Message = "No data found"
+                };
+            }
             var attributes = JsonConvert.DeserializeObject<List<im_ProductAttributes>>(jsonResult);
+            if (attributes.Count == 0)
+            {
+                return new ServiceResult<List<im_ProductAttributes>>
+                {
+                    Status = 300,
+                    Message = "No data found"
+                };
+            }
 
             return new ServiceResult<List<im_ProductAttributes>>
             {

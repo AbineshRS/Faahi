@@ -150,7 +150,7 @@ namespace Faahi.Controllers.Cobusiness
             var update = await _co_businessService.Inactive_company( company_id);
             return Ok(update);
         }
-        [Authorize]
+        //[Authorize]
         [HttpPost]
         [Route("create_sh_avilable_country")]
         public async Task<ActionResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries)

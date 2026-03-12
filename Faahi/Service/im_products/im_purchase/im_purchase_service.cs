@@ -49,12 +49,13 @@ namespace Faahi.Service.im_products.im_purchase
                     var table_key = await _context.super_abi.FirstOrDefaultAsync(a => a.description == table);
                     var key = Convert.ToInt16(table_key.next_key);
 
-                    var table_2 = "im_purchase_listing";
-                    var table_key_2 = await _context.am_table_next_key.FindAsync(table_2);
-                    var key_2 = Convert.ToInt16(table_key_2.next_key);
+   
 
                     var im_site = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == im_Purchase_Listing.site_id);
 
+                    var table_2 = "im_purchase_listing";
+                    var table_key_2 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_2 && a.business_id == im_site.company_id);
+                    var key_2 = Convert.ToInt16(table_key_2.next_key);
                     Decimal sub_total = 0;
                     Decimal other_expense = 0;
                     var year = DateTime.Now.Year;

@@ -187,6 +187,10 @@ namespace Faahi.Model.sales
         [Column(TypeName ="datetime")]
         public DateTime? created_at { get; set; }
 
+        [Column(TypeName ="decimal(18,4)")]
+        public Decimal return_qty { get; set; } = 0;
+
+
 
 
     }
