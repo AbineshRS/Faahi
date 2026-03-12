@@ -15,7 +15,7 @@ namespace Faahi.Controllers.im_products.sales
         {
             _isalse = isales;
         }
-        //[Authorize]
+        [Authorize]
         [HttpPost]
         [Route("Add_payment")]
         public async Task<ActionResult<so_payment_type>> Create_payment(so_payment_type so_payment_)
@@ -76,7 +76,7 @@ namespace Faahi.Controllers.im_products.sales
             var result = await _isalse.Get_item_batches(variant_id);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_item_batches_list/{variant_id}")]
         public async Task<IActionResult> Get_item_batches_list(Guid variant_id)
@@ -148,7 +148,7 @@ namespace Faahi.Controllers.im_products.sales
             var result = await _isalse.Get_sales_report_by_date(store_id, start_date, end_date);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_sales_deatiled_by_date/{store_id}/{start_date}/{end_date}")]
         public async Task<IActionResult> Get_sales_detailed_by_date(Guid store_id, DateOnly? start_date, DateOnly? end_date)
@@ -160,7 +160,7 @@ namespace Faahi.Controllers.im_products.sales
             var result = await _isalse.Get_sales_detailed_by_date(store_id, start_date, end_date);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_sales_deatiled_by_dayreport/{store_id}/{start_date}/{end_date}")]
         public async Task<IActionResult> Get_sales_detailed_by_day_report(Guid store_id, DateOnly? start_date, DateOnly? end_date)
@@ -172,7 +172,7 @@ namespace Faahi.Controllers.im_products.sales
             var result = await _isalse.Get_sales_detailed_by_day_report(store_id, start_date, end_date);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_sales_deatiled_by_customer/{store_id}")]
         public async Task<IActionResult> Get_sales_detailed_by_customer(Guid store_id, string? customer, DateOnly? start_date, DateOnly? end_date)
@@ -181,9 +181,10 @@ namespace Faahi.Controllers.im_products.sales
             {
                 return Ok("No store_id found");
             }
-            var result = await _isalse.Get_sales_detailed_by_customer(store_id,customer ,start_date, end_date);
+            var result = await _isalse.Get_sales_detailed_by_customer(store_id, customer, start_date, end_date);
             return Ok(result);
         }
+        [Authorize]
         [HttpGet]
         [Route("get_sales_deatiled_by_product/{store_id}")]
         public async Task<IActionResult> Get_sales_detailed_by_product(Guid store_id, string? ProductSku, DateOnly? start_date, DateOnly? end_date)
@@ -195,6 +196,7 @@ namespace Faahi.Controllers.im_products.sales
             var result = await _isalse.Get_sales_detailed_by_product(store_id, ProductSku, start_date, end_date);
             return Ok(result);
         }
+        [Authorize]
         [HttpGet]
         [Route("Get_sales_tax_report/{store_id}/{start_date}/{end_date}")]
         public async Task<IActionResult> Get_sales_tax_report(Guid store_id, DateOnly? start_date, DateOnly? end_date)
@@ -206,6 +208,7 @@ namespace Faahi.Controllers.im_products.sales
             var result = await _isalse.Get_sales_tax_report(store_id, start_date, end_date);
             return Ok(result);
         }
+        [Authorize]
         [HttpGet]
         [Route("Get_sales_out_standing/{store_id}/{start_date}/{end_date}")]
         public async Task<IActionResult> Get_sales_out_standing(Guid store_id, DateOnly? start_date, DateOnly? end_date)
@@ -217,6 +220,7 @@ namespace Faahi.Controllers.im_products.sales
             var result = await _isalse.Get_sales_out_standing(store_id, start_date, end_date);
             return Ok(result);
         }
+        [Authorize]
         [HttpGet]
         [Route("Get_sales_hourly_base/{store_id}/{start_date}/{end_date}")]
         public async Task<IActionResult> Get_sales_hourly_base(Guid store_id, DateOnly? start_date, DateOnly? end_date)
@@ -226,6 +230,18 @@ namespace Faahi.Controllers.im_products.sales
                 return Ok("No store_id found");
             }
             var result = await _isalse.Get_sales_hourly_base(store_id, start_date, end_date);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("add_sales_return/{salesId}")]
+        public async Task<ActionResult> Add_sales_return(Guid salesId, so_SalesHeaders so_SalesHeaders)
+        {
+            if (salesId == null)
+            {
+                return Ok("No salesId found");
+            }
+            var result = await _isalse.Add_sales_return(salesId, so_SalesHeaders);
             return Ok(result);
         }
     }

@@ -321,11 +321,11 @@ namespace Faahi.Service.im_products.sales
                     };
                 }
                 var table = "so_SalesHeaders_sales_no";
-                var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table);
+                var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id== so_SalesHeaders.business_id);
                 var key = Convert.ToInt16(table_key.next_key);
 
                 var table2 = "so_SalesHeaders_invoice_no";
-                var table_key2 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table2);
+                var table_key2 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table2 && a.business_id == so_SalesHeaders.business_id);
                 var key2 = Convert.ToInt16(table_key2.next_key);
 
                 var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == so_SalesHeaders.store_id);
@@ -343,7 +343,7 @@ namespace Faahi.Service.im_products.sales
                 so_SalesHeaders.payment_term_id = so_SalesHeaders.payment_term_id;
                 so_SalesHeaders.membership_id = so_SalesHeaders.membership_id;
                 so_SalesHeaders.sales_no = Convert.ToInt64(key + 1);
-                so_SalesHeaders.invoice_no = st_store.default_invoice_init + "-" + Convert.ToString(key2 + 1);
+                so_SalesHeaders.invoice_no = st_store.default_invoice_init+"-"+ so_SalesHeaders.invoice_no + "-" + Convert.ToString(key2 + 1);
 
                 if (so_SalesHeaders.doc_type == "SALE - QUOTATION")
                 {
@@ -369,6 +369,7 @@ namespace Faahi.Service.im_products.sales
                 so_SalesHeaders.fx_rate_to_base = so_SalesHeaders.fx_rate_to_base;
                 so_SalesHeaders.fx_rate_date = so_SalesHeaders.fx_rate_date;
                 so_SalesHeaders.fx_source = so_SalesHeaders.fx_source;
+                so_SalesHeaders.purchase_order_no = so_SalesHeaders.purchase_order_no;
                 so_SalesHeaders.sub_total = so_SalesHeaders.sub_total;
                 so_SalesHeaders.discount_total = so_SalesHeaders.discount_total;
                 so_SalesHeaders.service_charge = so_SalesHeaders.service_charge;
@@ -383,6 +384,7 @@ namespace Faahi.Service.im_products.sales
                 so_SalesHeaders.total_charge_customer = so_SalesHeaders.total_charge_customer;
                 so_SalesHeaders.total_plastic_bag_tax = so_SalesHeaders.total_plastic_bag * Convert.ToDecimal(st_store.plastic_bag_tax_amount);
                 so_SalesHeaders.sub_total_base = so_SalesHeaders.sub_total * so_SalesHeaders.fx_rate_to_base;
+                so_SalesHeaders.balance_base = so_SalesHeaders.balance_base * so_SalesHeaders.fx_rate_to_base;
                 so_SalesHeaders.discount_total_base = so_SalesHeaders.discount_total_base * so_SalesHeaders.fx_rate_to_base;
                 so_SalesHeaders.tax_total_base = so_SalesHeaders.tax_total * so_SalesHeaders.fx_rate_to_base;
                 so_SalesHeaders.grand_total_base = so_SalesHeaders.grand_total * so_SalesHeaders.fx_rate_to_base;
@@ -627,6 +629,7 @@ namespace Faahi.Service.im_products.sales
                 existing_sal_header.doc_currency_code = so_SalesHeaders.doc_currency_code;
                 existing_sal_header.fx_rate_to_base = 1;
                 existing_sal_header.fx_rate_date = so_SalesHeaders.fx_rate_date;
+                existing_sal_header.balance_base = so_SalesHeaders.balance_base;
                 existing_sal_header.fx_source = so_SalesHeaders.fx_source;
                 existing_sal_header.sub_total = so_SalesHeaders.sub_total;
                 existing_sal_header.discount_total = so_SalesHeaders.discount_total;
@@ -880,58 +883,47 @@ namespace Faahi.Service.im_products.sales
             }
 
         }
-        public async Task<ServiceResult<List<so_SalesHeaders>>> Get_sales(Guid company_id)
+        public async Task<ServiceResult<List<so_SalesHeaders_dto>>> Get_sales(Guid company_id)
         {
             try
             {
                 if (company_id == null)
                 {
                     _logger.LogInformation("No company_id found");
-                    return new ServiceResult<List<so_SalesHeaders>>
+                    return new ServiceResult<List<so_SalesHeaders_dto>>
                     {
                         Status = 400,
                         Message = "No company_id found",
                         Success = false
                     };
                 }
-                var so_sales = await _context.so_SalesHeaders.Include(a => a.so_SalesLines).Where(a => a.business_id == company_id).OrderByDescending(a => a.sales_no).ToListAsync();
+                var result = await _context.Database.SqlQueryRaw<so_SalesHeaders_dto>(
+                    "EXEC dbo.sp_sales_report @opr=@opr, @business_id=@business_id",
+                    new SqlParameter("@opr", 10),
+                    new SqlParameter("@business_id", company_id)
+                ).ToListAsync();
 
-                foreach (var sale in so_sales)
+                if (result.Count == 0)
                 {
-                    var customer = await _context.ar_Customers.FirstOrDefaultAsync(a => a.customer_id == sale.customer_id);
-                    if (customer == null)
-                    {
-                        sale.contact_name = "";
-
-                    }
-                    else
-                    {
-                        sale.contact_name = customer?.contact_name;
-
-                    }
-
-                }
-                if (so_sales.Count == 0)
-                {
-                    return new ServiceResult<List<so_SalesHeaders>>
+                    return new ServiceResult<List<so_SalesHeaders_dto>>
                     {
                         Status = 300,
                         Message = "No so_SalesHeaders found",
                         Success = false
                     };
                 }
-                return new ServiceResult<List<so_SalesHeaders>>
+                return new ServiceResult<List<so_SalesHeaders_dto>>
                 {
                     Success = true,
                     Status = 200,
                     Message = "Success",
-                    Data = so_sales
+                    Data = result
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogInformation("Erro while Get_sales company_id");
-                return new ServiceResult<List<so_SalesHeaders>>
+                return new ServiceResult<List<so_SalesHeaders_dto>>
                 {
                     Status = 500,
                     Success = false,
@@ -1212,7 +1204,7 @@ namespace Faahi.Service.im_products.sales
                     };
                 }
 
-                
+
 
                 // Execute SP
                 var result = await _context.Database.SqlQueryRaw<CustomerSalesDetailDto>(
@@ -1260,7 +1252,7 @@ namespace Faahi.Service.im_products.sales
             }
         }
 
-        public async Task<ServiceResult<List<ProductSalesDetailDto>>> Get_sales_detailed_by_product(Guid store_id,string? ProductSku, DateOnly? start_date, DateOnly? end_date)
+        public async Task<ServiceResult<List<ProductSalesDetailDto>>> Get_sales_detailed_by_product(Guid store_id, string? ProductSku, DateOnly? start_date, DateOnly? end_date)
         {
             try
             {
@@ -1274,7 +1266,7 @@ namespace Faahi.Service.im_products.sales
                         Message = "No store_id found"
                     };
                 }
-                
+
                 var result_report = await _context.Database.SqlQueryRaw<ProductSalesDetailDto>
                                  (
                                      "EXEC dbo.sp_sales_report @opr=@opr, @store_id=@store_id,@ProductSku=@ProductSku, @StartDate=@StartDate, @EndDate=@EndDate",
@@ -1510,5 +1502,207 @@ namespace Faahi.Service.im_products.sales
             }
         }
 
+        public async Task<ServiceResult<so_SalesHeaders>> Add_sales_return(Guid salesId, so_SalesHeaders so_SalesHeaders)
+        {
+            var transactio = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var existing_sales = await _context.so_SalesHeaders.Include(a => a.so_SalesLines).FirstOrDefaultAsync(a => a.sales_id == salesId);
+                if (existing_sales == null)
+                {
+                    _logger.LogInformation("No sales found with the provided salesId");
+                    return new ServiceResult<so_SalesHeaders>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No sales found with the provided salesId"
+                    };
+                }
+                var table = "so_SalesReturnLines";
+                var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == so_SalesHeaders.business_id);
+                var key = Convert.ToInt16(table_key.next_key);
+                var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == so_SalesHeaders.store_id);
+
+                so_SalesReturnHeaders so_SalesReturnHeaders = new so_SalesReturnHeaders();
+                //so_SalesReturnLines so_SalesReturnLines1 = new so_SalesReturnLines();
+                List<so_SalesReturnLines> so_SalesReturnLines = new List<so_SalesReturnLines>();
+                pos_ReturnsalePayments pos_ReturnsalePayments = new pos_ReturnsalePayments();
+                bool is_retunqty = false;
+                bool is_inserted = false;
+                Guid? sales_line_id = null;
+                var existing_grand_total = existing_sales.grand_total;
+                existing_sales.tax_percent = so_SalesHeaders.tax_percent;
+                existing_sales.service_charge_percent = so_SalesHeaders.service_charge_percent;
+                existing_sales.sub_total = so_SalesHeaders.sub_total;
+                existing_sales.tax_total = so_SalesHeaders.tax_total;
+                existing_sales.grand_total = so_SalesHeaders.grand_total;
+                existing_sales.tax_total_base = so_SalesHeaders.tax_total_base;
+                existing_sales.grand_total_base = so_SalesHeaders.grand_total_base;
+                existing_sales.amount_paid_base = so_SalesHeaders.amount_paid_base;
+                foreach (var item in so_SalesHeaders.so_SalesLines)
+                {
+                    var sales_line = existing_sales.so_SalesLines.FirstOrDefault(a => a.sales_line_id == item.sales_line_id);
+                    if (sales_line != null)
+                    {
+                        var st_store_inv = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id);
+                        var item_batches = await _context.im_itemBatches.FirstOrDefaultAsync(a => a.item_batch_id == item.batch_id);
+                        var po_payment = await _context.pos_SalePayments.Where(a => a.sale_id == sales_line.sales_id).ToListAsync();
+                        sales_line.quantity = item.quantity - item.return_qty;
+                        sales_line.unit_price = item.unit_price;
+                        sales_line.tax_amount = item.tax_amount;
+                        sales_line.unit_price_base = item.unit_price_base;
+                        sales_line.tax_amount_base = item.tax_amount_base;
+                        sales_line.line_total_base = item.line_total_base;
+                        sales_line.remarks = item.remarks;
+                        sales_line.line_total = item.line_total;
+                        sales_line.return_qty = item.return_qty;
+                        if (sales_line.return_qty != 0)
+                        {
+                            if (st_store_inv != null)
+                            {
+                                st_store_inv.on_hand_quantity += sales_line.return_qty;
+                                _context.im_StoreVariantInventory.Update(st_store_inv);
+                            }
+                            if (item_batches != null)
+                            {
+                                item_batches.on_hand_quantity += sales_line.return_qty;
+                                _context.im_itemBatches.Update(item_batches);
+                            }
+                            if (po_payment.Count > 0)
+                            {
+                                foreach (var payment in po_payment)
+                                {
+                                    var pos_sub = await _context.pos_SalePayments.FirstOrDefaultAsync(a => a.sale_payment_id == payment.sale_payment_id);
+                                    if (pos_sub != null)
+                                    {
+                                        pos_sub.amount = pos_sub.amount - existing_grand_total;
+                                        _context.pos_SalePayments.Update(pos_sub);
+                                    }
+                                    if (pos_sub != null)
+                                    {
+                                        pos_ReturnsalePayments.business_id = pos_sub.business_id;
+                                        pos_ReturnsalePayments.store_id = pos_sub.store_id;
+                                        pos_ReturnsalePayments.payment_method_id = so_SalesReturnHeaders.payment_term_id;
+                                        pos_ReturnsalePayments.terminal_id = pos_sub.terminal_id;
+                                        pos_ReturnsalePayments.shift_id = pos_sub.shift_id;
+                                        pos_ReturnsalePayments.drawer_session_id = pos_sub.drawer_session_id;
+                                        pos_ReturnsalePayments.amount = pos_sub.amount;
+                                        pos_ReturnsalePayments.base_amount = pos_sub.base_amount;
+                                        pos_ReturnsalePayments.change_given = pos_sub.change_given;
+                                        pos_ReturnsalePayments.reference_no = pos_sub.reference_no;
+                                        pos_ReturnsalePayments.notes = pos_sub.notes;
+                                        pos_ReturnsalePayments.is_voided = pos_sub.is_voided;
+                                        pos_ReturnsalePayments.voided_by = pos_sub.voided_by;
+                                        pos_ReturnsalePayments.currency_code = pos_sub.currency_code;
+                                        _context.pos_ReturnsalePayments.Add(pos_ReturnsalePayments);
+
+                                    }
+
+
+                                }
+                            }
+
+                            is_retunqty = true;
+                            is_inserted = true;
+                        }
+
+                        sales_line_id = sales_line.sales_line_id;
+                        _context.so_SalesLines.Update(sales_line);
+                    }
+
+                }
+                if (is_retunqty)
+                {
+                    if (is_inserted)
+                    {
+                        so_SalesReturnHeaders.sales_return_id = Guid.CreateVersion7();
+                        so_SalesReturnHeaders.sales_id = salesId;
+                        so_SalesReturnHeaders.business_id = existing_sales.business_id;
+                        so_SalesReturnHeaders.store_id = existing_sales.store_id;
+                        so_SalesReturnHeaders.customer_id = existing_sales.customer_id;
+                        so_SalesReturnHeaders.return_no = st_store?.default_invoice_init + "-" + Convert.ToString(key + 1);
+                        so_SalesReturnHeaders.return_date = DateTime.Now;
+                        so_SalesReturnHeaders.doc_type = existing_sales.doc_type;
+                        so_SalesReturnHeaders.return_type = "RETURN";
+                        so_SalesReturnHeaders.return_reason = so_SalesHeaders.notes;
+                        so_SalesReturnHeaders.doc_currency_code = existing_sales.doc_currency_code;
+                        so_SalesReturnHeaders.base_currency_code = existing_sales.base_currency_code;
+                        so_SalesReturnHeaders.fx_rate_to_base = existing_sales.fx_rate_to_base;
+                        so_SalesReturnHeaders.sub_total = so_SalesHeaders.sub_total;
+                        so_SalesReturnHeaders.discount_total = so_SalesHeaders.discount_total;
+                        so_SalesReturnHeaders.tax_total = so_SalesHeaders.tax_total;
+                        so_SalesReturnHeaders.grand_total = so_SalesHeaders.grand_total;
+                        so_SalesReturnHeaders.sub_total_base = so_SalesHeaders.sub_total_base;
+                        so_SalesReturnHeaders.discount_total_base = so_SalesHeaders.discount_total_base;
+                        so_SalesReturnHeaders.tax_total_base = so_SalesHeaders.tax_total_base;
+                        so_SalesReturnHeaders.created_at = DateTime.Now;
+                        is_inserted = false;
+                    }
+
+                    foreach (var item_2 in so_SalesHeaders.so_SalesLines)
+                    {
+                        if (item_2.return_qty != 0)
+                        {
+                            var so_SalesReturnLines1 = new so_SalesReturnLines();
+
+                            so_SalesReturnLines1.sales_return_line_id = Guid.CreateVersion7();
+                            so_SalesReturnLines1.sales_return_id = so_SalesReturnHeaders.sales_return_id;
+                            so_SalesReturnLines1.business_id = existing_sales.business_id;
+                            so_SalesReturnLines1.store_id = existing_sales.store_id;
+                            so_SalesReturnLines1.product_id = item_2.product_id;
+                            so_SalesReturnLines1.variant_id = item_2.variant_id;
+                            so_SalesReturnLines1.store_variant_inventory_id = item_2.store_variant_inventory_id;
+                            so_SalesReturnLines1.batch_id = item_2.batch_id;
+                            so_SalesReturnLines1.barcode = item_2.barcode;
+                            so_SalesReturnLines1.product_sku = item_2.product_sku;
+                            so_SalesReturnLines1.track_expiry = item_2.track_expiry;
+                            so_SalesReturnLines1.item_description = item_2.item_description;
+                            so_SalesReturnLines1.return_qty = item_2.return_qty;
+                            so_SalesReturnLines1.unit_price = item_2.unit_price;
+                            so_SalesReturnLines1.discount_amount = item_2.discount_amount;
+                            so_SalesReturnLines1.tax_amount = item_2.tax_amount;
+                            so_SalesReturnLines1.line_total = item_2.line_total;
+                            so_SalesReturnLines1.unit_price_base = item_2.unit_price_base;
+                            so_SalesReturnLines1.discount_amount_base = item_2.discount_amount_base;
+                            so_SalesReturnLines1.tax_amount_base = item_2.tax_amount_base;
+                            so_SalesReturnLines1.line_total_base = item_2.line_total_base;
+                            so_SalesReturnLines1.return_reason = item_2.remarks;
+                            so_SalesReturnLines.Add(so_SalesReturnLines1);
+                        }
+
+                        so_SalesReturnHeaders.so_SalesReturnLines = so_SalesReturnLines;
+                    }
+                    if (table_key != null)
+                    {
+                        table_key.next_key = key + 1;
+                        _context.am_table_next_key.Update(table_key);
+                        await _context.SaveChangesAsync();
+                    }
+                    await _context.so_SalesReturnHeaders.AddAsync(so_SalesReturnHeaders);
+                }
+                await _context.SaveChangesAsync();
+                await transactio.CommitAsync();
+
+                return new ServiceResult<so_SalesHeaders>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                    Data = so_SalesHeaders
+                };
+            }
+            catch (Exception ex)
+            {
+                await transactio.RollbackAsync();
+                _logger.LogInformation("Error while Add_sales_return");
+                return new ServiceResult<so_SalesHeaders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
     }
 }

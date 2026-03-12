@@ -12,6 +12,7 @@ using Faahi.Model.co_business;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
 using Faahi.Model.st_sellers;
+using Faahi.Model.table_key;
 using Faahi.Service.Auth;
 using Faahi.Service.Email;
 using Microsoft.AspNetCore.Hosting;
@@ -76,8 +77,24 @@ namespace Faahi.Service.CoBusiness
                 {
                     return new ServiceResult<co_business> { Success = false, Message = "Username already exists.", Status = -2 };
                 }
+                business.company_id = Guid.CreateVersion7();
+
+                var super_key = await _context.super_admin_keys.ToListAsync();
+                am_table_next_key am_Table_Next_Key = new am_table_next_key();
+
+                foreach (var item in super_key)
+                {
+                    am_Table_Next_Key.next_key_id=Guid.CreateVersion7();
+                    am_Table_Next_Key.name = item.name;
+                    am_Table_Next_Key.next_key = item.next_key+1;
+                    am_Table_Next_Key.business_id = business.company_id;
+                    am_Table_Next_Key.site_code = item.site_code;
+                    _context.am_table_next_key.Add(am_Table_Next_Key);
+                    await _context.SaveChangesAsync();
+                }
+
                 var table = "co_business";
-                var am_table = await _context.am_table_next_key.FindAsync(table);
+                var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a=>a.name==table&& a.business_id==business.company_id);
                 var key = Convert.ToInt16(am_table.next_key);
 
                 business.company_code = Convert.ToString(key + 1);
@@ -87,7 +104,6 @@ namespace Faahi.Service.CoBusiness
                         .Substring(0, Math.Min(3, (business.business_name ?? "").Length))
                         .ToUpper();
                 var companyId = namePart + "-";
-                business.company_id = Guid.CreateVersion7();
                 var hashedPassword = PasswordHelper.HashPassword(business?.password);
                 business.password = hashedPassword;
                 business.created_at = DateTime.Now;
@@ -1096,7 +1112,7 @@ namespace Faahi.Service.CoBusiness
             {
                 // Check if country already exists
                 var existingData = await _context.co_avl_countries
-                    .FirstOrDefaultAsync(a => a.name.ToLower() == co_Avl_Countries.name.ToLower());
+                    .FirstOrDefaultAsync(a => a.name.ToLower() == co_Avl_Countries.name.ToLower()&& a.company_id== co_Avl_Countries.company_id);
 
                 if (existingData != null)
                 {

@@ -21,7 +21,7 @@ namespace Faahi.Service.im_products.sales
 
         Task<ActionResult<ServiceResult<so_SalesHeaders>>> Add_sales(so_SalesHeaders so_SalesHeaders);
 
-        Task<ServiceResult<List<so_SalesHeaders>>> Get_sales(Guid company_id);
+        Task<ServiceResult<List<so_SalesHeaders_dto>>> Get_sales(Guid company_id);
 
         Task<ServiceResult<so_SalesHeaders>> Get_sales_salesId(Guid salesId);
 
@@ -36,6 +36,8 @@ namespace Faahi.Service.im_products.sales
         Task<ServiceResult<List<TaxClassReportDTO>>> Get_sales_tax_report(Guid store_id, DateOnly? start_date, DateOnly? end_date);
         Task<ServiceResult<List<OutstandingSalesDTO>>> Get_sales_out_standing(Guid store_id, DateOnly? start_date, DateOnly? end_date);
         Task<ServiceResult<List<HourlySalesReportDTO>>> Get_sales_hourly_base(Guid store_id, DateOnly? start_date, DateOnly? end_date);
+
+        Task<ServiceResult<so_SalesHeaders>> Add_sales_return(Guid salesId, so_SalesHeaders so_SalesHeaders);
 
     }
 }

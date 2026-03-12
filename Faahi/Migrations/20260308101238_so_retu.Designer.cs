@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260308101238_so_retu")]
+    partial class so_retu
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1719,9 +1722,6 @@ namespace Faahi.Migrations
                     b.Property<decimal?>("length_cm")
                         .HasColumnType("decimal(16, 4)");
 
-                    b.Property<decimal?>("minimum_selling")
-                        .HasColumnType("decimal(16, 4)");
-
                     b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -2847,108 +2847,6 @@ namespace Faahi.Migrations
                     b.ToTable("pos_SalePayments");
                 });
 
-            modelBuilder.Entity("Faahi.Model.sales.pos_ReturnsalePayments", b =>
-                {
-                    b.Property<Guid>("pos_retuen_sales_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
-
-                    b.Property<decimal>("amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("base_amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<Guid?>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("change_given")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateTime>("created_at")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<string>("created_by")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("currency_code")
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<Guid?>("drawer_session_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("fx_rate")
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<string>("is_voided")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)")
-                        .HasDefaultValue("F");
-
-                    b.Property<int?>("line_no")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<string>("notes")
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<Guid?>("payment_method_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("receipt_no")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("reference_no")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<Guid?>("sale_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("shift_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("terminal_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("voided_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("voided_by")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("pos_retuen_sales_id");
-
-                    b.HasIndex(new[] { "business_id" }, "IX_business_id");
-
-                    b.HasIndex(new[] { "created_at" }, "IX_created_at");
-
-                    b.HasIndex(new[] { "line_no" }, "IX_line_no");
-
-                    b.HasIndex(new[] { "payment_method_id" }, "IX_payment_method_id");
-
-                    b.HasIndex(new[] { "pos_retuen_sales_id" }, "IX_pos_retuen_sales_id")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "sale_id" }, "IX_sale_id");
-
-                    b.HasIndex(new[] { "store_id" }, "IX_store_id");
-
-                    b.HasIndex(new[] { "terminal_id" }, "IX_terminal_id");
-
-                    b.ToTable("pos_ReturnsalePayments");
-                });
-
             modelBuilder.Entity("Faahi.Model.sales.so_SalesHeaders", b =>
                 {
                     b.Property<Guid>("sales_id")
@@ -3895,15 +3793,7 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.table_key.am_table_next_key", b =>
                 {
-                    b.Property<Guid>("next_key_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("name")
-                        .IsRequired()
                         .HasColumnType("varchar(255)");
 
                     b.Property<int>("next_key")
@@ -3912,7 +3802,7 @@ namespace Faahi.Migrations
                     b.Property<string>("site_code")
                         .HasColumnType("varchar(16)");
 
-                    b.HasKey("next_key_id");
+                    b.HasKey("name");
 
                     b.ToTable("am_table_next_key");
                 });
@@ -3928,22 +3818,6 @@ namespace Faahi.Migrations
                     b.HasKey("description");
 
                     b.ToTable("super_abi");
-                });
-
-            modelBuilder.Entity("Faahi.Model.table_key.super_admin_keys", b =>
-                {
-                    b.Property<string>("name")
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<int>("next_key")
-                        .HasColumnType("int");
-
-                    b.Property<string>("site_code")
-                        .HasColumnType("varchar(16)");
-
-                    b.HasKey("name");
-
-                    b.ToTable("super_admin_keys");
                 });
 
             modelBuilder.Entity("Faahi.Model.tax_class_table.tx_TaxClasses", b =>
@@ -4254,33 +4128,6 @@ namespace Faahi.Migrations
                 });
 
             modelBuilder.Entity("Faahi.Model.pos_tables.pos_SalePayments", b =>
-                {
-                    b.HasOne("Faahi.Model.co_business.co_business", "co_Business")
-                        .WithMany()
-                        .HasForeignKey("business_id");
-
-                    b.HasOne("Faahi.Model.sales.so_payment_type", "payment_type")
-                        .WithMany()
-                        .HasForeignKey("payment_method_id");
-
-                    b.HasOne("Faahi.Model.sales.so_SalesHeaders", "sales_headers")
-                        .WithMany()
-                        .HasForeignKey("sale_id");
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
-                        .WithMany()
-                        .HasForeignKey("store_id");
-
-                    b.Navigation("co_Business");
-
-                    b.Navigation("payment_type");
-
-                    b.Navigation("sales_headers");
-
-                    b.Navigation("st_Stores");
-                });
-
-            modelBuilder.Entity("Faahi.Model.sales.pos_ReturnsalePayments", b =>
                 {
                     b.HasOne("Faahi.Model.co_business.co_business", "co_Business")
                         .WithMany()
