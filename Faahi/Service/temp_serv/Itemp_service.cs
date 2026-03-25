@@ -8,5 +8,9 @@ namespace Faahi.Service.temp_serv
         Task<ServiceResult<List<temp_im_variant>>> Add_temp_varient(List<temp_im_variant> varient);
 
         Task<ServiceResult<List<temp_im_variant>>> get_tempvariant(Guid store_id);
+
+        Task<ServiceResult<List<temp_im_variant>>> get_tempvariant_product(Guid detail_id);
+
+
     }
 }

@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260323064006_retn_purchase")]
+    partial class retn_purchase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -638,123 +641,7 @@ namespace Faahi.Migrations
                     b.ToTable("st_store_currencies");
                 });
 
-            modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
-                {
-                    b.Property<Guid>("role_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("am_usersuserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("description")
-                        .HasColumnType("varchar(300)");
-
-                    b.Property<string>("is_system_role")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<string>("role_code")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("role_group")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("role_name")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("status")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.HasKey("role_id");
-
-                    b.HasIndex("am_usersuserId");
-
-                    b.ToTable("am_roles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_business_access", b =>
-                {
-                    b.Property<Guid>("access_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier ");
-
-                    b.Property<string>("access_level")
-                        .IsRequired()
-                        .HasColumnType("varchar(30)");
-
-                    b.Property<Guid?>("am_user_rolesuser_role_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("status")
-                        .IsRequired()
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("user_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("access_id");
-
-                    b.HasIndex("am_user_rolesuser_role_id");
-
-                    b.HasIndex("store_id");
-
-                    b.HasIndex(new[] { "user_id", "business_id", "store_id" }, "IX_am_user_business_access_user_business_store");
-
-                    b.HasIndex(new[] { "business_id", "store_id" }, "X_am_user_business_access_business_store");
-
-                    b.ToTable("am_user_business_access");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
-                {
-                    b.Property<Guid>("user_role_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("am_rolesrole_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("user_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("user_role_id");
-
-                    b.HasIndex("am_rolesrole_id");
-
-                    b.HasIndex("store_id");
-
-                    b.HasIndex(new[] { "business_id", "store_id" }, "IX_am_user_roles_business_store");
-
-                    b.HasIndex(new[] { "user_id" }, "IX_am_user_roles_user_id");
-
-                    b.ToTable("am_user_roles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_users", b =>
+            modelBuilder.Entity("Faahi.Model.am_users", b =>
                 {
                     b.Property<Guid>("userId")
                         .ValueGeneratedOnAdd()
@@ -818,10 +705,6 @@ namespace Faahi.Migrations
                         .HasColumnType("varchar(32)");
 
                     b.HasKey("userId");
-
-                    b.HasIndex(new[] { "email" }, "UX_am_users_email");
-
-                    b.HasIndex(new[] { "userName" }, "UX_am_users_user_name");
 
                     b.ToTable("am_users");
                 });
@@ -1333,9 +1216,6 @@ namespace Faahi.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
-                    b.Property<string>("Goods_recipt_code")
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<Guid>("business_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -1642,9 +1522,6 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(9,4)")
                         .HasDefaultValue(0m);
-
-                    b.Property<string>("trans_type")
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<decimal>("unit_cost")
                         .ValueGeneratedOnAdd()
@@ -2917,9 +2794,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("category_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("detail_code")
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<decimal?>("discount_amount")
                         .HasColumnType("decimal(18, 4)");
 
@@ -2944,9 +2818,6 @@ namespace Faahi.Migrations
 
                     b.Property<decimal?>("line_unit_total")
                         .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("listing_code")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<Guid?>("listing_id")
                         .HasColumnType("uniqueidentifier");
@@ -4860,67 +4731,6 @@ namespace Faahi.Migrations
                         .HasForeignKey("st_StoresAddresstore_address_id");
                 });
 
-            modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
-                {
-                    b.HasOne("Faahi.Model.am_users.am_users", null)
-                        .WithMany("am_roles")
-                        .HasForeignKey("am_usersuserId");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_business_access", b =>
-                {
-                    b.HasOne("Faahi.Model.am_users.am_user_roles", null)
-                        .WithMany("am_user_business_access")
-                        .HasForeignKey("am_user_rolesuser_role_id");
-
-                    b.HasOne("Faahi.Model.co_business.co_business", "c_business")
-                        .WithMany()
-                        .HasForeignKey("business_id");
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
-                        .WithMany()
-                        .HasForeignKey("store_id");
-
-                    b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
-                        .WithMany()
-                        .HasForeignKey("user_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("am_Users");
-
-                    b.Navigation("c_business");
-
-                    b.Navigation("st_Stores");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
-                {
-                    b.HasOne("Faahi.Model.am_users.am_roles", null)
-                        .WithMany("am_user_roles")
-                        .HasForeignKey("am_rolesrole_id");
-
-                    b.HasOne("Faahi.Model.co_business.co_business", "c_business")
-                        .WithMany()
-                        .HasForeignKey("business_id");
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
-                        .WithMany()
-                        .HasForeignKey("store_id");
-
-                    b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
-                        .WithMany()
-                        .HasForeignKey("user_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("am_Users");
-
-                    b.Navigation("c_business");
-
-                    b.Navigation("st_Stores");
-                });
-
             modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>
                 {
                     b.HasOne("Faahi.Model.Shared_tables.st_Parties", null)
@@ -5495,21 +5305,6 @@ namespace Faahi.Migrations
             modelBuilder.Entity("Faahi.Model.Stores.st_StoresAddres", b =>
                 {
                     b.Navigation("st_store_currencies");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
-                {
-                    b.Navigation("am_user_roles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
-                {
-                    b.Navigation("am_user_business_access");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_users", b =>
-                {
-                    b.Navigation("am_roles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>
