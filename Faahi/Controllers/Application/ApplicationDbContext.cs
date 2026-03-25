@@ -35,6 +35,10 @@ namespace Faahi.Controllers.Application
 
         public DbSet<am_user_business_access> am_user_business_access { get; set; }
 
+        public DbSet<mk_customer_profiles> mk_customer_profiles { get; set; }
+
+        public DbSet<mk_customer_addresses> mk_customer_addresses { get; set; }
+
         public DbSet<am_table_next_key> am_table_next_key { get; set; }
 
         public DbSet<super_admin_keys> super_admin_keys { get; set; }
