@@ -56,7 +56,6 @@ namespace Faahi.Service.CoBusiness
 
         Task<ServiceResult<List<co_business>>> Dekiru(string searchTerm);
 
-        Task<ServiceResult<List<co_avl_countries>>> CurrencyList(Guid company_id);
 
 
     }

@@ -39,10 +39,6 @@ namespace Faahi.Model.co_business
         [Column(TypeName = "char(1)")]
         public string? serv_available { get; set; } = null;
 
-        //[NotMapped]
-        public Decimal? exchange_rate { get; set; } = null;
-
-        [Column(TypeName = "uniqueidentifier")]
-        public Guid? company_id { get; set; }
+      
     }
 }
