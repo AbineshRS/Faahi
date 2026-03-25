@@ -544,7 +544,7 @@ namespace Faahi.Service.Users
             }
 
         }
-        public async Task<ServiceResult<ap_Vendors>> Get_vendor(Guid vendor_id)
+        public async Task<ServiceResult<ap_Vendors>> Get_vendor (Guid vendor_id)
         {
             if (vendor_id == null)
             {
@@ -658,6 +658,97 @@ namespace Faahi.Service.Users
                 Message = "Success",
                 Status = 1,
                 Data = vendors
+            };
+        }
+
+        public async Task<ServiceResult<st_Parties>> Create_other_party(st_Parties st_Parties)
+        {
+            if (st_Parties == null)
+            {
+                _logger.LogWarning("Create_other_party: No data found");
+                return new ServiceResult<st_Parties>
+                {
+                    Success = false,
+                    Message = "No data found",
+                    Status = -1
+                };
+            }
+            try
+            {
+                st_Parties.party_id = Guid.CreateVersion7();
+                st_Parties.party_type = "other";
+                st_Parties.display_name = st_Parties.display_name;
+                st_Parties.legal_name = st_Parties.legal_name;
+                st_Parties.payable_name = st_Parties.payable_name;
+                st_Parties.email = st_Parties.email;
+                st_Parties.phone = st_Parties.phone;
+                st_Parties.default_currency = st_Parties.default_currency;
+                st_Parties.tax_id = st_Parties.tax_id;
+                st_Parties.status = st_Parties.status ?? "T";
+                st_Parties.created_at = DateTime.Now;
+                st_Parties.updated_at = DateTime.Now;
+
+                // No ap_Vendors or ar_Customers — only st_Parties is saved
+                st_Parties.ap_Vendors = null;
+                st_Parties.ar_Customers = null;
+
+                await _context.st_Parties.AddAsync(st_Parties);
+                await _context.SaveChangesAsync();
+
+                return new ServiceResult<st_Parties>
+                {
+                    Success = true,
+                    Message = "Success",
+                    Status = 1,
+                    Data = st_Parties
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while creating other party.");
+                return new ServiceResult<st_Parties>
+                {
+                    Success = false,
+                    Message = "An error occurred while creating the party.",
+                    Status = -1
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<st_Parties>>> Get_all_parties(Guid company_id)
+        {
+            if (company_id == Guid.Empty)
+            {
+                return new ServiceResult<List<st_Parties>>
+                {
+                    Success = false,
+                    Message = "No company ID provided",
+                    Status = -1
+                };
+            }
+
+            var parties = await _context.st_Parties
+                .Where(p => p.company_id == company_id && p.status == "T")
+                .OrderBy(p => p.display_name)
+                .ToListAsync();
+
+            if (parties == null || parties.Count == 0)
+            {
+                return new ServiceResult<List<st_Parties>>
+                {
+                    Success = false,
+                    Message = "No parties found",
+                    Status = 0,
+                    Data = parties
+                };
+            }
+
+            return new ServiceResult<List<st_Parties>>
+            {
+                Success = true,
+                Message = "Success",
+                Status = 1,
+                Data = parties
             };
         }
     }

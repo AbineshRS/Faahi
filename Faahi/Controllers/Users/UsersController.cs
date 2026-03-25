@@ -113,5 +113,31 @@ namespace Faahi.Controllers.Users
             var vendors = await _iuser.Get_all_vendors(company_id);
             return Ok(vendors);
         }
+
+        [Authorize]
+        [HttpPost]
+        [Route("create_party")]
+        public async Task<ActionResult<st_Parties>> Create_other_party(st_Parties st_Parties)
+        {
+            if (st_Parties == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _iuser.Create_other_party(st_Parties);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("get_all_parties/{company_id}")]
+        public async Task<ActionResult<List<st_Parties>>> Get_all_parties(Guid company_id)
+        {
+            if (company_id == Guid.Empty)
+            {
+                return Ok("No data found");
+            }
+            var result = await _iuser.Get_all_parties(company_id);
+            return Ok(result);
+        }
     }
 }

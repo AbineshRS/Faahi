@@ -2,6 +2,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Faahi.Controllers.Application;
 using Faahi.Mapper;
+using Faahi.Service.Accounts;
 using Faahi.Service.Admin;
 using Faahi.Service.Auth;
 using Faahi.Service.CoBusiness;
@@ -114,6 +115,10 @@ builder.Services.AddScoped<Itemp_service,temp_service>();
 builder.Services.AddScoped<Isite_settings,site_settings_service>();
 builder.Services.AddMemoryCache();
 
+
+builder.Services.AddScoped<IAccountService, AccountService>();
+
+
 var wasabiOptions = builder.Configuration.GetSection("Wasabi");
 var accessKey = wasabiOptions["AccessKey"];
 var secretKey = wasabiOptions["SecretKey"];
@@ -144,6 +149,7 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("/openapi/v1.json", "Faahi v1");
     });
 }
+
 app.Use(async (context, next) =>
 {
     // Try to get base URL from custom header or Origin

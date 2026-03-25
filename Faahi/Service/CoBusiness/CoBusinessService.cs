@@ -50,177 +50,416 @@ namespace Faahi.Service.CoBusiness
             _cache = cache;
         }
 
+        //public async Task<ServiceResult<co_business>> Create_account(co_business business)
+        //{
+        //    if (business == null)
+        //    {
+        //        _logger.LogWarning("No data found to insert co_business", business);
+
+        //        return new ServiceResult<co_business> { Success = false, Message = "NO data found" };
+        //    }
+        //    try
+        //    {
+
+        //        var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == business.email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
+        //        if (email_verify == null)
+        //        {
+        //            return new ServiceResult<co_business> { Success = false, Message = "No Email found account", Status = -1 };
+        //        }
+        //        if (email_verify.verified == "F")
+        //        {
+
+        //            return new ServiceResult<co_business> { Success = false, Message = "You need to verify your account", Status = -1 };
+        //        }
+        //        var exists = await _context.co_business.FirstOrDefaultAsync(a => a.email == business.email);
+        //        if (exists != null)
+        //        {
+        //            return new ServiceResult<co_business> { Success = false, Message = "Username already exists.", Status = -2 };
+        //        }
+        //        var table = "co_business";
+        //        var am_table = await _context.am_table_next_key.FindAsync(table);
+        //        var key = Convert.ToInt16(am_table.next_key);
+
+        //        business.company_code = Convert.ToString(key + 1);
+
+
+        //        var namePart = Regex.Replace(business.business_name ?? "", @"\s+", "")
+        //                .Substring(0, Math.Min(3, (business.business_name ?? "").Length))
+        //                .ToUpper();
+        //        var companyId = namePart + "-";
+        //        business.company_id = Guid.CreateVersion7();
+        //        var hashedPassword = PasswordHelper.HashPassword(business?.password);
+        //        business.password = hashedPassword;
+        //        business.created_at = DateTime.Now;
+        //        business.edit_date_time = DateTime.Now;
+        //        business.email = business.email;
+        //        business.sites_allowed = 2;
+        //        business.sites_users_allowed = 2;
+
+        //        foreach (var address in business.co_addresses)
+        //        {
+
+        //            address.company_address_id = Guid.CreateVersion7();
+        //            address.company_id = business.company_id;
+        //            address.edit_date_time = DateTime.Now;
+
+        //        }
+
+
+
+        //        await _context.co_business.AddAsync(business);
+        //        string subject = "Congratulations! Your Seller Account on Faahi is Ready";
+        //        string body = @"
+        //                    <!DOCTYPE html>
+        //                    <html lang='en'>
+        //                    <head>
+        //                        <meta charset='UTF-8'>
+        //                        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        //                        <title>Welcome to Faahi Seller Platform</title>
+        //                        <style>
+        //                            body {
+        //                                font-family: 'Arial', sans-serif;
+        //                                background-color: #f7f7f7;
+        //                                margin: 0;
+        //                                padding: 0;
+        //                                color: #333;
+        //                            }
+        //                            .email-container {
+        //                                width: 100%;
+        //                                max-width: 600px;
+        //                                margin: 0 auto;
+        //                                background-color: #fff;
+        //                                border-radius: 8px;
+        //                                overflow: hidden;
+        //                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        //                            }
+        //                            .email-header {
+        //                                background-color: #28a745;
+        //                                color: #fff;
+        //                                padding: 20px;
+        //                                text-align: center;
+        //                            }
+        //                            .email-header h1 {
+        //                                margin: 0;
+        //                                font-size: 24px;
+        //                            }
+        //                            .email-body {
+        //                                padding: 30px;
+        //                                text-align: left;
+        //                                font-size: 16px;
+        //                                line-height: 1.6;
+        //                            }
+        //                            .email-body p {
+        //                                margin-bottom: 15px;
+        //                            }
+        //                            .email-body strong {
+        //                                color: #28a745;
+        //                            }
+        //                            .email-footer {
+        //                                background-color: #f1f1f1;
+        //                                padding: 20px;
+        //                                text-align: center;
+        //                                font-size: 12px;
+        //                                color: #777;
+        //                            }
+        //                            .email-footer a {
+        //                                color: #28a745;
+        //                                text-decoration: none;
+        //                            }
+        //                            .button {
+        //                                background-color: #28a745;
+        //                                color: #fff;
+        //                                padding: 12px 24px;
+        //                                text-align: center;
+        //                                display: inline-block;
+        //                                border-radius: 5px;
+        //                                text-decoration: none;
+        //                                font-weight: bold;
+        //                                margin-top: 20px;
+        //                                width: 100%;
+        //                                max-width: 220px;
+        //                                margin-left: auto;
+        //                                margin-right: auto;
+        //                            }
+        //                        </style>
+        //                    </head>
+        //                    <body>
+        //                        <div class='email-container'>
+        //                            <div class='email-header'>
+        //                                <h1>Welcome to Faahi Seller Platform</h1>
+        //                            </div>
+        //                            <div class='email-body'>
+        //                                <p>Dear " + business.name + @",</p>
+        //                                <p>Congratulations! You have successfully registered as a seller on <strong>Faahi</strong>.</p>
+        //                                <p>We are excited to have you join our marketplace. As a seller, you'll now have the ability to manage your products, track your sales, and connect with customers across the globe.</p>
+        //                                <p>Here are a few next steps to get started:</p>
+        //                                <ul>
+        //                                    <li><strong>Set up your store</strong> – Personalize your storefront and manage your brand.</li>
+        //                                    <li><strong>Upload your products</strong> – Start adding your products to our platform.</li>
+        //                                    <li><strong>Start selling</strong> – Once your products are live, customers can start buying from you!</li>
+        //                                </ul>
+        //                                <p>If you have any questions or need assistance, our support team is here to help.</p>
+        //                                <a href='mailto:support@faahi.com' class='button'>Contact Support</a>
+        //                            </div>
+        //                            <div class='email-footer'>
+        //                                <p>Best regards,</p>
+        //                                <p>The Faahi Team</p>
+        //                                <p><small>If you need assistance, feel free to reach out to us at <a href='mailto:support@faahi.com'>support@faahi.com</a>.</small></p>
+        //                            </div>
+        //                        </div>
+        //                    </body>
+        //                    </html>
+        //                    ";
+        //        am_table.next_key = key + 1;
+        //         _context.am_table_next_key.Update(am_table);
+
+        //        var emailService = new EmailService(_configuration);
+        //        await emailService.SendEmailAsync(business.email, subject, body);
+
+        //        await _context.SaveChangesAsync();
+
+        //        return new ServiceResult<co_business>
+        //        {
+        //            Status=1,
+        //            Success = true,
+        //            Message = "User created successfully",
+        //            Data = business
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "error occurred adding co_business");
+        //        return new ServiceResult<co_business>
+        //        {
+        //            Success = false,
+        //            Message = "An unexpected error occurred",
+        //            Status = -500
+        //        };
+        //    }
+
+        //}
+
         public async Task<ServiceResult<co_business>> Create_account(co_business business)
         {
             if (business == null)
             {
-                _logger.LogWarning("No data found to insert co_business", business);
-
-                return new ServiceResult<co_business> { Success = false, Message = "NO data found" };
+                _logger.LogWarning("No data found to insert co_business");
+                return new ServiceResult<co_business>
+                {
+                    Success = false,
+                    Message = "NO data found"
+                };
             }
+
+            await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
+                var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a =>
+                    a.email == business.email &&
+                    a.verificationType == "EmailVerification" &&
+                    a.userType == "co-admin");
 
-                var email_verify = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == business.email && a.verificationType == "EmailVerification" && a.userType == "co-admin");
                 if (email_verify == null)
                 {
-                    return new ServiceResult<co_business> { Success = false, Message = "No Email found account", Status = -1 };
+                    return new ServiceResult<co_business>
+                    {
+                        Success = false,
+                        Message = "No Email found account",
+                        Status = -1
+                    };
                 }
+
                 if (email_verify.verified == "F")
                 {
-
-                    return new ServiceResult<co_business> { Success = false, Message = "You need to verify your account", Status = -1 };
+                    return new ServiceResult<co_business>
+                    {
+                        Success = false,
+                        Message = "You need to verify your account",
+                        Status = -1
+                    };
                 }
+
                 var exists = await _context.co_business.FirstOrDefaultAsync(a => a.email == business.email);
                 if (exists != null)
                 {
-                    return new ServiceResult<co_business> { Success = false, Message = "Username already exists.", Status = -2 };
+                    return new ServiceResult<co_business>
+                    {
+                        Success = false,
+                        Message = "Username already exists.",
+                        Status = -2
+                    };
                 }
+
                 var table = "co_business";
                 var am_table = await _context.am_table_next_key.FindAsync(table);
-                var key = Convert.ToInt16(am_table.next_key);
+                if (am_table == null)
+                {
+                    return new ServiceResult<co_business>
+                    {
+                        Success = false,
+                        Message = "Key table not found",
+                        Status = -500
+                    };
+                }
 
+                var key = Convert.ToInt16(am_table.next_key);
                 business.company_code = Convert.ToString(key + 1);
 
-
-                var namePart = Regex.Replace(business.business_name ?? "", @"\s+", "")
-                        .Substring(0, Math.Min(3, (business.business_name ?? "").Length))
-                        .ToUpper();
-                var companyId = namePart + "-";
                 business.company_id = Guid.CreateVersion7();
-                var hashedPassword = PasswordHelper.HashPassword(business?.password);
-                business.password = hashedPassword;
-                business.created_at = DateTime.Now;
-                business.edit_date_time = DateTime.Now;
-                business.email = business.email;
+                business.password = PasswordHelper.HashPassword(business.password);
+                business.created_at = DateTime.UtcNow;
+                business.edit_date_time = DateTime.UtcNow;
                 business.sites_allowed = 2;
                 business.sites_users_allowed = 2;
 
-                foreach (var address in business.co_addresses)
+                if (business.co_addresses != null)
                 {
-
-                    address.company_address_id = Guid.CreateVersion7();
-                    address.company_id = business.company_id;
-                    address.edit_date_time = DateTime.Now;
-
+                    foreach (var address in business.co_addresses)
+                    {
+                        address.company_address_id = Guid.CreateVersion7();
+                        address.company_id = business.company_id;
+                        address.edit_date_time = DateTime.UtcNow;
+                    }
                 }
 
-
-
                 await _context.co_business.AddAsync(business);
+
+                am_table.next_key = key + 1;
+                _context.am_table_next_key.Update(am_table);
+
+                // Save company first
+                await _context.SaveChangesAsync();
+
+                // Seed default GL accounts
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"EXEC dbo.sp_SeedCompanyGLAccounts @CompanyId={business.company_id}");
+
+                // Seed default account mappings
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"EXEC dbo.sp_SeedCompanyAccountMappings @CompanyId={business.company_id}");
+
+                // Seed account current balances (BS only)
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"EXEC dbo.sp_SeedAccountCurrentBalances @CompanyId={business.company_id}");
+
+                await tx.CommitAsync();
+
                 string subject = "Congratulations! Your Seller Account on Faahi is Ready";
                 string body = @"
-                            <!DOCTYPE html>
-                            <html lang='en'>
-                            <head>
-                                <meta charset='UTF-8'>
-                                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                                <title>Welcome to Faahi Seller Platform</title>
-                                <style>
-                                    body {
-                                        font-family: 'Arial', sans-serif;
-                                        background-color: #f7f7f7;
-                                        margin: 0;
-                                        padding: 0;
-                                        color: #333;
-                                    }
-                                    .email-container {
-                                        width: 100%;
-                                        max-width: 600px;
-                                        margin: 0 auto;
-                                        background-color: #fff;
-                                        border-radius: 8px;
-                                        overflow: hidden;
-                                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                                    }
-                                    .email-header {
-                                        background-color: #28a745;
-                                        color: #fff;
-                                        padding: 20px;
-                                        text-align: center;
-                                    }
-                                    .email-header h1 {
-                                        margin: 0;
-                                        font-size: 24px;
-                                    }
-                                    .email-body {
-                                        padding: 30px;
-                                        text-align: left;
-                                        font-size: 16px;
-                                        line-height: 1.6;
-                                    }
-                                    .email-body p {
-                                        margin-bottom: 15px;
-                                    }
-                                    .email-body strong {
-                                        color: #28a745;
-                                    }
-                                    .email-footer {
-                                        background-color: #f1f1f1;
-                                        padding: 20px;
-                                        text-align: center;
-                                        font-size: 12px;
-                                        color: #777;
-                                    }
-                                    .email-footer a {
-                                        color: #28a745;
-                                        text-decoration: none;
-                                    }
-                                    .button {
-                                        background-color: #28a745;
-                                        color: #fff;
-                                        padding: 12px 24px;
-                                        text-align: center;
-                                        display: inline-block;
-                                        border-radius: 5px;
-                                        text-decoration: none;
-                                        font-weight: bold;
-                                        margin-top: 20px;
-                                        width: 100%;
-                                        max-width: 220px;
-                                        margin-left: auto;
-                                        margin-right: auto;
-                                    }
-                                </style>
-                            </head>
-                            <body>
-                                <div class='email-container'>
-                                    <div class='email-header'>
-                                        <h1>Welcome to Faahi Seller Platform</h1>
-                                    </div>
-                                    <div class='email-body'>
-                                        <p>Dear " + business.name + @",</p>
-                                        <p>Congratulations! You have successfully registered as a seller on <strong>Faahi</strong>.</p>
-                                        <p>We are excited to have you join our marketplace. As a seller, you'll now have the ability to manage your products, track your sales, and connect with customers across the globe.</p>
-                                        <p>Here are a few next steps to get started:</p>
-                                        <ul>
-                                            <li><strong>Set up your store</strong> – Personalize your storefront and manage your brand.</li>
-                                            <li><strong>Upload your products</strong> – Start adding your products to our platform.</li>
-                                            <li><strong>Start selling</strong> – Once your products are live, customers can start buying from you!</li>
-                                        </ul>
-                                        <p>If you have any questions or need assistance, our support team is here to help.</p>
-                                        <a href='mailto:support@faahi.com' class='button'>Contact Support</a>
-                                    </div>
-                                    <div class='email-footer'>
-                                        <p>Best regards,</p>
-                                        <p>The Faahi Team</p>
-                                        <p><small>If you need assistance, feel free to reach out to us at <a href='mailto:support@faahi.com'>support@faahi.com</a>.</small></p>
-                                    </div>
-                                </div>
-                            </body>
-                            </html>
-                            ";
-                am_table.next_key = key + 1;
-                 _context.am_table_next_key.Update(am_table);
+            <!DOCTYPE html>
+            <html lang='en'>
+            <head>
+                <meta charset='UTF-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <title>Welcome to Faahi Seller Platform</title>
+                <style>
+                    body {
+                        font-family: 'Arial', sans-serif;
+                        background-color: #f7f7f7;
+                        margin: 0;
+                        padding: 0;
+                        color: #333;
+                    }
+                    .email-container {
+                        width: 100%;
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: #fff;
+                        border-radius: 8px;
+                        overflow: hidden;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    }
+                    .email-header {
+                        background-color: #28a745;
+                        color: #fff;
+                        padding: 20px;
+                        text-align: center;
+                    }
+                    .email-header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                    }
+                    .email-body {
+                        padding: 30px;
+                        text-align: left;
+                        font-size: 16px;
+                        line-height: 1.6;
+                    }
+                    .email-body p {
+                        margin-bottom: 15px;
+                    }
+                    .email-body strong {
+                        color: #28a745;
+                    }
+                    .email-footer {
+                        background-color: #f1f1f1;
+                        padding: 20px;
+                        text-align: center;
+                        font-size: 12px;
+                        color: #777;
+                    }
+                    .email-footer a {
+                        color: #28a745;
+                        text-decoration: none;
+                    }
+                    .button {
+                        background-color: #28a745;
+                        color: #fff;
+                        padding: 12px 24px;
+                        text-align: center;
+                        display: inline-block;
+                        border-radius: 5px;
+                        text-decoration: none;
+                        font-weight: bold;
+                        margin-top: 20px;
+                        width: 100%;
+                        max-width: 220px;
+                        margin-left: auto;
+                        margin-right: auto;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class='email-container'>
+                    <div class='email-header'>
+                        <h1>Welcome to Faahi Seller Platform</h1>
+                    </div>
+                    <div class='email-body'>
+                        <p>Dear " + business.name + @",</p>
+                        <p>Congratulations! You have successfully registered as a seller on <strong>Faahi</strong>.</p>
+                        <p>We are excited to have you join our marketplace. As a seller, you'll now have the ability to manage your products, track your sales, and connect with customers across the globe.</p>
+                        <p>Here are a few next steps to get started:</p>
+                        <ul>
+                            <li><strong>Set up your store</strong> – Personalize your storefront and manage your brand.</li>
+                            <li><strong>Upload your products</strong> – Start adding your products to our platform.</li>
+                            <li><strong>Start selling</strong> – Once your products are live, customers can start buying from you!</li>
+                        </ul>
+                        <p>If you have any questions or need assistance, our support team is here to help.</p>
+                        <a href='mailto:support@faahi.com' class='button'>Contact Support</a>
+                    </div>
+                    <div class='email-footer'>
+                        <p>Best regards,</p>
+                        <p>The Faahi Team</p>
+                        <p><small>If you need assistance, feel free to reach out to us at <a href='mailto:support@faahi.com'>support@faahi.com</a>.</small></p>
+                    </div>
+                </div>
+            </body>
+            </html>";
 
-                var emailService = new EmailService(_configuration);
-                await emailService.SendEmailAsync(business.email, subject, body);
-
-                await _context.SaveChangesAsync();
+                // Email should not break successful account creation
+                try
+                {
+                    var emailService = new EmailService(_configuration);
+                    await emailService.SendEmailAsync(business.email, subject, body);
+                }
+                catch (Exception mailEx)
+                {
+                    _logger.LogWarning(mailEx, "Account created but welcome email failed for {Email}", business.email);
+                }
 
                 return new ServiceResult<co_business>
                 {
-                    Status=1,
+                    Status = 1,
                     Success = true,
                     Message = "User created successfully",
                     Data = business
@@ -228,6 +467,11 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                if (_context.Database.CurrentTransaction != null)
+                {
+                    await tx.RollbackAsync();
+                }
+
                 _logger.LogError(ex, "error occurred adding co_business");
                 return new ServiceResult<co_business>
                 {
@@ -236,7 +480,6 @@ namespace Faahi.Service.CoBusiness
                     Status = -500
                 };
             }
-
         }
 
         public async Task<ServiceResult<List<co_business>>> Company_list()
@@ -1728,6 +1971,26 @@ namespace Faahi.Service.CoBusiness
                 Success = true,
                 Message = "Filtered businesses fetched successfully",
                 Data = resultList
+            };
+        }
+
+        public async Task<ServiceResult<List<co_avl_countries>>> CurrencyList(Guid company_id)
+        {
+            if (_context.co_avl_countries == null)
+            {
+                return new ServiceResult<List<co_avl_countries>>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = "no data found"
+                };
+            }
+            var currency_list = await _context.co_avl_countries.Where(a => a.company_id == company_id).ToListAsync();
+            return new ServiceResult<List<co_avl_countries>>
+            {
+                Success = true,
+                Status = 1,
+                Data = currency_list
             };
         }
 

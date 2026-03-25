@@ -21,5 +21,9 @@ namespace Faahi.Service.Users
         Task<ServiceResult<List<ar_Customers>>> Get_all_customer(Guid company_id);
 
         Task<ServiceResult<List<ap_Vendors>>> Get_all_vendors(Guid company_id);
+
+        Task<ServiceResult<st_Parties>> Create_other_party(st_Parties st_Parties);
+
+        Task<ServiceResult<List<st_Parties>>> Get_all_parties(Guid company_id);
     }
 }
