@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260325053330_amusers")]
+    partial class amusers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,7 +43,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("country_region_id");
 
-                    b.ToTable("sa_country_regions", (string)null);
+                    b.ToTable("sa_country_regions");
                 });
 
             modelBuilder.Entity("Faahi.Model.Admin.sa_regions", b =>
@@ -68,7 +71,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("sa_country_regionscountry_region_id");
 
-                    b.ToTable("sa_regions", (string)null);
+                    b.ToTable("sa_regions");
                 });
 
             modelBuilder.Entity("Faahi.Model.Admin.super_admin", b =>
@@ -113,7 +116,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "super_admin_id" }, "super_admin_id")
                         .IsUnique();
 
-                    b.ToTable("super_admin", (string)null);
+                    b.ToTable("super_admin");
                 });
 
             modelBuilder.Entity("Faahi.Model.Email_verify.am_emailVerifications", b =>
@@ -147,7 +150,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("Email_id");
 
-                    b.ToTable("am_emailVerifications", (string)null);
+                    b.ToTable("am_emailVerifications");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.fin_PartyBankAccounts", b =>
@@ -210,7 +213,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "party_id" }, "party_id");
 
-                    b.ToTable("fin_PartyBankAccounts", (string)null);
+                    b.ToTable("fin_PartyBankAccounts");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_Parties", b =>
@@ -267,7 +270,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "status" }, "idx_status");
 
-                    b.ToTable("st_Parties", (string)null);
+                    b.ToTable("st_Parties");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyAddresses", b =>
@@ -345,7 +348,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "vendor_id" }, "idx_vendor_id");
 
-                    b.ToTable("st_PartyAddresses", (string)null);
+                    b.ToTable("st_PartyAddresses");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyContacts", b =>
@@ -390,7 +393,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("st_PartyAddressesaddress_id");
 
-                    b.ToTable("st_PartyContacts", (string)null);
+                    b.ToTable("st_PartyContacts");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyRoles", b =>
@@ -410,7 +413,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("party_role_id");
 
-                    b.ToTable("st_PartyRoles", (string)null);
+                    b.ToTable("st_PartyRoles");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_StoreCategories", b =>
@@ -437,7 +440,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("store_id");
 
-                    b.ToTable("st_StoreCategories", (string)null);
+                    b.ToTable("st_StoreCategories");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_StoreCategoryTemplates", b =>
@@ -458,7 +461,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("store_type");
 
-                    b.ToTable("st_StoreCategoryTemplates", (string)null);
+                    b.ToTable("st_StoreCategoryTemplates");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_StoresAddres", b =>
@@ -519,7 +522,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("valid_from");
 
-                    b.ToTable("st_StoresAddres", (string)null);
+                    b.ToTable("st_StoresAddres");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_UserRoles", b =>
@@ -545,7 +548,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("role_name");
 
-                    b.ToTable("st_UserRoles", (string)null);
+                    b.ToTable("st_UserRoles");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_UserStoreAccess", b =>
@@ -582,7 +585,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("user_id");
 
-                    b.ToTable("st_UserStoreAccess", (string)null);
+                    b.ToTable("st_UserStoreAccess");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_invoice_template", b =>
@@ -602,7 +605,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("invoices_temp_id");
 
-                    b.ToTable("st_Invoice_Templates", (string)null);
+                    b.ToTable("st_Invoice_Templates");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_store_currencies", b =>
@@ -635,7 +638,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("store_id");
 
-                    b.ToTable("st_store_currencies", (string)null);
+                    b.ToTable("st_store_currencies");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
@@ -674,7 +677,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("am_usersuserId");
 
-                    b.ToTable("am_roles", (string)null);
+                    b.ToTable("am_roles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_user_business_access", b =>
@@ -717,7 +720,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "business_id", "store_id" }, "X_am_user_business_access_business_store");
 
-                    b.ToTable("am_user_business_access", (string)null);
+                    b.ToTable("am_user_business_access");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
@@ -751,7 +754,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "user_id" }, "IX_am_user_roles_user_id");
 
-                    b.ToTable("am_user_roles", (string)null);
+                    b.ToTable("am_user_roles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_users", b =>
@@ -823,7 +826,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "userName" }, "UX_am_users_user_name");
 
-                    b.ToTable("am_users", (string)null);
+                    b.ToTable("am_users");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_addresses", b =>
@@ -884,7 +887,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "address_id" }, "IX_address_id")
                         .IsUnique();
 
-                    b.ToTable("mk_customer_addresses", (string)null);
+                    b.ToTable("mk_customer_addresses");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_profiles", b =>
@@ -934,7 +937,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "customer_profile_id" }, "IX_customer_profile_id")
                         .IsUnique();
 
-                    b.ToTable("mk_customer_profiles", (string)null);
+                    b.ToTable("mk_customer_profiles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>
@@ -1016,7 +1019,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "vendor_id" }, "idx_vendor_id")
                         .IsUnique();
 
-                    b.ToTable("ap_Vendors", (string)null);
+                    b.ToTable("ap_Vendors");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ar_Customers", b =>
@@ -1107,7 +1110,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "price_tier_id" }, "idx_price_tier_id");
 
-                    b.ToTable("ar_Customers", (string)null);
+                    b.ToTable("ar_Customers");
                 });
 
             modelBuilder.Entity("Faahi.Model.co_business.co_address", b =>
@@ -1167,7 +1170,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("co_businesscompany_id");
 
-                    b.ToTable("co_address", (string)null);
+                    b.ToTable("co_address");
                 });
 
             modelBuilder.Entity("Faahi.Model.co_business.co_avl_countries", b =>
@@ -1206,7 +1209,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("avl_countries_id");
 
-                    b.ToTable("co_avl_countries", (string)null);
+                    b.ToTable("co_avl_countries");
                 });
 
             modelBuilder.Entity("Faahi.Model.co_business.co_business", b =>
@@ -1306,7 +1309,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("tin_number");
 
-                    b.ToTable("co_business", (string)null);
+                    b.ToTable("co_business");
                 });
 
             modelBuilder.Entity("Faahi.Model.countries.avl_countries", b =>
@@ -1344,7 +1347,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("avl_countries_id");
 
-                    b.ToTable("avl_countries", (string)null);
+                    b.ToTable("avl_countries");
                 });
 
             modelBuilder.Entity("Faahi.Model.countries.fx_Currencies", b =>
@@ -1379,7 +1382,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("currency_name");
 
-                    b.ToTable("fx_Currencies", (string)null);
+                    b.ToTable("fx_Currencies");
                 });
 
             modelBuilder.Entity("Faahi.Model.countries.fx_timezones", b =>
@@ -1406,7 +1409,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("fx_Currenciescurrency_id");
 
-                    b.ToTable("fx_Timezones", (string)null);
+                    b.ToTable("fx_Timezones");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_AttributeValues", b =>
@@ -1434,7 +1437,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_ProductAttributesattribute_id");
 
-                    b.ToTable("im_AttributeValues", (string)null);
+                    b.ToTable("im_AttributeValues");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptHeaders", b =>
@@ -1566,7 +1569,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "supplier_id", "receipt_date" }, "IX_im_GoodsReceiptHeaders_supplier")
                         .IsDescending();
 
-                    b.ToTable("im_GoodsReceiptHeaders", (string)null);
+                    b.ToTable("im_GoodsReceiptHeaders");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptLineBatches", b =>
@@ -1649,7 +1652,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "business_id", "store_id", "variant_id", "batch_no", "expiry_date" }, "IX_im_GoodsReceiptLineBatches_variant_batch");
 
-                    b.ToTable("im_GoodsReceiptLineBatches", (string)null);
+                    b.ToTable("im_GoodsReceiptLineBatches");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptLines", b =>
@@ -1795,7 +1798,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "business_id", "store_id", "variant_id" }, "IX_im_GoodsReceiptLines_variant");
 
-                    b.ToTable("im_GoodsReceiptLines", (string)null);
+                    b.ToTable("im_GoodsReceiptLines");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_InventoryLedger", b =>
@@ -1858,7 +1861,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("variant_id");
 
-                    b.ToTable("im_InventoryLedger", (string)null);
+                    b.ToTable("im_InventoryLedger");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_InventoryTransactions", b =>
@@ -1924,7 +1927,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "transaction_id" }, "IX_transaction_id")
                         .IsUnique();
 
-                    b.ToTable("im_InventoryTransactions", (string)null);
+                    b.ToTable("im_InventoryTransactions");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ItemBatches", b =>
@@ -2031,7 +2034,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "IX_variant_id");
 
-                    b.ToTable("im_itemBatches", null, t =>
+                    b.ToTable("im_itemBatches", t =>
                         {
                             t.HasCheckConstraint("CK_im_itemBatches_expiry_date", "[expiry_date] > GETDATE()");
 
@@ -2094,7 +2097,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("variant_id");
 
-                    b.ToTable("im_Lots", (string)null);
+                    b.ToTable("im_Lots");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_PriceTiers", b =>
@@ -2122,7 +2125,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_product_subvariantsub_variant_id");
 
-                    b.ToTable("im_PriceTiers", (string)null);
+                    b.ToTable("im_PriceTiers");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductAttributes", b =>
@@ -2146,7 +2149,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("name");
 
-                    b.ToTable("im_ProductAttributes", (string)null);
+                    b.ToTable("im_ProductAttributes");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductCategories", b =>
@@ -2187,7 +2190,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("parent_id");
 
-                    b.ToTable("im_ProductCategories", (string)null);
+                    b.ToTable("im_ProductCategories");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductImages", b =>
@@ -2228,7 +2231,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "variant_id");
 
-                    b.ToTable("im_ProductImages", (string)null);
+                    b.ToTable("im_ProductImages");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductVariantPrices", b =>
@@ -2265,7 +2268,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_PriceTiersprice_tier_id");
 
-                    b.ToTable("im_ProductVariantPrices", (string)null);
+                    b.ToTable("im_ProductVariantPrices");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductVariants", b =>
@@ -2342,7 +2345,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "variant_id");
 
-                    b.ToTable("im_ProductVariants", (string)null);
+                    b.ToTable("im_ProductVariants");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_Products", b =>
@@ -2474,7 +2477,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "sub_sub_category_id" }, "sub_sub_category_id");
 
-                    b.ToTable("im_Products", (string)null);
+                    b.ToTable("im_Products");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_SellerInventory", b =>
@@ -2542,7 +2545,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("variant_id");
 
-                    b.ToTable("im_SellerInventory", (string)null);
+                    b.ToTable("im_SellerInventory");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_StoreVariantInventory", b =>
@@ -2585,7 +2588,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "variant_id");
 
-                    b.ToTable("im_StoreVariantInventory", (string)null);
+                    b.ToTable("im_StoreVariantInventory");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_UnitsOfMeasure", b =>
@@ -2602,7 +2605,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("uom_id");
 
-                    b.ToTable("im_UnitsOfMeasures", (string)null);
+                    b.ToTable("im_UnitsOfMeasures");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_VariantAttributes", b =>
@@ -2635,7 +2638,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "varient_attribute_id" }, "varient_attribute_id");
 
-                    b.ToTable("im_VariantAttributes", (string)null);
+                    b.ToTable("im_VariantAttributes");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_bin_location", b =>
@@ -2655,7 +2658,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("bin_location_id");
 
-                    b.ToTable("im_bin_locations", (string)null);
+                    b.ToTable("im_bin_locations");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_item_Category", b =>
@@ -2704,7 +2707,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("item_class_id");
 
-                    b.ToTable("im_item_Category", (string)null);
+                    b.ToTable("im_item_Category");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_item_site", b =>
@@ -2758,7 +2761,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_sitesite_id");
 
-                    b.ToTable("im_item_site", (string)null);
+                    b.ToTable("im_item_site");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_item_subcategory", b =>
@@ -2793,7 +2796,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_item_Categoryitem_class_id");
 
-                    b.ToTable("im_item_subcategory", (string)null);
+                    b.ToTable("im_item_subcategory");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_product_subvariant", b =>
@@ -2885,7 +2888,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("sub_variant_id");
 
-                    b.ToTable("im_product_subvariant", (string)null);
+                    b.ToTable("im_product_subvariant");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_products_tag", b =>
@@ -2908,7 +2911,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("tag_id");
 
-                    b.ToTable("im_products_tag", (string)null);
+                    b.ToTable("im_products_tag");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_listing", b =>
@@ -2998,7 +3001,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "vendor_id" }, "vendor_id");
 
-                    b.ToTable("im_purchase_listing", (string)null);
+                    b.ToTable("im_purchase_listing");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_listing_details", b =>
@@ -3126,7 +3129,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "sub_variant_id" }, "sub_variant_id");
 
-                    b.ToTable("im_purchase_listing_details", (string)null);
+                    b.ToTable("im_purchase_listing_details");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_details_line", b =>
@@ -3204,7 +3207,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "return_id" }, "return_id");
 
-                    b.ToTable("im_purchase_return_details_line", (string)null);
+                    b.ToTable("im_purchase_return_details_line");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_header", b =>
@@ -3294,7 +3297,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "vendor_id" }, "vendor_id");
 
-                    b.ToTable("im_purchase_return_header", (string)null);
+                    b.ToTable("im_purchase_return_header");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_site", b =>
@@ -3330,7 +3333,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("site_id");
 
-                    b.ToTable("im_site", (string)null);
+                    b.ToTable("im_site");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_site_users", b =>
@@ -3394,7 +3397,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("userId");
 
-                    b.ToTable("im_site_users", (string)null);
+                    b.ToTable("im_site_users");
                 });
 
             modelBuilder.Entity("Faahi.Model.pos_tables.pos_DrawerCountDetails", b =>
@@ -3445,7 +3448,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "payment_method_id" }, "IX_payment_method_id");
 
-                    b.ToTable("pos_DrawerCountDetails", (string)null);
+                    b.ToTable("pos_DrawerCountDetails");
                 });
 
             modelBuilder.Entity("Faahi.Model.pos_tables.pos_DrawerSessions", b =>
@@ -3520,7 +3523,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "terminal_id" }, "IX_terminal_id");
 
-                    b.ToTable("pos_DrawerSessions", (string)null);
+                    b.ToTable("pos_DrawerSessions");
                 });
 
             modelBuilder.Entity("Faahi.Model.pos_tables.pos_SalePayments", b =>
@@ -3622,7 +3625,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "terminal_id" }, "IX_terminal_id");
 
-                    b.ToTable("pos_SalePayments", (string)null);
+                    b.ToTable("pos_SalePayments");
                 });
 
             modelBuilder.Entity("Faahi.Model.sales.pos_ReturnsalePayments", b =>
@@ -3724,7 +3727,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "terminal_id" }, "IX_terminal_id");
 
-                    b.ToTable("pos_ReturnsalePayments", (string)null);
+                    b.ToTable("pos_ReturnsalePayments");
                 });
 
             modelBuilder.Entity("Faahi.Model.sales.so_SalesHeaders", b =>
@@ -4013,7 +4016,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "store_id" }, "IX_store_id");
 
-                    b.ToTable("so_SalesHeaders", null, t =>
+                    b.ToTable("so_SalesHeaders", t =>
                         {
                             t.HasCheckConstraint("CK_so_SalesHeaders_Totals_NonNegative", "sub_total >= 0 AND discount_total >= 0 AND tax_total >= 0 AND grand_total >= 0 AND sub_total_base >= 0 AND discount_total_base >= 0 AND tax_total_base >= 0 AND grand_total_base >= 0");
                         });
@@ -4221,7 +4224,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "IX_variant_id");
 
-                    b.ToTable("so_SalesLines", null, t =>
+                    b.ToTable("so_SalesLines", t =>
                         {
                             t.HasCheckConstraint("CK_so_SalesLines_Amounts", "unit_price >= 0 AND discount_amount >= 0 AND tax_amount >= 0 AND discount_percent >= 0 AND fx_rate_to_base > 0");
                         });
@@ -4338,7 +4341,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "store_id" }, "IX_store_id");
 
-                    b.ToTable("so_SalesReturnHeaders", (string)null);
+                    b.ToTable("so_SalesReturnHeaders");
                 });
 
             modelBuilder.Entity("Faahi.Model.sales.so_SalesReturnLines", b =>
@@ -4467,7 +4470,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "sales_return_line_id" }, "IX_sales_return_line_id")
                         .IsUnique();
 
-                    b.ToTable("so_SalesReturnLines", (string)null);
+                    b.ToTable("so_SalesReturnLines");
                 });
 
             modelBuilder.Entity("Faahi.Model.sales.so_payment_type", b =>
@@ -4514,7 +4517,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("business_id");
 
-                    b.ToTable("so_Payment_Types", (string)null);
+                    b.ToTable("so_Payment_Types");
                 });
 
             modelBuilder.Entity("Faahi.Model.st_sellers.st_Users", b =>
@@ -4563,7 +4566,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("status");
 
-                    b.ToTable("st_Users", (string)null);
+                    b.ToTable("st_Users");
                 });
 
             modelBuilder.Entity("Faahi.Model.st_sellers.st_stores", b =>
@@ -4668,7 +4671,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("store_type");
 
-                    b.ToTable("st_stores", (string)null);
+                    b.ToTable("st_stores");
                 });
 
             modelBuilder.Entity("Faahi.Model.table_key.am_table_next_key", b =>
@@ -4692,7 +4695,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("next_key_id");
 
-                    b.ToTable("am_table_next_key", (string)null);
+                    b.ToTable("am_table_next_key");
                 });
 
             modelBuilder.Entity("Faahi.Model.table_key.super_abi", b =>
@@ -4705,7 +4708,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("description");
 
-                    b.ToTable("super_abi", (string)null);
+                    b.ToTable("super_abi");
                 });
 
             modelBuilder.Entity("Faahi.Model.table_key.super_admin_keys", b =>
@@ -4721,7 +4724,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("name");
 
-                    b.ToTable("super_admin_keys", (string)null);
+                    b.ToTable("super_admin_keys");
                 });
 
             modelBuilder.Entity("Faahi.Model.tax_class_table.tx_TaxClasses", b =>
@@ -4749,7 +4752,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "tax_class_name" }, "IX_tax_class_name");
 
-                    b.ToTable("tx_TaxClasses", (string)null);
+                    b.ToTable("tx_TaxClasses");
                 });
 
             modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_purchase_listing_details", b =>
@@ -4855,7 +4858,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("temp_detail_id");
 
-                    b.ToTable("temp_Im_Purchase_Listing_Details", (string)null);
+                    b.ToTable("temp_Im_Purchase_Listing_Details");
                 });
 
             modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_variant", b =>
@@ -4905,7 +4908,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "temp_variant_id" }, "temp_variant_id");
 
-                    b.ToTable("temp_im_variants", (string)null);
+                    b.ToTable("temp_im_variants");
                 });
 
             modelBuilder.Entity("Faahi.Model.Admin.sa_regions", b =>
