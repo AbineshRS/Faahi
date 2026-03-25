@@ -278,13 +278,7 @@ namespace Faahi.Controllers.Cobusiness
             return Ok(updated);
         }
 
-        [HttpGet]
-        [Route("currency_list/{company_id}")]
-        public async Task<IActionResult> CurrencyList(Guid company_id)
-        {
-            var currency_list = await _co_businessService.CurrencyList(company_id);
-            return Ok(currency_list);
-        }
+       
 
         [HttpGet]
         [Route("Dekiru/{searchTerm}")]

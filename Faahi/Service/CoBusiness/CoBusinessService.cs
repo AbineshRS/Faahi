@@ -2000,25 +2000,7 @@ namespace Faahi.Service.CoBusiness
             };
         }
 
-        public async Task<ServiceResult<List<co_avl_countries>>> CurrencyList(Guid company_id)
-        {
-            if (_context.co_avl_countries == null)
-            {
-                return new ServiceResult<List<co_avl_countries>>
-                {
-                    Success = false,
-                    Status = -1,
-                    Message = "no data found"
-                };
-            }
-            var currency_list = await _context.co_avl_countries.Where(a => a.company_id == company_id).ToListAsync();
-            return new ServiceResult<List<co_avl_countries>>
-            {
-                Success = true,
-                Status = 1,
-                Data = currency_list
-            };
-        }
+        
 
     }
 }
