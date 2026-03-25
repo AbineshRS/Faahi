@@ -12,6 +12,7 @@ using Faahi.Service.im_products;
 using Faahi.Service.im_products.category;
 using Faahi.Service.im_products.im_purchase;
 using Faahi.Service.im_products.im_tags;
+using Faahi.Service.im_products.sales;
 using Faahi.Service.PartyService;
 using Faahi.Service.site_settings_service;
 using Faahi.Service.Store;
@@ -113,6 +114,7 @@ builder.Services.AddScoped<Iavl_countries,avl_countries_service>();
 builder.Services.AddScoped<Iadmin,admin_service>();
 builder.Services.AddScoped<Itemp_service,temp_service>();
 builder.Services.AddScoped<Isite_settings,site_settings_service>();
+builder.Services.AddScoped<Isales,sales_service>();
 builder.Services.AddMemoryCache();
 
 

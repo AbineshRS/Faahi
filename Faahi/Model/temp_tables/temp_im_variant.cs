@@ -49,5 +49,16 @@ namespace Faahi.Model.temp_tables
         [Column(TypeName = "decimal(18,2)")]
         public Decimal? quantity { get; set; }
 
+        [Column(TypeName = "varchar(50)")]
+        public string? sku { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(100)")]
+        public string? barcode { get; set; } = null;
+
+        [Column(TypeName = "varchar(200)")]
+        public string? title { get; set; } = null;
+
+
+
     }
 }

@@ -34,6 +34,7 @@ namespace Faahi.Service.temp_serv
                 }
                 foreach (var item in varient)
                 {
+                    temp_im_purchase_listing_details temp_purchase = new temp_im_purchase_listing_details();
 
                     var existing_temp = await _context.temp_im_variants.FirstOrDefaultAsync(a => a.company_id == item.company_id && a.store_id == item.store_id &&
                     a.variant_id == item.variant_id && a.detail_id == item.detail_id);
@@ -53,9 +54,28 @@ namespace Faahi.Service.temp_serv
                         item.variant_id = item.variant_id;
                         item.cost_price = item.cost_price;
                         item.quantity = item.quantity;
+                        item.sku = item.sku;
+                        item.barcode = item.barcode;
+                        item.title = item.title;
+                        item.store_variant_inventory_id = item.store_variant_inventory_id;
                         _context.temp_im_variants.Add(item);
-                        await _context.SaveChangesAsync();
 
+                        temp_purchase.temp_detail_id = Guid.CreateVersion7();
+                        temp_purchase.detail_id=item.detail_id;
+                        temp_purchase.listing_id =null;
+                        temp_purchase.product_id = item.product_id;
+                        temp_purchase.sub_variant_id = item.variant_id;
+                        temp_purchase.store_variant_inventory_id = item.store_variant_inventory_id;
+                        temp_purchase.quantity = item.quantity;
+                        temp_purchase.unit_price = item.cost_price;
+                        temp_purchase.is_varient = "T";
+                        temp_purchase.Product_title = item.title;
+                        temp_purchase.barcode = item.barcode;
+                        temp_purchase.sku = item.sku;
+                        temp_purchase.line_total = item.cost_price * item.quantity;
+                        _context.temp_Im_Purchase_Listing_Details.Add(temp_purchase);
+
+                        await _context.SaveChangesAsync();
 
                     }
                 }
@@ -66,7 +86,7 @@ namespace Faahi.Service.temp_serv
                     existing_imPurchase_details.unit_price = 0;
                     existing_imPurchase_details.line_total = 0;
                     _context.im_purchase_listing_details.Update(existing_imPurchase_details);
-                    await _context.SaveChangesAsync();
+                    //await _context.SaveChangesAsync();
                 }
                 var temp_varient = await _context.temp_im_variants.Where(a => a.detail_id == varient[0].detail_id).ToListAsync();
                 foreach (var items in temp_varient)
@@ -116,6 +136,51 @@ namespace Faahi.Service.temp_serv
                     };
                 }
                 var temp_varient = await _context.temp_im_variants.Where(a => a.store_id == store_id).ToListAsync();
+                if (temp_varient.Count == 0)
+                {
+                    _logger.LogInformation("no data found in temp_im_variants store_id");
+                    return new ServiceResult<List<temp_im_variant>>
+                    {
+                        Status = 400,
+                        Success = false,
+                    };
+                }
+                return new ServiceResult<List<temp_im_variant>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Data = temp_varient
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Erro  temp_im_variants ");
+                return new ServiceResult<List<temp_im_variant>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+
+
+        }
+        public async Task<ServiceResult<List<temp_im_variant>>> get_tempvariant_product(Guid detail_id)
+        {
+            try
+            {
+                if (detail_id == null)
+                {
+                    _logger.LogInformation("NO store_id found");
+                    return new ServiceResult<List<temp_im_variant>>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "store_id Not found",
+
+                    };
+                }
+                var temp_varient = await _context.temp_im_variants.Where(a => a.detail_id == detail_id).ToListAsync();
                 if (temp_varient.Count == 0)
                 {
                     _logger.LogInformation("no data found in temp_im_variants store_id");

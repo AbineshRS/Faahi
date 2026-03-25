@@ -1,5 +1,7 @@
 ﻿using Faahi.Dto;
+using Faahi.Dto.Purchase_dto;
 using Faahi.Model.im_products;
+using Faahi.Model.temp_tables;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Faahi.Service.im_products.im_purchase
@@ -8,11 +10,19 @@ namespace Faahi.Service.im_products.im_purchase
     {
         Task<ServiceResult<im_purchase_listing>> Create_im_purchase(im_purchase_listing im_Purchase_Listing);
 
-        Task<ServiceResult<List<im_purchase_listing>>> Purchase_list(Guid site_id);
+        Task<ServiceResult<List<PurchaseListDto>>> Purchase_list(Guid site_id);
+
+        Task<ServiceResult<im_purchase_listing>> Calculate_discount_avg(Guid listing_id);
 
         Task<ServiceResult<im_purchase_listing>> im_purchase_details(Guid listing_id);
 
+        Task<ServiceResult<List<temp_im_purchase_listing_details>>> temp_im_purchase_details(Guid listing_id);
+
         Task<ServiceResult<im_purchase_listing>> Update_purchase(Guid listing_id,im_purchase_listing im_Purchas);
+
+        Task<ServiceResult<im_purchase_listing_dto>> Update_purchase_return(Guid listing_id, im_purchase_listing_dto im_Purchas);
+
+        Task<ServiceResult<im_GoodsReceiptHeaders>> Add_GoodsHeader(Guid listing_id);
 
         Task<ServiceResult<im_purchase_listing>> Update_purchase_calculation(Guid listing_id, im_purchase_listing im_Purchas);
 
@@ -37,5 +47,11 @@ namespace Faahi.Service.im_products.im_purchase
         Task<ServiceResult<im_Products>> Get_product_data(Guid product_id);
 
         Task<ServiceResult<List<im_purchase_listing>>> Get_purchase_list(string searchText);
+
+        Task<ServiceResult<Dictionary<string, List<im_GoodsReceiptLines>>>> Get_inventory(Guid store_id, Guid variant_id);
+
+        Task<ServiceResult<List<im_purchase_listing>>> Get_inventory_report(Guid store_id, DateTime? start_date, DateTime? end_date,Guid? vendor_id,string searchText);
+
+        Task<ServiceResult<im_purchase_listing_dto>> Add_retuen_purchase(Guid listing_id, im_purchase_listing_dto _Purchase_Listing);
     }
 }

@@ -13,9 +13,13 @@ namespace Faahi.Service.table_key
         Task<ActionResult<am_table_next_key>> Update_key(am_table_next_key table_Next_Key);
 
         Task<am_table_next_key> GetByName(string name);  
+
+        Task<am_table_next_key> GetNextKey_company(Guid business_id, string name);  
         
         Task<am_table_next_key> delete_key(string name);
 
         Task<ServiceResult<super_abi>> Add_Super_Table_Key(super_abi super_Abi);
+
+        Task<ServiceResult<super_admin_keys>> Add_Super_Table_Key(super_admin_keys super_admin_keys);
     }
 }

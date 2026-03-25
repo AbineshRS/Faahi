@@ -1,12 +1,15 @@
 ﻿using Faahi.Model;
 using Faahi.Model.Accounts;
 using Faahi.Model.Admin;
+using Faahi.Model.am_users;
 using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
 using Faahi.Model.countries;
 using Faahi.Model.Email_verify;
 using Faahi.Model.Finance;
 using Faahi.Model.im_products;
+using Faahi.Model.pos_tables;
+using Faahi.Model.sales;
 using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
@@ -24,11 +27,23 @@ namespace Faahi.Controllers.Application
             this.ChangeTracker.LazyLoadingEnabled = false;
 
         }
-           
+
 
         public DbSet<am_users> am_users { get; set; }
 
+        public DbSet<am_roles> am_roles { get; set; }
+
+        public DbSet<am_user_roles> am_user_roles { get; set; }
+
+        public DbSet<am_user_business_access> am_user_business_access { get; set; }
+
+        public DbSet<mk_customer_profiles> mk_customer_profiles { get; set; }
+
+        public DbSet<mk_customer_addresses> mk_customer_addresses { get; set; }
+
         public DbSet<am_table_next_key> am_table_next_key { get; set; }
+
+        public DbSet<super_admin_keys> super_admin_keys { get; set; }
 
         public DbSet<co_business> co_business { get; set; }
 
@@ -104,8 +119,8 @@ namespace Faahi.Controllers.Application
 
         public DbSet<st_store_currencies> st_store_currencies { get; set; }
 
-        public DbSet<im_InventoryLedger> im_InventoryLedger { get;set; }
-         
+        public DbSet<im_InventoryLedger> im_InventoryLedger { get; set; }
+
         public DbSet<im_SellerInventory> im_SellerInventory { get; set; }
 
         public DbSet<im_Lots> im_Lots { get; set; }
@@ -116,7 +131,7 @@ namespace Faahi.Controllers.Application
 
         public DbSet<im_VariantAttributes> im_VariantAttributes { get; set; }
 
-        public DbSet<im_StoreVariantInventory> im_StoreVariantInventory { get;set; }
+        public DbSet<im_StoreVariantInventory> im_StoreVariantInventory { get; set; }
 
         public DbSet<super_admin> super_admin { get; set; }
 
@@ -137,14 +152,41 @@ namespace Faahi.Controllers.Application
 
         public DbSet<im_InventoryTransactions> im_InventoryTransactions { get; set; }
 
+        public DbSet<so_payment_type> so_Payment_Types { get; set; }
 
+        public DbSet<so_SalesHeaders> so_SalesHeaders { get; set; }
 
+        public DbSet<so_SalesLines> so_SalesLines { get; set; }
 
+        public DbSet<st_invoice_template> st_Invoice_Templates { get; set; }
 
+        public DbSet<pos_SalePayments> pos_SalePayments { get; set; }
+
+        public DbSet<pos_DrawerSessions> pos_DrawerSessions { get; set; }
+
+        public DbSet<pos_DrawerCountDetails> pos_DrawerCountDetails { get; set; }
+
+        public DbSet<so_SalesReturnHeaders> so_SalesReturnHeaders { get; set; }
+
+        public DbSet<so_SalesReturnLines> so_SalesReturnLines { get; set; }
+
+        public DbSet<pos_ReturnsalePayments> pos_ReturnsalePayments { get; set; }
+
+        public DbSet<im_GoodsReceiptHeaders> im_GoodsReceiptHeaders { get; set; }
+
+        public DbSet<im_GoodsReceiptLines> im_GoodsReceiptLines { get; set; }
+
+        public DbSet<im_GoodsReceiptLineBatches> im_GoodsReceiptLineBatches {  get; set; }
+
+        public DbSet<im_purchase_return_header> im_purchase_return_header { get; set; }
+
+        public DbSet<im_purchase_return_details_line> im_purchase_return_details_line { get; set; }
 
 
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }
+
+        public DbSet<temp_im_purchase_listing_details> temp_Im_Purchase_Listing_Details { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -203,12 +245,206 @@ namespace Faahi.Controllers.Application
             });
 
 
-            //modelBuilder.Entity<im_InventoryTransactions>().ToTable(tb =>
-            //{
-            //    tb.HasCheckConstraint("CK_im_InventoryTransactions_sub_total", "[sub_total]>=0");
-            //    tb.HasCheckConstraint("CK_im_InventoryTransactions_doc_totall", "[doc_total]>=0");
+            modelBuilder.Entity<so_payment_type>(entity =>
+            {
+                entity.Property(a => a.payment_type_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(sp => sp.is_avilable).HasDefaultValue("T");
+            });
 
-            //});
+            modelBuilder.Entity<so_SalesHeaders>(entity =>
+            {
+                entity.Property(e => e.sub_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.service_charge_percent).HasColumnType("decimal(6,2)").HasDefaultValue("0");
+                entity.Property(e => e.discount_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.service_charge).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.tax_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.grand_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_plastic_bag).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_taxable_value).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_zero_value).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_exempted_value).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_charge_customer).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_plastic_bag_tax).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.sub_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.discount_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.tax_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.grand_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_taxable_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_zero_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_exempted_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                //entity.Property(e => e.total_charge_customer_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");  
+                entity.Property(e => e.service_charge_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_plastic_bag_tax_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.total_charge_bank_marchant).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.transaction_cost).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.amount_paid_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.change_given_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.change_given_doc).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.balance_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.status).HasColumnType("varchar(20)").HasDefaultValue("OPEN");
+                entity.Property(e => e.sales_mode).HasColumnType("varchar(25)").HasDefaultValue("GENERAL");
+                entity.Property(e => e.doc_type).HasColumnType("varchar(10)").HasDefaultValue("SALE");
+                entity.Property(e => e.sales_on_hold).HasColumnType("char(1)").HasDefaultValue("F");
+                entity.Property(e => e.is_mutiple_payment).HasColumnType("char(1)").HasDefaultValue("F");
+
+
+                entity.ToTable(tb =>
+                {
+                    tb.HasCheckConstraint(
+                        "CK_so_SalesHeaders_Totals_NonNegative",
+                        "sub_total >= 0 AND discount_total >= 0 AND tax_total >= 0 AND grand_total >= 0 AND sub_total_base >= 0 AND discount_total_base >= 0 AND tax_total_base >= 0 AND grand_total_base >= 0"
+                    );
+                });
+            });
+
+            modelBuilder.Entity<so_SalesLines>(entity =>
+            {
+                entity.Property(e => e.sales_line_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.quantity).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.line_discount_amount).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.unit_price).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.discount_amount).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.discount_percent).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.tax_amount).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.detected_qty).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.original_price_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.returned_quantity).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.original_quantity).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.fx_rate_to_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.unit_price_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.discount_amount_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.tax_amount_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.unit_discount_amount_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.line_total_base).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.line_total).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(a => a.return_qty).HasColumnType("decimal(18,4)").HasDefaultValueSql("0");
+                entity.Property(e => e.track_expiry).HasColumnType("char(1)").HasDefaultValue("F");
+                entity.Property(e => e.stock_item).HasColumnType("char(1)").HasDefaultValue("F");
+
+                entity.ToTable(tb =>
+                {
+                    tb.HasCheckConstraint("CK_so_SalesLines_Amounts",
+                        "unit_price >= 0 AND discount_amount >= 0 AND tax_amount >= 0 AND discount_percent >= 0 AND fx_rate_to_base > 0");
+                });
+            });
+
+            modelBuilder.Entity<pos_SalePayments>(entity =>
+            {
+                entity.Property(a => a.sale_payment_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.line_no).HasColumnType("int").HasDefaultValue(1);
+                entity.Property(a => a.change_given).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.is_voided).HasColumnType("char(1)").HasDefaultValue("F");
+            });
+
+            modelBuilder.Entity<pos_DrawerSessions>(entity =>
+            {
+                entity.Property(a => a.drawer_session_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.opening_float).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.opened_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.status).HasColumnType("char(1)").HasDefaultValue("O");
+
+            });
+
+            modelBuilder.Entity<pos_DrawerCountDetails>(entity =>
+            {
+                entity.Property(a => a.drawer_count_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.expected_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.counted_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.difference_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+
+
+            });
+
+            modelBuilder.Entity<so_SalesReturnHeaders>(entity =>
+            {
+                entity.Property(e => e.sub_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.discount_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.tax_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.grand_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.sub_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.discount_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.tax_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.grand_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(e => e.discount_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.HasOne(e => e.st_Stores).WithMany().HasForeignKey(e => e.store_id).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<so_SalesReturnLines>(entity =>
+            {
+                entity.Property(a => a.return_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.unit_price).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.discount_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.discount_percent).HasColumnType("decimal(6,2)").HasDefaultValue("0");
+                entity.Property(a => a.tax_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.line_total).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.unit_price_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.discount_amount_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.tax_amount_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.line_total_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.HasOne(a => a.so_SalesReturnHeaders).WithMany().HasForeignKey(a => a.sales_return_id).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(a => a.st_Stores).WithMany().HasForeignKey(a => a.store_id).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<pos_ReturnsalePayments>(entity =>
+            {
+                entity.Property(a => a.pos_retuen_sales_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.line_no).HasColumnType("int").HasDefaultValue(1);
+                entity.Property(a => a.change_given).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.is_voided).HasColumnType("char(1)").HasDefaultValue("F");
+            });
+
+            modelBuilder.Entity<im_GoodsReceiptHeaders>(entity =>
+            {
+                entity.Property(a => a.goods_receipt_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.subtotal).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.discount_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.tax_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.total_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.posted_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.receipt_date).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.is_posted).HasColumnType("char(1)").HasDefaultValue("F");
+                entity.Property(a => a.is_cancelled).HasColumnType("char(1)").HasDefaultValue("F");
+            });
+
+            modelBuilder.Entity<im_GoodsReceiptLines>(entity =>
+            {
+                entity.Property(a => a.goods_receipt_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.ordered_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.discount_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.tax_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.received_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.free_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.rejected_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.accepted_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.unit_cost).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.discount_percent).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.line_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.net_amount).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.net_unit_cost).HasColumnType("decimal(18,6)").HasDefaultValue("0");
+                entity.Property(a => a.tax_percent).HasColumnType("decimal(9,4)").HasDefaultValue("0");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+
+            });
+
+            modelBuilder.Entity<im_GoodsReceiptLineBatches>(entity =>
+            {
+                entity.Property(a => a.goods_receipt_line_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.received_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.free_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.rejected_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.accepted_qty).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.unit_cost).HasColumnType("decimal(18,4)").HasDefaultValue("0");
+                entity.Property(a => a.net_unit_cost).HasColumnType("decimal(18,6)").HasDefaultValue("0");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+            });
         }
 
         // edited by rijobin 

@@ -66,6 +66,9 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "decimal(16, 4)")]
         public Decimal? last_price { get; set; } = null;
 
+        [Column(TypeName = "decimal(16, 4)")]
+        public Decimal? minimum_selling { get; set; } = null;
+
         [Column(TypeName = "datetime")]
         public DateTime? created_at { get; set; } = null;
 
@@ -91,7 +94,7 @@ namespace Faahi.Model.im_products
         public string? description_2 { get; set; } = null;
 
 
-
+     
 
         public ICollection<im_VariantAttributes>? im_VariantAttributes { get; set; } = null;
         public ICollection<im_StoreVariantInventory>? im_StoreVariantInventory { get; set; } = null;

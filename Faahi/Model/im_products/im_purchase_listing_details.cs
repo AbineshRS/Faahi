@@ -21,6 +21,12 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? listing_id { get; set; }
 
+        [Column(TypeName = "nvarchar(50)")]
+        public string? listing_code { get; set; } = null;
+
+        [Column(TypeName ="nvarchar(50)")]
+        public string? detail_code { get; set; }
+
         [ForeignKey("product_id")]
         [Display(Name = "im_Products")]
         [Column(TypeName = "uniqueidentifier")]
@@ -61,6 +67,9 @@ namespace Faahi.Model.im_products
         public Decimal? quantity { get; set; } = null;
 
         [Column(TypeName = "decimal(18, 4)")]
+        public Decimal? return_quantity { get; set; } = null;
+
+        [Column(TypeName = "decimal(18, 4)")]
         public Decimal? unit_price { get; set; } = null;
 
         [Column(TypeName = "decimal(18, 4)")]
@@ -99,7 +108,10 @@ namespace Faahi.Model.im_products
         public string? bin_no { get; set; } = null;
 
         [Column(TypeName = "nvarchar(100)")]
-        public string? product_description { get; set; } = null;
+        public string? Product_Brand { get; set; } = null;
+
+        [Column(TypeName = "nvarchar(100)")]
+        public string? Product_title { get; set; } = null;
 
         [Column(TypeName = "nvarchar(100)")]
         public string? barcode { get; set; } = null;
@@ -116,6 +128,14 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "decimal(18, 4)")]
         public Decimal? base_price { get; set; } = null;
 
+        [Column(TypeName = "decimal(18, 4)")]
+        public Decimal? selling_price { get; set; } = null;
+
+        [Column(TypeName = "decimal(18, 4)")]
+        public Decimal? line_net_cost { get; set; } = null;
+
+        [Column(TypeName = "decimal(18, 4)")]
+        public Decimal? line_unit_total { get; set; } = null;
 
         [NotMapped]
         public string? Category { get; set; } = null;

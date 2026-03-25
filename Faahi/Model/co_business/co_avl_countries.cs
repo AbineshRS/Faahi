@@ -28,6 +28,12 @@ namespace Faahi.Model.co_business
         [Column(TypeName = "varchar(100)")]
         public string? currency_name { get; set; } = null;
 
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal? exchange_rate { get; set; } = null;
+
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? company_id { get; set; }
+
         [StringLength(1)]
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]

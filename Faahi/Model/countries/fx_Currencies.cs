@@ -25,6 +25,9 @@ namespace Faahi.Model.countries
         [Column(TypeName ="nvarchar(8)")]
         public string currency_symbol { get; set; }
 
+        [Column(TypeName ="nvarchar(8)")]
+        public string currency_code { get; set; }
+
         public ICollection<fx_timezones>? fx_timezones { get; set; } = null;
     }
 }

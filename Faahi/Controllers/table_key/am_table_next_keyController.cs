@@ -12,7 +12,7 @@ namespace Faahi.Controllers.table_key
     {
         private readonly ApplicationDbContext _context;
         private readonly Itable_key _table_key;
-        public am_table_next_keyController(ApplicationDbContext context,Itable_key tale_key)
+        public am_table_next_keyController(ApplicationDbContext context, Itable_key tale_key)
         {
             _context = context;
             _table_key = tale_key;
@@ -25,23 +25,23 @@ namespace Faahi.Controllers.table_key
             {
                 return Ok("no data found");
             }
-           var key =await _table_key.Add_Key(next_Key);
-            if(key == null)
+            var key = await _table_key.Add_Key(next_Key);
+            if (key == null)
             {
                 return Ok("not inserted");
             }
-            
+
             return Ok(key);
         }
         [HttpGet]
         [Route("get_all_key")]
         public async Task<ActionResult<IEnumerable<am_table_next_key>>> Get_all()
         {
-            if(_context.am_table_next_key is null)
+            if (_context.am_table_next_key is null)
             {
                 return Ok("no data found");
             }
-            var table_key= await _table_key.Get_all();
+            var table_key = await _table_key.Get_all();
 
             return Ok(table_key);
         }
@@ -49,7 +49,7 @@ namespace Faahi.Controllers.table_key
         [Route("update_key")]
         public async Task<ActionResult<am_table_next_key>> Update_key(am_table_next_key table_Next_Key)
         {
-            if(table_Next_Key == null)
+            if (table_Next_Key == null)
             {
                 return Ok("no data found");
             }
@@ -61,18 +61,29 @@ namespace Faahi.Controllers.table_key
         [Route("get/{name}")]
         public async Task<ActionResult<am_table_next_key>> GetByName(string name)
         {
-            if(name == null)
+            if (name == null)
             {
                 return Ok("not found");
             }
             var data = await _table_key.GetByName(name);
             return Ok(data);
         }
+        [HttpGet]
+        [Route("get_next_key/{business_id}/{name}")]
+        public async Task<ActionResult<am_table_next_key>> GetNextKey_company(Guid business_id, string name)
+        {
+            if (name == null || business_id == Guid.Empty)
+            {
+                return Ok("not found");
+            }
+            var data = await _table_key.GetNextKey_company(business_id, name);
+            return Ok(data);
+        }
         [HttpDelete]
         [Route("delete/{name}")]
         public async Task<ActionResult<am_table_next_key>> delete_key(string name)
         {
-            if(name == null)
+            if (name == null)
             {
                 return Ok("not found");
             }
@@ -87,5 +98,15 @@ namespace Faahi.Controllers.table_key
             var result = await _table_key.Add_Super_Table_Key(super_Abi);
             return Ok("Super table keys added successfully.");
         }
+
+        [HttpPost]
+        [Route("add_super_keys")]
+        public async Task<ActionResult<super_admin_keys>> Add_Super_Table_Key(super_admin_keys super_Admin_Keys)
+        {
+            var result = await _table_key.Add_Super_Table_Key(super_Admin_Keys);
+            return Ok(result);
+
+        }
     }
 }
+
