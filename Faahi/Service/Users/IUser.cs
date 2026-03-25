@@ -22,6 +22,8 @@ namespace Faahi.Service.Users
 
         Task<ServiceResult<List<ar_Customers>>> get_all_customer_search(Guid company_id,string search_text);
 
+        Task<ServiceResult<List<ap_Vendors>>> get_all_vendors_search(Guid company_id,string search_text);
+
         Task<ServiceResult<List<ap_Vendors>>> Get_all_vendors(Guid company_id);
     }
 }

@@ -1,5 +1,7 @@
-﻿using Faahi.Model.im_products;
+﻿using Faahi.Dto.Purchase_dto;
+using Faahi.Model.im_products;
 using Faahi.Service.im_products.im_purchase;
+using Faahi.Service.im_products.sales;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -46,6 +48,14 @@ namespace Faahi.Controllers.im_products.im_purchase
             return Ok(result);
         }
         [Authorize]
+        [HttpGet]
+        [Route("temp_im_purchase_details/{listing_id}")]
+        public async Task<IActionResult> temp_im_purchase_details(Guid listing_id)
+        {
+            var result = await _im_purchase.temp_im_purchase_details(listing_id);
+            return Ok(result);
+        }
+        [Authorize]
         [HttpPost]
         [Route("update_purchase/{listing_id}")]
         public async Task<ActionResult<im_purchase_listing>> Update_purchase(Guid listing_id, im_purchase_listing im_Purchase_)
@@ -55,6 +65,19 @@ namespace Faahi.Controllers.im_products.im_purchase
                 return Ok("No data found");
             }
             var result = await _im_purchase.Update_purchase(listing_id, im_Purchase_);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("update_purchase_retuen/{listing_id}")]
+        public async Task<ActionResult<im_purchase_listing_dto>> Update_purchase_return(Guid listing_id, im_purchase_listing_dto im_Purchase_)
+        {
+            if (listing_id == null || im_Purchase_ == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Update_purchase_return(listing_id, im_Purchase_);
+            
             return Ok(result);
         }
         [Authorize]
@@ -180,7 +203,7 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.Get_product_data(product_id);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_purchase_list/{searchText}")]
         public async Task<IActionResult> Get_purchase_list(string searchText)
@@ -192,6 +215,37 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.Get_purchase_list(searchText);
             return Ok(result);
         }
-      
+        [Authorize]
+        [HttpGet]
+        [Route("get_inventory/{store_id}/{variant_id}")]
+        public async Task<IActionResult> Get_inventory(Guid store_id,Guid variant_id)
+        {
+            if(store_id==null|| variant_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Get_inventory(store_id, variant_id);
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpGet]
+        [Route("get_inventory_report/{store_id}/{start_date}/{end_date}/{vendor_id}/{searchText}")]
+        public async Task<IActionResult> Get_inventory_report(Guid store_id,DateTime? start_date,DateTime? end_date,string vendor_id,string searchText)
+        {
+            if (store_id == Guid.Empty)
+                return Ok("No store_id found");
+
+            Guid? vid = null;
+            if (!string.IsNullOrWhiteSpace(vendor_id) &&
+                !vendor_id.Equals("null", StringComparison.OrdinalIgnoreCase) &&
+                Guid.TryParse(vendor_id, out var parsed))
+            {
+                vid = parsed;
+            }
+
+            var result = await _im_purchase.Get_inventory_report(store_id, start_date, end_date, vid, searchText);
+            return Ok(result);
+        }
+
     }
 }

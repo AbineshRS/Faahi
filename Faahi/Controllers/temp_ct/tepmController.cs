@@ -40,5 +40,17 @@ namespace Faahi.Controllers.temp_ct
             var result = await _temp_service.get_tempvariant(store_id);
             return Ok(result);
         }
+        [Authorize]
+        [HttpGet]
+        [Route("get_tempvariant_product/{detail_id}/")]
+        public async Task<IActionResult> get_tempvariant_product(Guid detail_id)
+        {
+            if (detail_id == null)
+            {
+                return Ok("No Id found");
+            }
+            var result = await _temp_service.get_tempvariant_product(detail_id);
+            return Ok(result);
+        }
     }
 }

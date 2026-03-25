@@ -1,9 +1,12 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Faahi.Model
+namespace Faahi.Model.am_users
 {
+    [Index(nameof(email),Name = "UX_am_users_email")]
+    [Index(nameof(userName),Name = "UX_am_users_user_name")]
     public class am_users
     {
         [Key]
@@ -72,6 +75,8 @@ namespace Faahi.Model
 
         [Column(TypeName = "varchar(200)")]
         public string? address2 { get; set; } = null;
+
+        public ICollection<am_roles>? am_roles { get; set; } = null;
     }
 
 }

@@ -279,6 +279,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
         }
+
         public async Task<ActionResult<ServiceResult<string>>> Upload_logo(IFormFile formFile, Guid company_id)
         {
             if (formFile == null || formFile.Length == 0)
@@ -395,6 +396,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
         }
+
         public async Task<ServiceResult<co_business>> Get_company(Guid companyId)
         {
             if (companyId == Guid.Empty)
@@ -534,6 +536,7 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
+
         private string CreatToken(co_business user, int minutes)
         {
             var claims = new List<Claim>
@@ -559,6 +562,7 @@ namespace Faahi.Service.CoBusiness
                 );
             return new JwtSecurityTokenHandler().WriteToken(tokendescription);
         }
+
         private string CreatTokensite_user(st_Users user, int minutes)
         {
             var user_role = _context.st_UserStoreAccess.FirstOrDefault(a => a.user_id == user.user_id);
@@ -587,6 +591,7 @@ namespace Faahi.Service.CoBusiness
                 );
             return new JwtSecurityTokenHandler().WriteToken(tokendescription);
         }
+
         public async Task<ServiceResult<string>> send_reset_password(string email)
         {
             if (email == null)
@@ -700,6 +705,7 @@ namespace Faahi.Service.CoBusiness
 
 
         }
+
         public async Task<ServiceResult<am_emailVerifications>> verify(string email, string token, string userType)
         {
             if (email is null)
@@ -782,6 +788,7 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
+
         public async Task<ServiceResult<am_emailVerifications>> Password_Verify(string email, string token)
         {
             if (email is null)
@@ -861,6 +868,7 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
+
         public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
         {
             if (email == null)
@@ -957,6 +965,7 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
+
         public string CreateToken_email(string email, int minutes)
         {
             var claims = new List<Claim>
@@ -1051,6 +1060,7 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
+
         public async Task<ServiceResult<ActionResult>> Inactive_company(Guid company_id)
         {
             if (company_id == Guid.Empty)
@@ -1096,6 +1106,7 @@ namespace Faahi.Service.CoBusiness
                 };
             }
         }
+
         public async Task<ServiceResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries)
         {
             if (co_Avl_Countries == null || co_Avl_Countries == null || string.IsNullOrWhiteSpace(co_Avl_Countries.name))
@@ -1179,6 +1190,7 @@ namespace Faahi.Service.CoBusiness
 
 
         }
+
         public async Task<CountryInfo_Dto?> GetCountryInfoByNameAsync(string countryName)
         {
             if (string.IsNullOrWhiteSpace(countryName))
@@ -1248,6 +1260,7 @@ namespace Faahi.Service.CoBusiness
 
             return null;
         }
+
         public async Task<ServiceResult<List<co_avl_countries>>> CurrencyList(Guid company_id)
         {
             if (_context.co_avl_countries == null)
@@ -1267,6 +1280,7 @@ namespace Faahi.Service.CoBusiness
                 Data = currency_list
             };
         }
+
         public async Task<ServiceResult<im_site>> Create_im_site(im_site im_site)
         {
             if (im_site == null)
@@ -1364,6 +1378,7 @@ namespace Faahi.Service.CoBusiness
 
 
         }
+
         public async Task<ServiceResult<List<im_site>>> imsite_list()
         {
             if (_context.im_item_site == null)
@@ -1392,6 +1407,7 @@ namespace Faahi.Service.CoBusiness
                 Data = imsite
             };
         }
+
         public async Task<ServiceResult<im_site>> Get_im_site(string site_id)
         {
             if (site_id == null)
@@ -1421,6 +1437,7 @@ namespace Faahi.Service.CoBusiness
                 Data = imsite
             };
         }
+
         public async Task<ServiceResult<List<im_site>>> Get_im_site_company(string company_id)
         {
             if (company_id == null)
@@ -1450,6 +1467,7 @@ namespace Faahi.Service.CoBusiness
                 Data = imsite
             };
         }
+
         public async Task<ServiceResult<im_site>> Update_imsite(string site_id, im_site imsite)
         {
             if (site_id == null || imsite == null)
@@ -1533,6 +1551,7 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
+
         public async Task<ServiceResult<im_site_users>> Add_site_users(im_site_users im_Site_Users)
         {
             if (im_Site_Users == null)
@@ -1618,6 +1637,7 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
+
         public async Task<ServiceResult<im_site_users>> site_user(Guid user_id)
         {
             if (_context.im_site_users == null)
@@ -1646,6 +1666,7 @@ namespace Faahi.Service.CoBusiness
                 Data = site_user
             };
         }
+
         public async Task<ServiceResult<List<im_site_users>>> site_user_list(Guid company_id)
         {
             if (_context.im_site_users == null)
@@ -1674,6 +1695,7 @@ namespace Faahi.Service.CoBusiness
                 Data = site_user
             };
         }
+
         public async Task<ServiceResult<im_site_users>> Update_site_users(Guid userId, im_site_users im_Site_Users)
         {
             if (userId == null || im_Site_Users == null)
@@ -1725,6 +1747,7 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
+
         public async Task<ServiceResult<List<co_business>>> Dekiru(string searchTerm)
         {
             FilterMacros.Add<string, string, bool>(

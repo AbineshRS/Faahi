@@ -681,6 +681,57 @@ namespace Faahi.Service.Users
             }
             
         }
+        public async Task<ServiceResult<List<ap_Vendors>>> get_all_vendors_search(Guid company_id,string search_text)
+        {
+            try
+            {
+                if (company_id == null || search_text == null)
+                {
+                    _logger.LogInformation("No data found");
+                    return new ServiceResult<List<ap_Vendors>>
+                    {
+                        Status = 300,
+                        Message = "No data found",
+                        Success = false,
+                    };
+                }
+
+                var jsonresult = _context.Database.SqlQueryRaw<string>(
+                    "EXEC dbo.sp_Getusers @company_id=@company_id,@search_text=@search_text,@opr=@opr",
+                    new SqlParameter("@company_id", company_id),
+                    new SqlParameter("@search_text", search_text),
+                    new SqlParameter("@opr",3)).AsEnumerable().FirstOrDefault();
+                var vendors = JsonConvert.DeserializeObject<List<ap_Vendors>>(jsonresult);
+                if(vendors == null)
+                {
+                    return new ServiceResult<List<ap_Vendors>>
+                    {
+                        Status = 300,
+                        Message = "No data found",
+                        Success = false,
+                    };
+                }
+                return new ServiceResult<List<ap_Vendors>>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = vendors
+                };
+                     
+
+            }
+            catch(Exception ex)
+            {
+                _logger.LogInformation("Error While get_all_customer_search");
+                return new ServiceResult<List<ap_Vendors>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+            
+        }
 
 
         public async Task<ServiceResult<List<ap_Vendors>>> Get_all_vendors(Guid company_id)

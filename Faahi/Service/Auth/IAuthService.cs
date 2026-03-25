@@ -1,5 +1,5 @@
 ﻿using Faahi.Dto;
-using Faahi.Model;
+using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
 using Microsoft.AspNetCore.Mvc;
 

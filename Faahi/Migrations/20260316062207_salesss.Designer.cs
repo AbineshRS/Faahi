@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260316062207_salesss")]
+    partial class salesss
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -638,123 +641,7 @@ namespace Faahi.Migrations
                     b.ToTable("st_store_currencies");
                 });
 
-            modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
-                {
-                    b.Property<Guid>("role_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("am_usersuserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("description")
-                        .HasColumnType("varchar(300)");
-
-                    b.Property<string>("is_system_role")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<string>("role_code")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("role_group")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("role_name")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("status")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.HasKey("role_id");
-
-                    b.HasIndex("am_usersuserId");
-
-                    b.ToTable("am_roles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_business_access", b =>
-                {
-                    b.Property<Guid>("access_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier ");
-
-                    b.Property<string>("access_level")
-                        .IsRequired()
-                        .HasColumnType("varchar(30)");
-
-                    b.Property<Guid?>("am_user_rolesuser_role_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("status")
-                        .IsRequired()
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("user_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("access_id");
-
-                    b.HasIndex("am_user_rolesuser_role_id");
-
-                    b.HasIndex("store_id");
-
-                    b.HasIndex(new[] { "user_id", "business_id", "store_id" }, "IX_am_user_business_access_user_business_store");
-
-                    b.HasIndex(new[] { "business_id", "store_id" }, "X_am_user_business_access_business_store");
-
-                    b.ToTable("am_user_business_access");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
-                {
-                    b.Property<Guid>("user_role_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("am_rolesrole_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("user_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("user_role_id");
-
-                    b.HasIndex("am_rolesrole_id");
-
-                    b.HasIndex("store_id");
-
-                    b.HasIndex(new[] { "business_id", "store_id" }, "IX_am_user_roles_business_store");
-
-                    b.HasIndex(new[] { "user_id" }, "IX_am_user_roles_user_id");
-
-                    b.ToTable("am_user_roles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_users", b =>
+            modelBuilder.Entity("Faahi.Model.am_users", b =>
                 {
                     b.Property<Guid>("userId")
                         .ValueGeneratedOnAdd()
@@ -818,10 +705,6 @@ namespace Faahi.Migrations
                         .HasColumnType("varchar(32)");
 
                     b.HasKey("userId");
-
-                    b.HasIndex(new[] { "email" }, "UX_am_users_email");
-
-                    b.HasIndex(new[] { "userName" }, "UX_am_users_user_name");
 
                     b.ToTable("am_users");
                 });
@@ -1324,367 +1207,6 @@ namespace Faahi.Migrations
                     b.HasIndex("im_ProductAttributesattribute_id");
 
                     b.ToTable("im_AttributeValues");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptHeaders", b =>
-                {
-                    b.Property<Guid>("goods_receipt_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
-
-                    b.Property<string>("Goods_recipt_code")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("cancelled_by")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("created_at")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<Guid?>("created_by")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("discount_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<string>("is_cancelled")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)")
-                        .HasDefaultValue("F");
-
-                    b.Property<string>("is_posted")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)")
-                        .HasDefaultValue("F");
-
-                    b.Property<DateTime?>("posted_at")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<Guid?>("posted_by")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("purchase_entry_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("purchase_order_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("receipt_date")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<string>("receipt_no")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<Guid?>("received_by")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("remarks")
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("status")
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<Guid>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("subtotal")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<string>("supplier_do_no")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("supplier_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("supplier_invoice_no")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("supplier_ref_no")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal>("tax_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("total_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateTime?>("updated_at")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<Guid?>("warehouse_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("goods_receipt_id");
-
-                    b.HasIndex("purchase_order_id");
-
-                    b.HasIndex("store_id");
-
-                    b.HasIndex(new[] { "goods_receipt_id" }, "IX_goods_receipt_id")
-                        .IsUnique()
-                        .IsDescending();
-
-                    b.HasIndex(new[] { "business_id", "store_id", "status", "receipt_date" }, "IX_im_GoodsReceiptHeaders_status")
-                        .IsDescending();
-
-                    b.HasIndex(new[] { "supplier_id", "receipt_date" }, "IX_im_GoodsReceiptHeaders_supplier")
-                        .IsDescending();
-
-                    b.ToTable("im_GoodsReceiptHeaders");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptLineBatches", b =>
-                {
-                    b.Property<Guid>("goods_receipt_line_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
-
-                    b.Property<decimal>("accepted_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<string>("batch_no")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("created_at")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<DateOnly?>("expiry_date")
-                        .HasColumnType("date");
-
-                    b.Property<decimal>("free_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateOnly?>("manufacture_date")
-                        .HasColumnType("date");
-
-                    b.Property<decimal>("net_unit_cost")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,6)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("received_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("rejected_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<string>("remarks")
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<Guid>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("unit_cost")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateTime>("updated_at")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<Guid>("variant_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("goods_receipt_line_id");
-
-                    b.HasIndex("store_id");
-
-                    b.HasIndex("variant_id");
-
-                    b.HasIndex(new[] { "goods_receipt_line_id" }, "IX_im_GoodsReceiptLineBatches_line")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "business_id", "store_id", "variant_id", "batch_no", "expiry_date" }, "IX_im_GoodsReceiptLineBatches_variant_batch");
-
-                    b.ToTable("im_GoodsReceiptLineBatches");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptLines", b =>
-                {
-                    b.Property<Guid>("goods_receipt_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
-
-                    b.Property<decimal>("accepted_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<string>("batch_no")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("created_at")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<decimal>("discount_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("discount_percent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateOnly?>("expiry_date")
-                        .HasColumnType("date");
-
-                    b.Property<decimal>("free_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<Guid?>("im_GoodsReceiptHeadersgoods_receipt_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("line_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<int>("line_no")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly?>("manufacture_date")
-                        .HasColumnType("date");
-
-                    b.Property<decimal>("net_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("net_unit_cost")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,6)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("ordered_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<Guid>("product_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("received_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("rejected_qty")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<string>("remarks")
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<Guid>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("supplier_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("tax_amount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<decimal>("tax_percent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(9,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<string>("trans_type")
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<decimal>("unit_cost")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,4)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<string>("uom_code")
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<Guid?>("uom_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("updated_at")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<Guid>("variant_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("goods_receipt_id");
-
-                    b.HasIndex("im_GoodsReceiptHeadersgoods_receipt_id");
-
-                    b.HasIndex("product_id");
-
-                    b.HasIndex("store_id");
-
-                    b.HasIndex("uom_id");
-
-                    b.HasIndex("variant_id");
-
-                    b.HasIndex(new[] { "goods_receipt_id" }, "IX_goods_receipt_id")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "line_no" }, "IX_im_GoodsReceiptLines_receipt");
-
-                    b.HasIndex(new[] { "business_id", "store_id", "variant_id" }, "IX_im_GoodsReceiptLines_variant");
-
-                    b.ToTable("im_GoodsReceiptLines");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_InventoryLedger", b =>
@@ -2917,9 +2439,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("category_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("detail_code")
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<decimal?>("discount_amount")
                         .HasColumnType("decimal(18, 4)");
 
@@ -2936,17 +2455,8 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<decimal?>("line_net_cost")
-                        .HasColumnType("decimal(18, 4)");
-
                     b.Property<decimal?>("line_total")
                         .HasColumnType("decimal(18, 4)");
-
-                    b.Property<decimal?>("line_unit_total")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("listing_code")
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<Guid?>("listing_id")
                         .HasColumnType("uniqueidentifier");
@@ -2965,9 +2475,6 @@ namespace Faahi.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal?>("quantity")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<decimal?>("return_quantity")
                         .HasColumnType("decimal(18, 4)");
 
                     b.Property<decimal?>("selling_price")
@@ -3016,174 +2523,6 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "sub_variant_id" }, "sub_variant_id");
 
                     b.ToTable("im_purchase_listing_details");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_details_line", b =>
-                {
-                    b.Property<Guid>("return_detail_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("barcode")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("batch_no")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateOnly?>("expiry_date")
-                        .HasColumnType("date");
-
-                    b.Property<decimal?>("line_total")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("orginal_line_total")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("orginal_quantity")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("orginal_unit_price")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("other_expenses")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<string>("product_brand")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<Guid?>("product_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("product_title")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<Guid?>("return_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("return_qty")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<string>("return_reason")
-                        .HasColumnType("varchar(200)");
-
-                    b.Property<string>("sku")
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<Guid?>("store_variant_inventory_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("sub_variant_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("unit_price")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<string>("uom_name")
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("return_detail_id");
-
-                    b.HasIndex("store_variant_inventory_id");
-
-                    b.HasIndex("sub_variant_id");
-
-                    b.HasIndex(new[] { "product_id" }, "product_id");
-
-                    b.HasIndex(new[] { "return_detail_id" }, "return_detail_id");
-
-                    b.HasIndex(new[] { "return_id" }, "return_id");
-
-                    b.ToTable("im_purchase_return_details_line");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_header", b =>
-                {
-                    b.Property<Guid>("return_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<Guid?>("created_user_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("discount_amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("exchange_rate")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("freight_amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<Guid?>("listing_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("notes")
-                        .HasColumnType("varchar(400)");
-
-                    b.Property<decimal?>("orginal_discount_amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("orginal_sub_total")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("orginal_tax_amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("orginal_total_amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("other_expenses")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("plastic_bag")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<string>("reason")
-                        .HasColumnType("varchar(400)");
-
-                    b.Property<string>("return_code")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateOnly?>("return_date")
-                        .HasColumnType("date");
-
-                    b.Property<string>("return_type")
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<Guid?>("site_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("status")
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<decimal?>("sub_total")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<string>("supplier_return_ref")
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<decimal?>("tax_amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("total_amount")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<Guid?>("vendor_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("return_id");
-
-                    b.HasIndex(new[] { "return_id" }, "return_id")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "site_id" }, "site_id");
-
-                    b.HasIndex(new[] { "vendor_id" }, "vendor_id");
-
-                    b.ToTable("im_purchase_return_header");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_site", b =>
@@ -4641,120 +3980,11 @@ namespace Faahi.Migrations
                     b.ToTable("tx_TaxClasses");
                 });
 
-            modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_purchase_listing_details", b =>
-                {
-                    b.Property<Guid>("temp_detail_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Product_Brand")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Product_title")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("barcode")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<decimal?>("base_price")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("batch_no")
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("bin_no")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("detail_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("discount_amount")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<DateOnly?>("expiry_date")
-                        .HasColumnType("date");
-
-                    b.Property<decimal?>("freight_amount")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("is_varient")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<decimal?>("line_net_cost")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<decimal?>("line_total")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<decimal?>("line_unit_total")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<Guid?>("listing_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("new_item")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
-
-                    b.Property<string>("notes")
-                        .HasColumnType("varchar(400)");
-
-                    b.Property<decimal?>("other_expenses")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<Guid?>("product_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("quantity")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<decimal?>("return_quantity")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("return_reason")
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<decimal?>("selling_price")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("sku")
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<Guid?>("store_variant_inventory_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("sub_variant_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("tax_amount")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<Guid?>("tax_class_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("unit_price")
-                        .HasColumnType("decimal(18, 4)");
-
-                    b.Property<string>("uom_name")
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<decimal?>("variant_qty")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.HasKey("temp_detail_id");
-
-                    b.ToTable("temp_Im_Purchase_Listing_Details");
-                });
-
             modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_variant", b =>
                 {
                     b.Property<Guid>("temp_variant_id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("barcode")
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
@@ -4771,17 +4001,11 @@ namespace Faahi.Migrations
                     b.Property<decimal?>("quantity")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("sku")
-                        .HasColumnType("varchar(50)");
-
                     b.Property<Guid?>("store_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("store_variant_inventory_id")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("title")
-                        .HasColumnType("varchar(200)");
 
                     b.Property<Guid?>("variant_id")
                         .HasColumnType("uniqueidentifier");
@@ -4860,67 +4084,6 @@ namespace Faahi.Migrations
                         .HasForeignKey("st_StoresAddresstore_address_id");
                 });
 
-            modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
-                {
-                    b.HasOne("Faahi.Model.am_users.am_users", null)
-                        .WithMany("am_roles")
-                        .HasForeignKey("am_usersuserId");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_business_access", b =>
-                {
-                    b.HasOne("Faahi.Model.am_users.am_user_roles", null)
-                        .WithMany("am_user_business_access")
-                        .HasForeignKey("am_user_rolesuser_role_id");
-
-                    b.HasOne("Faahi.Model.co_business.co_business", "c_business")
-                        .WithMany()
-                        .HasForeignKey("business_id");
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
-                        .WithMany()
-                        .HasForeignKey("store_id");
-
-                    b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
-                        .WithMany()
-                        .HasForeignKey("user_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("am_Users");
-
-                    b.Navigation("c_business");
-
-                    b.Navigation("st_Stores");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
-                {
-                    b.HasOne("Faahi.Model.am_users.am_roles", null)
-                        .WithMany("am_user_roles")
-                        .HasForeignKey("am_rolesrole_id");
-
-                    b.HasOne("Faahi.Model.co_business.co_business", "c_business")
-                        .WithMany()
-                        .HasForeignKey("business_id");
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
-                        .WithMany()
-                        .HasForeignKey("store_id");
-
-                    b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
-                        .WithMany()
-                        .HasForeignKey("user_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("am_Users");
-
-                    b.Navigation("c_business");
-
-                    b.Navigation("st_Stores");
-                });
-
             modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>
                 {
                     b.HasOne("Faahi.Model.Shared_tables.st_Parties", null)
@@ -4954,109 +4117,6 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.im_products.im_ProductAttributes", null)
                         .WithMany("im_AttributeValues")
                         .HasForeignKey("im_ProductAttributesattribute_id");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptHeaders", b =>
-                {
-                    b.HasOne("Faahi.Model.co_business.co_business", "co_business")
-                        .WithMany()
-                        .HasForeignKey("business_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Faahi.Model.im_products.im_purchase_listing", "im_purchase_listing")
-                        .WithMany()
-                        .HasForeignKey("purchase_order_id");
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
-                        .WithMany()
-                        .HasForeignKey("store_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Faahi.Model.am_vcos.ap_Vendors", "ap_Vendors")
-                        .WithMany()
-                        .HasForeignKey("supplier_id");
-
-                    b.Navigation("ap_Vendors");
-
-                    b.Navigation("co_business");
-
-                    b.Navigation("im_purchase_listing");
-
-                    b.Navigation("st_Stores");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptLineBatches", b =>
-                {
-                    b.HasOne("Faahi.Model.co_business.co_business", "co_business")
-                        .WithMany()
-                        .HasForeignKey("business_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
-                        .WithMany()
-                        .HasForeignKey("store_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Faahi.Model.im_products.im_ProductVariants", "variants")
-                        .WithMany()
-                        .HasForeignKey("variant_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("co_business");
-
-                    b.Navigation("st_Stores");
-
-                    b.Navigation("variants");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptLines", b =>
-                {
-                    b.HasOne("Faahi.Model.co_business.co_business", "co_business")
-                        .WithMany()
-                        .HasForeignKey("business_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Faahi.Model.im_products.im_GoodsReceiptHeaders", null)
-                        .WithMany("im_GoodsReceiptLines")
-                        .HasForeignKey("im_GoodsReceiptHeadersgoods_receipt_id");
-
-                    b.HasOne("Faahi.Model.im_products.im_Products", "products")
-                        .WithMany()
-                        .HasForeignKey("product_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
-                        .WithMany()
-                        .HasForeignKey("store_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Faahi.Model.im_products.im_UnitsOfMeasure", "im_UnitsOfMeasure")
-                        .WithMany()
-                        .HasForeignKey("uom_id");
-
-                    b.HasOne("Faahi.Model.im_products.im_ProductVariants", "variants")
-                        .WithMany()
-                        .HasForeignKey("variant_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("co_business");
-
-                    b.Navigation("im_UnitsOfMeasure");
-
-                    b.Navigation("products");
-
-                    b.Navigation("st_Stores");
-
-                    b.Navigation("variants");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_InventoryTransactions", b =>
@@ -5153,48 +4213,6 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.im_products.im_purchase_listing", null)
                         .WithMany("im_purchase_listing_details")
                         .HasForeignKey("im_purchase_listinglisting_id");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_details_line", b =>
-                {
-                    b.HasOne("Faahi.Model.im_products.im_Products", "im_Products")
-                        .WithMany()
-                        .HasForeignKey("product_id");
-
-                    b.HasOne("Faahi.Model.im_products.im_purchase_return_header", "return_detail_header")
-                        .WithMany("im_purchase_return_details_line")
-                        .HasForeignKey("return_id");
-
-                    b.HasOne("Faahi.Model.im_products.im_StoreVariantInventory", "im_StoreVariantInventory")
-                        .WithMany()
-                        .HasForeignKey("store_variant_inventory_id");
-
-                    b.HasOne("Faahi.Model.im_products.im_ProductVariants", "im_ProductVariants")
-                        .WithMany()
-                        .HasForeignKey("sub_variant_id");
-
-                    b.Navigation("im_ProductVariants");
-
-                    b.Navigation("im_Products");
-
-                    b.Navigation("im_StoreVariantInventory");
-
-                    b.Navigation("return_detail_header");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_header", b =>
-                {
-                    b.HasOne("Faahi.Model.st_sellers.st_stores", "stores")
-                        .WithMany()
-                        .HasForeignKey("site_id");
-
-                    b.HasOne("Faahi.Model.am_vcos.ap_Vendors", "ap_Vendors")
-                        .WithMany()
-                        .HasForeignKey("vendor_id");
-
-                    b.Navigation("ap_Vendors");
-
-                    b.Navigation("stores");
                 });
 
             modelBuilder.Entity("Faahi.Model.pos_tables.pos_DrawerCountDetails", b =>
@@ -5497,21 +4515,6 @@ namespace Faahi.Migrations
                     b.Navigation("st_store_currencies");
                 });
 
-            modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
-                {
-                    b.Navigation("am_user_roles");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
-                {
-                    b.Navigation("am_user_business_access");
-                });
-
-            modelBuilder.Entity("Faahi.Model.am_users.am_users", b =>
-                {
-                    b.Navigation("am_roles");
-                });
-
             modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>
                 {
                     b.Navigation("fin_PartyBankAccounts");
@@ -5534,11 +4537,6 @@ namespace Faahi.Migrations
             modelBuilder.Entity("Faahi.Model.countries.fx_Currencies", b =>
                 {
                     b.Navigation("fx_timezones");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptHeaders", b =>
-                {
-                    b.Navigation("im_GoodsReceiptLines");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_PriceTiers", b =>
@@ -5578,11 +4576,6 @@ namespace Faahi.Migrations
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_listing", b =>
                 {
                     b.Navigation("im_purchase_listing_details");
-                });
-
-            modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_header", b =>
-                {
-                    b.Navigation("im_purchase_return_details_line");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_site", b =>

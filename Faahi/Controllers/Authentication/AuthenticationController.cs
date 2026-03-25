@@ -1,6 +1,7 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Model;
+using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
 using Faahi.Service.Auth;
 using Microsoft.AspNetCore.Authorization;

@@ -1,6 +1,6 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
-using Faahi.Model;
+using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
 using Faahi.Service.Email;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -164,8 +164,6 @@ namespace Faahi.Service.Auth
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
-
 
         public async Task<ServiceResult<am_users>> Create_account(am_users user)
         {
@@ -347,6 +345,7 @@ namespace Faahi.Service.Auth
 
 
         }
+
         public string CreateToken_email(string email, int minutes)
         {
             var claims = new List<Claim>
@@ -557,6 +556,7 @@ namespace Faahi.Service.Auth
             }
 
         }
+
         public async Task<ServiceResult<am_emailVerifications>> Resend_verification(string email, string userType)
         {
             if (email is null)

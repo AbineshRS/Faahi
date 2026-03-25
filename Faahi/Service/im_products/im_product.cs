@@ -271,7 +271,6 @@ namespace Faahi.Service.im_products
 
         }
 
-
         public async Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile, Guid product_id)
         {
             if (formFile == null || formFile.Length == 0)
@@ -613,7 +612,6 @@ namespace Faahi.Service.im_products
                 };
             }
         }
-
 
         public async Task<ActionResult<ServiceResult<string>>> Upload_vedio(IFormFile[] formFile, string product_id, string variant_id)
         {
@@ -1097,8 +1095,6 @@ namespace Faahi.Service.im_products
             };
         }
 
-
-
         public async Task<ActionResult<ServiceResult<im_Products>>> Update_Product(Guid product_id, im_Products im_products)
         {
             if (product_id == null)
@@ -1197,6 +1193,7 @@ namespace Faahi.Service.im_products
             }
 
         }
+
         public async Task<ServiceResult<im_Products>> Update_Mutiple_Product(Guid product_id, im_Products im_Products)
         {
             if (product_id == null)
@@ -1487,7 +1484,7 @@ namespace Faahi.Service.im_products
             {
                 var jsonResult = (await _context.Database.SqlQueryRaw<string>(
                     "EXEC dbo.GetAllProductDetails_JSON @opr = @opr",
-                    new SqlParameter("@opr", 3)).ToListAsync()).FirstOrDefault();
+                    new SqlParameter("@opr", 4)).ToListAsync()).FirstOrDefault();
 
                 var all_product_details =
                     System.Text.Json.JsonSerializer.Deserialize<List<im_Products>>(jsonResult);
@@ -1522,6 +1519,7 @@ namespace Faahi.Service.im_products
             }
 
         }
+
         public async Task<ServiceResult<List<im_Products>>> Product_search(string search_text, Guid store_id)
         {
             if (search_text == null)
@@ -1558,6 +1556,7 @@ namespace Faahi.Service.im_products
                 Data = products
             };
         }
+
         public async Task<ActionResult<ServiceResult<im_Products>>> Delete_product(string product_id)
         {
             if (product_id == null)
@@ -1683,6 +1682,7 @@ namespace Faahi.Service.im_products
                 };
             }
         }
+
         public async Task<ServiceResult<List<im_ProductAttributes>>> Get_attribute(Guid company_id)
         {
             if (company_id == null)
@@ -1859,6 +1859,7 @@ namespace Faahi.Service.im_products
 
 
         }
+
         public async Task<ServiceResult<im_Products>> Delete_product_data(Guid product_id)
         {
             if (product_id == null)
