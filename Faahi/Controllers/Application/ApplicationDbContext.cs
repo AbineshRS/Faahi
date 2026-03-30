@@ -1,10 +1,12 @@
 ﻿using Faahi.Model;
+using Faahi.Model.Accounts;
 using Faahi.Model.Admin;
 using Faahi.Model.am_users;
 using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
 using Faahi.Model.countries;
 using Faahi.Model.Email_verify;
+using Faahi.Model.Finance;
 using Faahi.Model.im_products;
 using Faahi.Model.pos_tables;
 using Faahi.Model.sales;
@@ -196,7 +198,52 @@ namespace Faahi.Controllers.Application
                 tb.HasCheckConstraint("CK_im_itemBatches_on_hand_quantity", "[on_hand_quantity] >= 0");
                 tb.HasCheckConstraint("CK_im_itemBatches_expiry_date", "[expiry_date] > GETDATE()");
                 tb.HasCheckConstraint("CK_im_itemBatches_unit_cost", "[unit_cost] >= 0");
+
             });
+            modelBuilder.Entity<gl_Accounts>(entity =>
+            {
+                entity.Property(e => e.GlAccountId).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(e => e.IsPostable).HasColumnType("char(1)").HasDefaultValue("T");
+                entity.Property(e => e.IsActive).HasColumnType("char(1)").HasDefaultValue("T");
+            });
+
+            modelBuilder.Entity<gl_FiscalPeriods>(entity =>
+            {
+                entity.Property(e => e.PeriodId).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(e => e.IsClosed).HasColumnType("char(1)").HasDefaultValue("F");
+            });
+            modelBuilder.Entity<gl_AccountMapping>()
+            .HasOne(x => x.GlAccount).WithMany().HasForeignKey(x => x.GlAccountId).OnDelete(DeleteBehavior.Restrict);   // or NoAction
+
+            // Configure gl_Ledger to prevent cascade delete conflicts
+            modelBuilder.Entity<gl_Ledger>(entity =>
+            {
+                entity.Property(e => e.LedgerId).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                
+                // Explicitly tell EF Core NOT to create foreign key for CompanyId
+                entity.HasOne<co_business>()
+                    .WithMany()
+                    .HasForeignKey(e => e.BusinessId)
+                    .OnDelete(DeleteBehavior.NoAction)
+                    .IsRequired(false); // Make relationship optional to avoid constraint issues
+                
+                // Configure foreign keys with NoAction to prevent cascade conflicts
+                entity.HasOne(x => x.JournalHeader)
+                    .WithMany()
+                    .HasForeignKey(x => x.JournalId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasOne(x => x.JournalLine)
+                    .WithMany()
+                    .HasForeignKey(x => x.JournalLineId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasOne(x => x.GlAccount)
+                    .WithMany()
+                    .HasForeignKey(x => x.GlAccountId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
 
             modelBuilder.Entity<so_payment_type>(entity =>
             {
@@ -400,6 +447,31 @@ namespace Faahi.Controllers.Application
             });
         }
 
+        // edited by rijobin 
+
+        public DbSet<AccountType> AccountTypes { get; set; }
+        public DbSet<gl_Accounts> gl_Accounts { get; set; }
+        public DbSet<gl_AccountMapping> gl_AccountMapping { get; set; }
+        public DbSet<gl_Ledger> gl_ledger { get; set; }
+        public DbSet<gl_AccountCurrentBalances> gl_AccountCurrentBalances {get; set; }
+        public DbSet<gl_FiscalPeriods> gl_FiscalPeriods { get; set; }
+        public DbSet<gl_BusinessSettings> gl_BusinessSettings { get; set; }
+        public DbSet<gl_JournalHeaders> gl_JournalHeaders { get; set; }
+        public DbSet<gl_JournalLines> gl_JournalLines { get; set; }
+        public DbSet<gl_JournalAttachments> gl_JournalAttachments { get; set; }
+        public DbSet<ap_Payments> ap_Payments { get; set; }
+        public DbSet<ap_PaymentAllocations> ap_PaymentAllocations { get; set; }
+        public DbSet<ap_PaymentLines> ap_PaymentLines { get; set; }
+        public DbSet<ap_PaymentAttachments> ap_PaymentAttachments { get; set; }
+        public DbSet<fin_BankDeposits> fin_BankDeposits { get; set; }
+        public DbSet<fin_BankDepositLines> fin_BankDepositLines { get; set; }
+        public DbSet<fin_BankDepositAttachments> fin_BankDepositAttachments { get; set; }
+        public DbSet<ap_Expenses> ap_Expenses { get; set; }
+        public DbSet<ap_ExpenseLines> ap_ExpenseLines { get; set; }
+        public DbSet<ap_ExpensesAttachments> ap_ExpensesAttachments { get; set; }
+        public DbSet<ap_Cheques> ap_Cheques { get; set; }
+        public DbSet<ap_ChequeLines> ap_ChequeLines { get; set; }
+        public DbSet<ap_ChequesAttachments> ap_ChequesAttachments { get; set; }
     }
 
 }

@@ -1,5 +1,7 @@
-﻿using Faahi.Controllers.Application;
+﻿using Azure.Core;
+using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Migrations;
 using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
 using Faahi.Service.Email;
@@ -8,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.ComponentModel.Design;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -47,8 +50,10 @@ namespace Faahi.Service.Auth
                 {
                     return null;
                 }
-                var accessToken = CreatToken(user, 10);   // 10 minutes
-                var refreshToken = CreatToken(user, 10080); // 7 days (in minutes)
+                //var accessToken = CreatToken(user, 10);   // 10 minutes
+                //var refreshToken = CreatToken(user, 10080); // 7 days (in minutes)
+                var accessToken = "";   // 10 minutes
+                var refreshToken =""; // 7 days (in minutes)
                 return new AuthResponse
                 {
                     AccessToken = accessToken,
@@ -63,12 +68,140 @@ namespace Faahi.Service.Auth
 
 
         }
-        private string CreatToken(am_users user, int minutes)
+
+        public async Task<ServiceResult<am_users>> am_user_login(string username, string password)
+        {
+            try
+            {
+                if (username == null || password == null)
+                {
+                    _logger.LogInformation("No data found");
+                    return new ServiceResult<am_users>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No dat found"
+                    };
+                }
+                var am_users = await _context.am_users.Include(a => a.am_roles).ThenInclude(a => a.am_user_roles).ThenInclude(a => a.am_user_business_access)
+                                 .Include(a => a.am_roles)
+                                 .ThenInclude(r => r.am_user_roles)
+                                 .ThenInclude(ur => ur.mk_customer_profiles) 
+                                 .FirstOrDefaultAsync(a => a.userName == username || a.email == username);
+                if (am_users != null)
+                {
+                    bool verify_password = PasswordHelper.VerifyPassword(password, am_users.password);
+                    if (!verify_password)
+                    {
+                        return new ServiceResult<am_users>
+                        {
+                            Status = 300,
+                            Success = false,
+                        };
+                    }
+                }
+                if (am_users == null)
+                {
+                    return new ServiceResult<am_users>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message= "No data found"    
+                    };
+                }
+                return new ServiceResult<am_users>
+                {
+                    Status = 200,
+                    Success = true,
+                    Data = am_users
+                };
+
+            }
+            catch(Exception ex)
+            {
+                _logger.LogInformation("Error while am_user_login");
+                return new ServiceResult<am_users>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+            
+
+        }
+
+        public async Task<AuthResponse> am_user_login_ids(Guid user_id, Guid business_id)
+        {
+            if (user_id == null || business_id == Guid.Empty)
+            {
+                return new AuthResponse     {
+                    status = 300,
+                };
+            }
+            string accessToken = "";
+            string refreshToken = "";
+            var am_user = await _context.am_roles.FirstOrDefaultAsync(a=>a.role_id == user_id);
+            var am_user_roles = await _context.am_user_roles.FirstOrDefaultAsync(a=>a.role_id== am_user.role_id && a.business_id==business_id);
+
+            if (am_user_roles != null)
+            {
+                var co_company = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == am_user_roles.business_id);
+                if (co_company != null)
+                {
+                     accessToken = CreatToken(null, co_company.company_id,null, am_user.role_name, 10);
+                     refreshToken = CreatToken(null, co_company.company_id,null, am_user.role_name, 10080);
+
+                    return new AuthResponse
+                    {
+                        status = 200,
+                        AccessToken = accessToken,
+                        RefreshToken = refreshToken
+                    };
+                }
+
+            }
+            else
+            {
+                var am_user_roles_1 = await _context.am_user_roles.FirstOrDefaultAsync(a => a.role_id == am_user.role_id && a.store_id == business_id);
+                var st_Users = await _context.st_Users.FirstOrDefaultAsync(a => a.user_id == am_user_roles_1.store_user_id);
+                var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == am_user_roles_1.store_id);
+
+                if (st_store != null)
+                {
+                    accessToken = CreatToken(st_Users?.user_id, st_store.company_id, st_store.store_id, am_user.role_name, 10);
+                    refreshToken = CreatToken(st_Users?.user_id, st_store.company_id, st_store.store_id, am_user.role_name, 10080);
+
+                    return new AuthResponse
+                    {
+                        status = 200,
+                        AccessToken = accessToken,
+                        RefreshToken = refreshToken
+                    };
+                }
+            }
+            
+            return new AuthResponse
+            {
+                status = 200,
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+            
+
+
+        }
+
+        private string CreatToken(Guid? userId,Guid? companyId,Guid? store_id,string userRole, int minutes)
         {
             var claims = new List<Claim>
             {
-                 new Claim(ClaimTypes.NameIdentifier, user.userId.ToString() ?? ""), // important for RefreshToken
-                 new Claim(ClaimTypes.Name, user.userId.ToString() ?? "")
+                 new Claim(ClaimTypes.NameIdentifier, userId.ToString() ?? companyId.ToString()), // important for RefreshToken
+                 new Claim(ClaimTypes.Name, userId.ToString() ?? companyId.ToString() ?? store_id.ToString()),
+                 new Claim("userRole", userRole ?? ""),
+                 new Claim("company_id", companyId.ToString() ?? companyId.ToString()),
+                 new Claim("store_id", store_id.ToString() ?? store_id.ToString()),
+                 new Claim("userId", userId.ToString() ?? ""),
             };
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:key")!));
@@ -84,6 +217,7 @@ namespace Faahi.Service.Auth
                 );
             return new JwtSecurityTokenHandler().WriteToken(tokendescription);
         }
+
         public AuthResponse RefreshToken(string refreshToken)
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
@@ -110,6 +244,7 @@ namespace Faahi.Service.Auth
                 var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var userRole = principal.FindFirst("userRole")?.Value;
                 var companyId = principal.FindFirst("company_id")?.Value;
+                var store_userId = principal.FindFirst("company_id")?.Value;
 
                 if (string.IsNullOrEmpty(userId))
                     return null;
@@ -123,6 +258,7 @@ namespace Faahi.Service.Auth
                     new Claim("userRole", userRole ?? ""),
                     new Claim("company_id", companyId ?? ""),
                     new Claim("userId", userId ?? ""),
+                    new Claim("store_id",store_userId),
                 }, 15); // 15 minutes
 
                 // Create new refresh token with the same claims
@@ -131,7 +267,8 @@ namespace Faahi.Service.Auth
                     new Claim(ClaimTypes.NameIdentifier, parsedUserId.ToString()),
                     new Claim("userRole", userRole ?? ""),
                     new Claim("company_id", companyId ?? ""),
-                    new Claim("userId", userId ?? "")
+                    new Claim("userId", userId ?? ""),
+                    new Claim("store_id",store_userId),
                 }, 10080); // 7 days
 
                 return new AuthResponse
@@ -149,6 +286,7 @@ namespace Faahi.Service.Auth
                 return null; // invalid token
             }
         }
+
         private string CreateToken(List<Claim> claims, int expiresInMinutes)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["AppSettings:Key"]));
@@ -369,6 +507,7 @@ namespace Faahi.Service.Auth
 
             return new JwtSecurityTokenHandler().WriteToken(tokenDescription);
         }
+
         /// <summary>
         /// co_business Email verification
         /// </summary>
@@ -469,6 +608,7 @@ namespace Faahi.Service.Auth
             }
 
         }
+
         /// <summary>
         /// User Email verification
         /// </summary>
@@ -654,6 +794,7 @@ namespace Faahi.Service.Auth
             }
 
         }
+
         /// <summary>
         /// User resend verification
         /// </summary>
@@ -756,6 +897,7 @@ namespace Faahi.Service.Auth
             }
 
         }
+
         /// <summary>
         /// Verify user using email token
         /// </summary>
@@ -841,6 +983,7 @@ namespace Faahi.Service.Auth
             }
 
         }
+
         public async Task<ServiceResult<List<am_users>>> Users_list()
         {
             var user = await _context.am_users.ToListAsync();
@@ -852,6 +995,7 @@ namespace Faahi.Service.Auth
                 Data = user
             };
         }
+
         public async Task<ServiceResult<am_users>> Update_profile(am_users am_users, string userId)
         {
 
@@ -890,6 +1034,7 @@ namespace Faahi.Service.Auth
             }
 
         }
+
         /// <summary>
         /// user reset_password
         /// </summary>
@@ -1008,6 +1153,7 @@ namespace Faahi.Service.Auth
 
 
         }
+
         /// <summary>
         /// User need to verify email,token for reset_password
         /// </summary>

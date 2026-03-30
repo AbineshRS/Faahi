@@ -38,5 +38,7 @@ namespace Faahi.Model.co_business
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]
         public string? serv_available { get; set; } = null;
+
+      
     }
 }

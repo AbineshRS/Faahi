@@ -38,6 +38,28 @@ namespace Faahi.Controllers.Authentication
             return Ok(new { status = 1, token });
 
         }
+        [HttpPost]
+        [Route("am_user_login/{username}/{password}")]
+        public async Task<IActionResult> am_user_login(string username,string password)
+        {
+            if(username == null || password == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _authService.am_user_login(username,password);
+            return Ok(result);
+        }
+        [HttpPost]
+        [Route("am_user_login_ids/{user_id}/{business_id}")]
+        public async Task<IActionResult> am_user_login_ids(Guid user_id,Guid business_id)
+        {
+            if(user_id==null|| business_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _authService.am_user_login_ids(user_id,business_id);
+            return Ok(result);
+        }
         [HttpPost("refresh-token/{refreshToken}")]
         public ActionResult<AuthResponse> RefreshToken( string refreshToken)
         {

@@ -278,58 +278,6 @@ namespace Faahi.Controllers.im_products
 
 
 
-        [HttpPost("encript/{id}")]
-        public IActionResult EncryptId(string id)
-        {
-            var encrypted = EncryptionHelper.EncryptString(id); 
-            var urlSafeEncrypted = Uri.EscapeDataString(encrypted); 
-            return Ok(urlSafeEncrypted);
-        }
-
-
-        [HttpGet("get-by-id/{encryptedId}")]
-        public IActionResult GetProductByEncryptedId(string encryptedId)
-        {
-            try
-            {
-                var base64 = Uri.UnescapeDataString(encryptedId);
-
-                var decryptedId = EncryptionHelper.DecryptString(base64);
-
-                return Ok(decryptedId);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Invalid encrypted ID: {ex.Message}");
-            }
-        }
-        //[HttpGet("update-by-id/{encryptedId}")]
-        //public async Task<IActionResult> UpdateProductByEncryptedId(string encryptedId)
-        //{
-        //    try
-        //    {
-        //        // 1. Decode & decrypt the ID
-        //        var base64 = Uri.UnescapeDataString(encryptedId);
-        //        var productId = EncryptionHelper.DecryptString(base64);
-
-        //        // 2. Find the product in DB
-        //        var product = await _context.im_Products.FirstOrDefaultAsync(p => p.product_id == productId);
-        //        if (product == null)
-        //            return NotFound("Product not found");
-
-        //        // 3. Update fields from payload
-
-        //        var jsonData = JsonConvert.SerializeObject(product);
-        //        var encryptedData = EncryptionHelper.EncryptString(jsonData);
-        //        //await _context.SaveChangesAsync();
-
-        //        return Ok(product);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest($"Error: {ex.Message}");
-        //    }
-        //}
 
 
     }

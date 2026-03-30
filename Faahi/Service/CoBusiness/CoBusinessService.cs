@@ -8,6 +8,7 @@ using Dekiru.QueryFilter.Macros;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Model;
+using Faahi.Model.am_users;
 using Faahi.Model.co_business;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
@@ -53,6 +54,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<co_business>> Create_account(co_business business)
         {
+            var transaction_begin = await _context.Database.BeginTransactionAsync();
             if (business == null)
             {
                 _logger.LogWarning("No data found to insert co_business", business);
@@ -77,6 +79,8 @@ namespace Faahi.Service.CoBusiness
                 {
                     return new ServiceResult<co_business> { Success = false, Message = "Username already exists.", Status = -2 };
                 }
+
+
                 business.company_id = Guid.CreateVersion7();
 
                 var super_key = await _context.super_admin_keys.ToListAsync();
@@ -84,17 +88,18 @@ namespace Faahi.Service.CoBusiness
 
                 foreach (var item in super_key)
                 {
-                    am_Table_Next_Key.next_key_id=Guid.CreateVersion7();
+                    am_Table_Next_Key.next_key_id = Guid.CreateVersion7();
                     am_Table_Next_Key.name = item.name;
-                    am_Table_Next_Key.next_key = item.next_key+1;
+                    am_Table_Next_Key.next_key = item.next_key + 1;
                     am_Table_Next_Key.business_id = business.company_id;
                     am_Table_Next_Key.site_code = item.site_code;
                     _context.am_table_next_key.Add(am_Table_Next_Key);
                     await _context.SaveChangesAsync();
                 }
+                co_avl_countries co_Avl_Countries = new co_avl_countries();
 
                 var table = "co_business";
-                var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a=>a.name==table&& a.business_id==business.company_id);
+                var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == business.company_id);
                 var key = Convert.ToInt16(am_table.next_key);
 
                 business.company_code = Convert.ToString(key + 1);
@@ -106,11 +111,32 @@ namespace Faahi.Service.CoBusiness
                 var companyId = namePart + "-";
                 var hashedPassword = PasswordHelper.HashPassword(business?.password);
                 business.password = hashedPassword;
+                business.business_name = business.business_name;
+                business.tin_number = business.tin_number;
+                business.name = business.name;
+                business.reg_no = business.reg_no;
+                business.country = business.country;
+                business.phoneNumber = business.phoneNumber;
                 business.created_at = DateTime.Now;
                 business.edit_date_time = DateTime.Now;
                 business.email = business.email;
                 business.sites_allowed = 2;
                 business.sites_users_allowed = 2;
+
+                var co_avl = await _context.avl_countries.FirstOrDefaultAsync(a => a.name == business.country);
+
+                co_Avl_Countries.avl_countries_id = Guid.CreateVersion7();
+                co_Avl_Countries.name = co_avl.name;
+                co_Avl_Countries.country_code = co_avl.country_code;
+                co_Avl_Countries.flag = co_avl.flag;
+                co_Avl_Countries.dialling_code = co_avl.dialling_code;
+                co_Avl_Countries.currency_code = co_avl.currency_code;
+                co_Avl_Countries.currency_name = co_avl.currency_name;
+                co_Avl_Countries.exchange_rate = 1;
+                co_Avl_Countries.company_id = business.company_id;
+                co_Avl_Countries.serv_available = "T";
+                _context.co_avl_countries.Add(co_Avl_Countries);
+
 
                 foreach (var address in business.co_addresses)
                 {
@@ -121,9 +147,74 @@ namespace Faahi.Service.CoBusiness
 
                 }
 
+                am_users am_Users = new am_users
+                {
+                    userId = Guid.CreateVersion7(),
+                    userName = business.email,
+                    password = hashedPassword,
+                    email = business.email,
+                    fullName = business.business_name,
+                    emailVerified = "T",
+                    created_at = DateTime.Now,
+                    edit_date_time = DateTime.Now,
+                    status = "T",
+                    phoneNumber = business.phoneNumber,
+
+                    am_roles = new List<am_roles>() 
+                }; var role = new am_roles
+                {
+                    role_id = Guid.CreateVersion7(),
+                    role_code = "CO",
+                    user_ids = am_Users.userId,
+                    role_group ="CO-ADMIN",
+                    role_name = "CO-ADMIN",
+                    description = "Whole Access",
+                    is_system_role = "T",
+                    am_user_roles = new List<am_user_roles>() 
+                };
+
+                var userRole = new am_user_roles
+                {
+                    user_role_id = Guid.CreateVersion7(),
+                    user_id = am_Users.userId,
+                    role_id = role.role_id,
+                    business_id = business.company_id,
+                    created_at = DateTime.Now,
+                    am_user_business_access = new List<am_user_business_access>() 
+                };
+
+                var businessAccess = new am_user_business_access
+                {
+                    access_id = Guid.CreateVersion7(),
+                    user_role_id = userRole.user_role_id,
+                    user_id = am_Users.userId,
+                    business_id = business.company_id,
+                    access_level = "Whole Access",
+                    status = "T",
+                    created_at = DateTime.Now
+                };
+
+                userRole.am_user_business_access.Add(businessAccess);
+                role.am_user_roles.Add(userRole);
+                am_Users.am_roles.Add(role);
+                _context.am_users.Add(am_Users);
 
 
                 await _context.co_business.AddAsync(business);
+                await _context.SaveChangesAsync();
+
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                          $"EXEC dbo.sp_SeedCompanyGLAccounts @CompanyId={business.company_id}");
+
+                // Seed default account mappings
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"EXEC dbo.sp_SeedCompanyAccountMappings @CompanyId={business.company_id}");
+
+                // Seed account current balances (BS only)
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"EXEC dbo.sp_SeedAccountCurrentBalances @CompanyId={business.company_id}");
+
+
                 string subject = "Congratulations! Your Seller Account on Faahi is Ready";
                 string body = @"
                             <!DOCTYPE html>
@@ -227,16 +318,18 @@ namespace Faahi.Service.CoBusiness
                             </html>
                             ";
                 am_table.next_key = key + 1;
-                 _context.am_table_next_key.Update(am_table);
+                _context.am_table_next_key.Update(am_table);
 
                 var emailService = new EmailService(_configuration);
                 await emailService.SendEmailAsync(business.email, subject, body);
 
+
                 await _context.SaveChangesAsync();
+                await transaction_begin.CommitAsync();
 
                 return new ServiceResult<co_business>
                 {
-                    Status=1,
+                    Status = 1,
                     Success = true,
                     Message = "User created successfully",
                     Data = business
@@ -244,6 +337,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction_begin.RollbackAsync();
                 _logger.LogError(ex, "error occurred adding co_business");
                 return new ServiceResult<co_business>
                 {
@@ -259,7 +353,7 @@ namespace Faahi.Service.CoBusiness
         {
             try
             {
-                var company_list = await _context.co_business.Include(a=>a.co_addresses).OrderByDescending(a=>a.company_code).ToListAsync();
+                var company_list = await _context.co_business.Include(a => a.co_addresses).OrderByDescending(a => a.company_code).ToListAsync();
                 return new ServiceResult<List<co_business>>
                 {
                     Status = 1,
@@ -318,7 +412,7 @@ namespace Faahi.Service.CoBusiness
                 using var s3Client = new AmazonS3Client(accessKey, secretKey, s3Config);
 
                 // ✅ Delete old logo if exists
-                var co_buss = await _context.co_business.FirstOrDefaultAsync(a=>a.company_id==company_id);
+                var co_buss = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == company_id);
                 if (co_buss != null && !string.IsNullOrEmpty(co_buss.logo_fileName))
                 {
                     try
@@ -484,7 +578,7 @@ namespace Faahi.Service.CoBusiness
                 var user = _context.co_business.FirstOrDefault(a => a.name == username || a.email == username);
                 if (user is null)
                 {
-                    
+
                     var store_user = await _context.st_Users.FirstOrDefaultAsync(a => a.email == username);
                     var accessToken_site_users = CreatTokensite_user(store_user, 15);   // 15 minutes
                     var refreshToken_site_users = CreatTokensite_user(store_user, 10080); // 7 days (in minutes)
@@ -493,7 +587,7 @@ namespace Faahi.Service.CoBusiness
                     {
                         return new AuthResponse
                         {
-                            status=2,
+                            status = 2,
                             AccessToken = accessToken_site_users,
                             RefreshToken = refreshToken_site_users
                         };
@@ -506,10 +600,10 @@ namespace Faahi.Service.CoBusiness
                     {
                         return null;
                     }
-                   
+
                     return new AuthResponse
                     {
-                        status=0,
+                        status = 0,
                         AccessToken = accessToken_site_users,
                         RefreshToken = refreshToken_site_users
                     };
@@ -524,7 +618,7 @@ namespace Faahi.Service.CoBusiness
 
                 return new AuthResponse
                 {
-                    status=1,
+                    status = 1,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken
                 };
@@ -737,7 +831,7 @@ namespace Faahi.Service.CoBusiness
                         Success = false,
                         Message = "You have already verifyed",
                         Status = -4,
-                        Data=am_email
+                        Data = am_email
 
                     };
                 }
@@ -759,7 +853,7 @@ namespace Faahi.Service.CoBusiness
                         Success = false,
                         Message = "Invalid or expired token",
                         Status = -3,
-                        Data=am_email
+                        Data = am_email
                     };
                 }
                 am_email.verified = "T";
@@ -1011,7 +1105,7 @@ namespace Faahi.Service.CoBusiness
                 {
                     return new ServiceResult<co_business>
                     {
-                        Status=400,
+                        Status = 400,
                         Success = false,
                         Message = "User not found",
                         Data = null
@@ -1042,7 +1136,7 @@ namespace Faahi.Service.CoBusiness
                 await _context.SaveChangesAsync();
                 return new ServiceResult<co_business>
                 {
-                    Status=200,
+                    Status = 200,
                     Success = true,
                     Message = "User profile updated successfully",
                     Data = existing
@@ -1123,7 +1217,7 @@ namespace Faahi.Service.CoBusiness
             {
                 // Check if country already exists
                 var existingData = await _context.co_avl_countries
-                    .FirstOrDefaultAsync(a => a.name.ToLower() == co_Avl_Countries.name.ToLower()&& a.company_id== co_Avl_Countries.company_id);
+                    .FirstOrDefaultAsync(a => a.name.ToLower() == co_Avl_Countries.name.ToLower() && a.company_id == co_Avl_Countries.company_id);
 
                 if (existingData != null)
                 {
@@ -1272,7 +1366,7 @@ namespace Faahi.Service.CoBusiness
                     Message = "no data found"
                 };
             }
-            var currency_list = await _context.co_avl_countries.Where(a=>a.company_id==company_id).ToListAsync();
+            var currency_list = await _context.co_avl_countries.Where(a => a.company_id == company_id).ToListAsync();
             return new ServiceResult<List<co_avl_countries>>
             {
                 Success = true,
@@ -1771,6 +1865,8 @@ namespace Faahi.Service.CoBusiness
                 Data = resultList
             };
         }
+
+
 
     }
 }

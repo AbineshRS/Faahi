@@ -390,7 +390,7 @@ namespace Faahi.Service.im_products
                     Data = null
                 };
             }
-        }
+        }   
 
         public async Task<long> GetStoreFolderSizeAsync(string bucketName, string storeName)
         {

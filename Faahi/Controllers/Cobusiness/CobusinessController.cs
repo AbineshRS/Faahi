@@ -277,6 +277,9 @@ namespace Faahi.Controllers.Cobusiness
             var updated = await _co_businessService.Update_site_users(user_id,im_Site_Users);
             return Ok(updated);
         }
+
+       
+
         [HttpGet]
         [Route("Dekiru/{searchTerm}")]
         public async Task<ActionResult> Dekiru(string searchTerm)
@@ -284,6 +287,8 @@ namespace Faahi.Controllers.Cobusiness
             var data = await _co_businessService.Dekiru(searchTerm);
             return Ok(data);
         }
+
+
         
     }
 }

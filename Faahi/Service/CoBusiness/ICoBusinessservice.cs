@@ -56,6 +56,7 @@ namespace Faahi.Service.CoBusiness
 
         Task<ServiceResult<List<co_business>>> Dekiru(string searchTerm);
 
-        
+
+
     }
 }

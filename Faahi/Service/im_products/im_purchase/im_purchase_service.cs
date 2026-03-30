@@ -868,7 +868,7 @@ namespace Faahi.Service.im_products.im_purchase
 
 
                         var spResults = _context.Database.SqlQueryRaw<string>(
-                            "EXEC dbo.sp_UpdateVariantCosts @listing_id=@listing_id ,@site_id=@site_id,@ope=@opr",
+                            "EXEC dbo.sp_UpdateVariantCosts @listing_id=@listing_id ,@site_id=@site_id,@opr=@opr",
                             new SqlParameter("@listing_id", listing_id),
                             new SqlParameter("@site_id", existing_purchase.site_id),
                             new SqlParameter("@opr", 1)).AsEnumerable().ToList();

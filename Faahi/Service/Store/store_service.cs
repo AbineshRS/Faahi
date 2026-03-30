@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Migrations;
+using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
@@ -38,6 +40,7 @@ namespace Faahi.Service.Store
 
         public async Task<ServiceResult<Store_users>> Create_sellers(Store_users Store_users)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (Store_users == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_sellers: st_sellers is null");
@@ -96,6 +99,7 @@ namespace Faahi.Service.Store
 
                 if (st_userAccesstore != null)
                 {
+                    await transaction.RollbackAsync();
                     return new ServiceResult<Store_users>
                     {
                         Success = false,
@@ -160,10 +164,103 @@ namespace Faahi.Service.Store
 
                     }
                 }
+                var st_UserRoles= await _context.st_UserRoles.FirstOrDefaultAsync(a=>a.role_id==Store_users.role_id);
+                var am_user = await _context.am_users.Include(u => u.am_roles).FirstOrDefaultAsync(a => a.email == Store_users.email);
+                if(am_user == null)
+                {
+                    am_users am_Users = new am_users
+                    {
+                        userId = Guid.CreateVersion7(),
+                        userName = Store_users.email,
+                        password = PasswordHelper.HashPassword(Store_users.password),
+                        email = Store_users.email,
+                        fullName = Store_users.Full_name,
+                        emailVerified = "T",
+                        created_at = DateTime.Now,
+                        edit_date_time = DateTime.Now,
+                        status = "T",
+                        phoneNumber = Store_users.phone,
+
+                        am_roles = new List<am_roles>()
+                    }; var role = new am_roles
+                    {
+                        role_id = Guid.CreateVersion7(),
+                        role_code = "ST",
+                        user_ids = am_Users.userId,
+                        role_group = st_UserRoles.role_name,
+                        role_name = st_UserRoles.role_name,
+                        description = st_UserRoles.description,
+                        is_system_role = "T",
+                        am_user_roles = new List<am_user_roles>()
+                    };
+
+                    var userRole = new am_user_roles
+                    {
+                        user_role_id = Guid.CreateVersion7(),
+                        role_id = role.role_id,
+                        user_id = am_Users.userId,
+                        store_id = Store_users.store_id,
+                        business_id = co_business.company_id,
+                        created_at = DateTime.Now,
+                        am_user_business_access = new List<am_user_business_access>()
+                    };
+
+                    var businessAccess = new am_user_business_access
+                    {
+                        access_id = Guid.CreateVersion7(),
+                        user_role_id = userRole.user_role_id,
+                        user_id = am_Users.userId,
+                        store_id = Store_users.store_id,
+                        business_id = co_business.company_id,
+                        access_level = st_UserRoles.role_name,
+                        status = "T",
+                        created_at = DateTime.Now
+                    };
+
+                    userRole.am_user_business_access.Add(businessAccess);
+                    role.am_user_roles.Add(userRole);
+                    am_Users.am_roles.Add(role);
+                    _context.am_users.Add(am_Users);
+                }
+                else
+                {
+                    var role = new am_roles
+                    {
+                        role_id = Guid.CreateVersion7(),
+                        role_code = "ST",
+                        user_ids = am_user.userId,
+                        role_group = st_UserRoles.role_name,
+                        role_name = st_UserRoles.role_name,
+                        description = st_UserRoles.description,
+                        is_system_role = "T",
+                        am_user_roles = new List<am_user_roles>()
+                    };
+
+                    var userRole = new am_user_roles
+                    {
+                        user_role_id = Guid.CreateVersion7(),
+                        role_id = role.role_id,
+                        user_id = am_user.userId,
+                        business_id = co_business.company_id,
+                        store_id = Store_users.store_id,
+                        created_at = DateTime.Now,
+                        am_user_business_access = new List<am_user_business_access>()
+                    };
+
+                    
+
+                    _context.am_user_roles.Add(userRole);
+                    _context.am_roles.Add(role);
+                    role.am_user_roles.Add(userRole);
+                    am_user.am_roles.Add(role);
+                    _context.am_users.Update(am_user);
+                }
+                
+
 
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<Store_users>
                 {
                     Success = true,
@@ -174,6 +271,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+               await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_sellers: Exception occurred while creating seller");
                 return new ServiceResult<Store_users>
                 {

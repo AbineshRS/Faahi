@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using Faahi.Service.Admin;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -10,8 +11,15 @@ namespace Faahi.Model.am_users
         [Column(TypeName = "uniqueidentifier")]
         public Guid role_id { get; set; }
 
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid user_ids { get; set; }
+
         [Column(TypeName = "varchar(50)")]
         public string role_code { get; set; }
+         //CO = Company(admin-level)
+        //ST = Store
+        //MK = Marketplace
+        //DL = Delivery
 
         [Column(TypeName = "varchar(50)")]
         public string role_name { get; set; }

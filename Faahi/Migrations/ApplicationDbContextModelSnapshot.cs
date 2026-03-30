@@ -22,6 +22,1008 @@ namespace Faahi.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Faahi.Model.Accounts.AccountType", b =>
+                {
+                    b.Property<Guid>("AccountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AccountName")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("AccountParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("AccountId");
+
+                    b.HasIndex("AccountId")
+                        .IsUnique();
+
+                    b.HasIndex("AccountParentId");
+
+                    b.ToTable("AccountTypes");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_ChequeLines", b =>
+                {
+                    b.Property<Guid>("ChequeLineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("ChequeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int?>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("ChequeLineId");
+
+                    b.HasIndex(new[] { "ChequeId" }, "IX_ChequeLines_Cheque");
+
+                    b.ToTable("ap_ChequeLines");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_Cheques", b =>
+                {
+                    b.Property<Guid>("ChequeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CheckNumber")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ChequeNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Memo")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("PayeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PayeeName")
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("PaymentAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ChequeId");
+
+                    b.HasIndex(new[] { "BusinessId" }, "IX_Cheques_Business");
+
+                    b.HasIndex(new[] { "StoreId" }, "IX_Cheques_Store");
+
+                    b.ToTable("ap_Cheques");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_ChequesAttachments", b =>
+                {
+                    b.Property<Guid>("AttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ChequeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("image_url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(600)");
+
+                    b.HasKey("AttachmentId");
+
+                    b.HasIndex(new[] { "ChequeId", "UploadedAt" }, "IX_ap_ChequesAttachments_Cheque");
+
+                    b.ToTable("ap_ChequesAttachments");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_ExpenseLines", b =>
+                {
+                    b.Property<Guid>("ExpenseLineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid>("ExpenseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("ExpenseLineId");
+
+                    b.HasIndex(new[] { "ExpenseId" }, "IX_ExpenseLines_Expense");
+
+                    b.ToTable("ap_ExpenseLines");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_Expenses", b =>
+                {
+                    b.Property<Guid>("ExpenseId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BaseTotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<decimal>("ExchangeRate")
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<DateTime>("ExpenseDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ExpenseNo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Memo")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("PayeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PayeeName")
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("PaymentAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PaymentMethod")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ReferenceNo")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ExpenseId");
+
+                    b.HasIndex(new[] { "BusinessId" }, "IX_Expenses_Business");
+
+                    b.HasIndex(new[] { "StoreId" }, "IX_Expenses_Store");
+
+                    b.HasIndex(new[] { "BusinessId", "ExpenseNo" }, "UX_ap_Expenses_Business_ExpenseNo")
+                        .IsUnique();
+
+                    b.ToTable("ap_Expenses");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_ExpensesAttachments", b =>
+                {
+                    b.Property<Guid>("AttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ExpenseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("image_url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(600)");
+
+                    b.HasKey("AttachmentId");
+
+                    b.HasIndex(new[] { "ExpenseId", "UploadedAt" }, "IX_ap_ExpensesAttachments_Expense");
+
+                    b.ToTable("ap_ExpensesAttachments");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_PaymentAllocations", b =>
+                {
+                    b.Property<Guid>("AllocationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AppliedAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("BillId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("AllocationId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("ap_PaymentAllocations");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_PaymentAttachments", b =>
+                {
+                    b.Property<Guid>("AttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(600)");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("AttachmentId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("ap_PaymentAttachments");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_PaymentLines", b =>
+                {
+                    b.Property<Guid>("PaymentLineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ExpenseAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("PaymentLineId");
+
+                    b.HasIndex("ExpenseAccountId");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("ap_PaymentLines");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_Payments", b =>
+                {
+                    b.Property<Guid>("PaymentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ChequeDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("ChequeNumber")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("ClearedDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasColumnType("decimal(28,12)");
+
+                    b.Property<string>("Memo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("PaymentAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<string>("ReferenceNo")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<Guid?>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid>("VendorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("PaymentId");
+
+                    b.HasIndex(new[] { "BusinessId", "PaymentDate", "PaymentId" }, "IX_ap_Payments_BusinessDate");
+
+                    b.HasIndex(new[] { "BusinessId", "PaymentMethod", "ChequeNumber" }, "IX_ap_Payments_MethodCheque");
+
+                    b.ToTable("ap_Payments");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_AccountCurrentBalances", b =>
+                {
+                    b.Property<Guid>("gl_account_current_id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<decimal>("CurrentBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid?>("LastUpdatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("gl_account_current_id");
+
+                    b.HasIndex(new[] { "gl_account_current_id" }, "IX_gl_account_current_id")
+                        .IsUnique();
+
+                    b.ToTable("gl_AccountCurrentBalances");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_AccountMapping", b =>
+                {
+                    b.Property<Guid>("DefaultId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid?>("GlAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("IsActive")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
+
+                    b.Property<string>("IsRequired")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .HasColumnType("char(1)");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("PurposeCode")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<Guid?>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("DefaultId");
+
+                    b.HasIndex("GlAccountId");
+
+                    b.HasIndex("StoreId");
+
+                    b.HasIndex(new[] { "CompanyId", "StoreId", "Module", "PurposeCode" }, "UQ_gl_AccountMapping_CompanyStoreModulePurpose")
+                        .IsUnique()
+                        .HasFilter("[StoreId] IS NOT NULL");
+
+                    b.ToTable("gl_AccountMapping");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_Accounts", b =>
+                {
+                    b.Property<Guid>("GlAccountId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("AccountName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("AccountType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime?>("AsOfDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("BalanceType")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("DetailType")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("IsActive")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(1)")
+                        .HasDefaultValue("T");
+
+                    b.Property<string>("IsPostable")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(1)")
+                        .HasDefaultValue("T");
+
+                    b.Property<string>("NormalBalance")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal>("OpeningBalance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("ParentAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("GlAccountId");
+
+                    b.HasIndex("ParentAccountId");
+
+                    b.HasIndex(new[] { "CompanyId", "AccountType", "IsActive" }, "IX_gl_Accounts_BusinessType");
+
+                    b.HasIndex(new[] { "AccountName" }, "UQ_gl_Accounts_BusinessCode");
+
+                    b.ToTable("gl_Accounts");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_BusinessSettings", b =>
+                {
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("business_id");
+
+                    b.Property<Guid?>("APControlAccountId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ap_control_account_id");
+
+                    b.Property<Guid?>("ARControlAccountId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("ar_control_account_id");
+
+                    b.Property<Guid?>("CogsAccountId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("cogs_account_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("InventoryAccountId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("inventory_account_id");
+
+                    b.Property<Guid?>("SalesAccountId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("sales_account_id");
+
+                    b.Property<Guid?>("TaxPayableAccountId")
+                        .HasColumnType("uniqueidentifier")
+                        .HasColumnName("tax_payable_account_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("BusinessId");
+
+                    b.ToTable("gl_BusinessSettings");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_FiscalPeriods", b =>
+                {
+                    b.Property<Guid>("PeriodId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid?>("ClosedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<byte>("FiscalMonth")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int>("FiscalYear")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IsClosed")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(1)")
+                        .HasDefaultValue("F");
+
+                    b.Property<DateTime>("PeriodEnd")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("PeriodId");
+
+                    b.HasIndex(new[] { "BusinessId", "IsClosed", "FiscalYear", "FiscalMonth" }, "IX_gl_FiscalPeriods_BusinessClosed");
+
+                    b.ToTable("gl_FiscalPeriods");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_JournalAttachments", b =>
+                {
+                    b.Property<Guid>("AttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<Guid>("JournalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("image_url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(600)");
+
+                    b.HasKey("AttachmentId");
+
+                    b.HasIndex(new[] { "JournalId", "UploadedAt" }, "IX_gl_JournalAttachments_Journal");
+
+                    b.ToTable("gl_JournalAttachments");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_JournalHeaders", b =>
+                {
+                    b.Property<Guid>("JournalId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BaseCurrencyCode")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<bool>("IsSystemGenerated")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("JournalDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("JournalMemo")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("JournalNo")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("PostedBy")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("PostingDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("ReferenceNo")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("ReversalOfJournalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceType")
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<Guid?>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("TotalCreditBC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("TotalCreditFC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("TotalDebitBC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal?>("TotalDebitFC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("TransactionCurrencyCode")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("JournalId");
+
+                    b.HasIndex(new[] { "BusinessId", "JournalDate", "JournalId" }, "IX_gl_JournalHeaders_BusinessDate");
+
+                    b.HasIndex(new[] { "BusinessId", "PostingDate", "JournalId" }, "IX_gl_JournalHeaders_PostingDate");
+
+                    b.HasIndex(new[] { "BusinessId", "SourceType", "SourceId" }, "IX_gl_JournalHeaders_Source");
+
+                    b.HasIndex(new[] { "BusinessId", "JournalNo" }, "UX_gl_JournalHeaders_Business_JournalNo")
+                        .IsUnique()
+                        .HasFilter("[JournalNo] IS NOT NULL");
+
+                    b.ToTable("gl_JournalHeaders");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_JournalLines", b =>
+                {
+                    b.Property<Guid>("JournalLineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CostCenterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("CreditAmountBC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("CreditAmountFC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("DebitAmountBC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("DebitAmountFC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<Guid>("GlAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JournalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("SourceLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceType")
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<Guid?>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SupplierId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("JournalLineId");
+
+                    b.HasIndex("GlAccountId");
+
+                    b.HasIndex(new[] { "BusinessId", "GlAccountId" }, "IX_gl_JournalLines_Account");
+
+                    b.HasIndex(new[] { "JournalId", "LineNo" }, "IX_gl_JournalLines_Journal");
+
+                    b.HasIndex(new[] { "BusinessId", "StoreId", "GlAccountId" }, "IX_gl_JournalLines_StoreAccount");
+
+                    b.ToTable("gl_JournalLines");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_Ledger", b =>
+                {
+                    b.Property<Guid>("LedgerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                    b.Property<string>("BaseCurrencyCode")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("CreditAmountBC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("CreditAmountFC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal>("DebitAmountBC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("DebitAmountFC")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasColumnType("decimal(18,8)");
+
+                    b.Property<Guid>("GlAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JournalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("JournalLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Module")
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("PostingDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("ReferenceNo")
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("SourceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("SourceLineId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceType")
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<Guid?>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TransactionCurrencyCode")
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("LedgerId");
+
+                    b.HasIndex("GlAccountId");
+
+                    b.HasIndex("JournalLineId");
+
+                    b.HasIndex(new[] { "BusinessId", "PostingDate", "GlAccountId" }, "IX_gl_Ledger_BusinessDateAccount");
+
+                    b.HasIndex(new[] { "BusinessId", "TransactionDate" }, "IX_gl_Ledger_BusinessTransactionDate");
+
+                    b.HasIndex(new[] { "JournalId", "JournalLineId" }, "IX_gl_Ledger_JournalRefs");
+
+                    b.HasIndex(new[] { "SourceType", "SourceId" }, "IX_gl_Ledger_Source");
+
+                    b.ToTable("gl_ledger");
+                });
+
             modelBuilder.Entity("Faahi.Model.Admin.sa_country_regions", b =>
                 {
                     b.Property<Guid>("country_region_id")
@@ -40,7 +1042,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("country_region_id");
 
-                    b.ToTable("sa_country_regions", (string)null);
+                    b.ToTable("sa_country_regions");
                 });
 
             modelBuilder.Entity("Faahi.Model.Admin.sa_regions", b =>
@@ -68,7 +1070,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("sa_country_regionscountry_region_id");
 
-                    b.ToTable("sa_regions", (string)null);
+                    b.ToTable("sa_regions");
                 });
 
             modelBuilder.Entity("Faahi.Model.Admin.super_admin", b =>
@@ -113,7 +1115,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "super_admin_id" }, "super_admin_id")
                         .IsUnique();
 
-                    b.ToTable("super_admin", (string)null);
+                    b.ToTable("super_admin");
                 });
 
             modelBuilder.Entity("Faahi.Model.Email_verify.am_emailVerifications", b =>
@@ -147,7 +1149,115 @@ namespace Faahi.Migrations
 
                     b.HasKey("Email_id");
 
-                    b.ToTable("am_emailVerifications", (string)null);
+                    b.ToTable("am_emailVerifications");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Finance.fin_BankDepositAttachments", b =>
+                {
+                    b.Property<Guid>("AttachmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("DepositId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("image_url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(600)");
+
+                    b.HasKey("AttachmentId");
+
+                    b.HasIndex("DepositId");
+
+                    b.ToTable("fin_BankDepositAttachments");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Finance.fin_BankDepositLines", b =>
+                {
+                    b.Property<Guid>("DepositLineId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("DepositId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("LineNo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReferenceNo")
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("SourceAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("DepositLineId");
+
+                    b.HasIndex("DepositId");
+
+                    b.HasIndex("SourceAccountId");
+
+                    b.ToTable("fin_BankDepositLines");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Finance.fin_BankDeposits", b =>
+                {
+                    b.Property<Guid>("DepositId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BankAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BusinessId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime>("DepositDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("DepositNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Memo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<Guid?>("StoreId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("DepositId");
+
+                    b.HasIndex("BusinessId", "DepositNumber")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "BusinessId", "DepositDate", "DepositId" }, "IX_fin_BankDeposits_BusinessDate");
+
+                    b.ToTable("fin_BankDeposits");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.fin_PartyBankAccounts", b =>
@@ -210,7 +1320,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "party_id" }, "party_id");
 
-                    b.ToTable("fin_PartyBankAccounts", (string)null);
+                    b.ToTable("fin_PartyBankAccounts");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_Parties", b =>
@@ -267,7 +1377,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "status" }, "idx_status");
 
-                    b.ToTable("st_Parties", (string)null);
+                    b.ToTable("st_Parties");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyAddresses", b =>
@@ -345,7 +1455,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "vendor_id" }, "idx_vendor_id");
 
-                    b.ToTable("st_PartyAddresses", (string)null);
+                    b.ToTable("st_PartyAddresses");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyContacts", b =>
@@ -390,7 +1500,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("st_PartyAddressesaddress_id");
 
-                    b.ToTable("st_PartyContacts", (string)null);
+                    b.ToTable("st_PartyContacts");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_PartyRoles", b =>
@@ -410,7 +1520,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("party_role_id");
 
-                    b.ToTable("st_PartyRoles", (string)null);
+                    b.ToTable("st_PartyRoles");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_StoreCategories", b =>
@@ -437,7 +1547,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("store_id");
 
-                    b.ToTable("st_StoreCategories", (string)null);
+                    b.ToTable("st_StoreCategories");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_StoreCategoryTemplates", b =>
@@ -458,7 +1568,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("store_type");
 
-                    b.ToTable("st_StoreCategoryTemplates", (string)null);
+                    b.ToTable("st_StoreCategoryTemplates");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_StoresAddres", b =>
@@ -519,7 +1629,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("valid_from");
 
-                    b.ToTable("st_StoresAddres", (string)null);
+                    b.ToTable("st_StoresAddres");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_UserRoles", b =>
@@ -545,7 +1655,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("role_name");
 
-                    b.ToTable("st_UserRoles", (string)null);
+                    b.ToTable("st_UserRoles");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_UserStoreAccess", b =>
@@ -582,7 +1692,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("user_id");
 
-                    b.ToTable("st_UserStoreAccess", (string)null);
+                    b.ToTable("st_UserStoreAccess");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_invoice_template", b =>
@@ -602,7 +1712,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("invoices_temp_id");
 
-                    b.ToTable("st_Invoice_Templates", (string)null);
+                    b.ToTable("st_Invoice_Templates");
                 });
 
             modelBuilder.Entity("Faahi.Model.Stores.st_store_currencies", b =>
@@ -635,7 +1745,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("store_id");
 
-                    b.ToTable("st_store_currencies", (string)null);
+                    b.ToTable("st_store_currencies");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
@@ -670,11 +1780,14 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
+                    b.Property<Guid>("user_ids")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("role_id");
 
                     b.HasIndex("am_usersuserId");
 
-                    b.ToTable("am_roles", (string)null);
+                    b.ToTable("am_roles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_user_business_access", b =>
@@ -686,9 +1799,6 @@ namespace Faahi.Migrations
                     b.Property<string>("access_level")
                         .IsRequired()
                         .HasColumnType("varchar(30)");
-
-                    b.Property<Guid?>("am_user_rolesuser_role_id")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("business_id")
                         .HasColumnType("uniqueidentifier");
@@ -707,17 +1817,20 @@ namespace Faahi.Migrations
                     b.Property<Guid>("user_id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("user_role_id")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("access_id");
 
-                    b.HasIndex("am_user_rolesuser_role_id");
-
                     b.HasIndex("store_id");
+
+                    b.HasIndex("user_role_id");
 
                     b.HasIndex(new[] { "user_id", "business_id", "store_id" }, "IX_am_user_business_access_user_business_store");
 
                     b.HasIndex(new[] { "business_id", "store_id" }, "X_am_user_business_access_business_store");
 
-                    b.ToTable("am_user_business_access", (string)null);
+                    b.ToTable("am_user_business_access");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
@@ -726,16 +1839,19 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("am_rolesrole_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("business_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("created_at")
                         .HasColumnType("datetime");
 
+                    b.Property<Guid?>("role_id")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("store_id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("store_user_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("user_id")
@@ -743,15 +1859,17 @@ namespace Faahi.Migrations
 
                     b.HasKey("user_role_id");
 
-                    b.HasIndex("am_rolesrole_id");
+                    b.HasIndex("role_id");
 
                     b.HasIndex("store_id");
+
+                    b.HasIndex("store_user_id");
 
                     b.HasIndex(new[] { "business_id", "store_id" }, "IX_am_user_roles_business_store");
 
                     b.HasIndex(new[] { "user_id" }, "IX_am_user_roles_user_id");
 
-                    b.ToTable("am_user_roles", (string)null);
+                    b.ToTable("am_user_roles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_users", b =>
@@ -785,7 +1903,6 @@ namespace Faahi.Migrations
                         .HasColumnType("char(1)");
 
                     b.Property<string>("firstName")
-                        .IsRequired()
                         .HasColumnType("varchar(50)");
 
                     b.Property<string>("fullName")
@@ -823,7 +1940,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "userName" }, "UX_am_users_user_name");
 
-                    b.ToTable("am_users", (string)null);
+                    b.ToTable("am_users");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_addresses", b =>
@@ -884,7 +2001,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "address_id" }, "IX_address_id")
                         .IsUnique();
 
-                    b.ToTable("mk_customer_addresses", (string)null);
+                    b.ToTable("mk_customer_addresses");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_profiles", b =>
@@ -934,7 +2051,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "customer_profile_id" }, "IX_customer_profile_id")
                         .IsUnique();
 
-                    b.ToTable("mk_customer_profiles", (string)null);
+                    b.ToTable("mk_customer_profiles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>
@@ -1016,7 +2133,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "vendor_id" }, "idx_vendor_id")
                         .IsUnique();
 
-                    b.ToTable("ap_Vendors", (string)null);
+                    b.ToTable("ap_Vendors");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ar_Customers", b =>
@@ -1107,7 +2224,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "price_tier_id" }, "idx_price_tier_id");
 
-                    b.ToTable("ar_Customers", (string)null);
+                    b.ToTable("ar_Customers");
                 });
 
             modelBuilder.Entity("Faahi.Model.co_business.co_address", b =>
@@ -1167,7 +2284,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("co_businesscompany_id");
 
-                    b.ToTable("co_address", (string)null);
+                    b.ToTable("co_address");
                 });
 
             modelBuilder.Entity("Faahi.Model.co_business.co_avl_countries", b =>
@@ -1206,7 +2323,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("avl_countries_id");
 
-                    b.ToTable("co_avl_countries", (string)null);
+                    b.ToTable("co_avl_countries");
                 });
 
             modelBuilder.Entity("Faahi.Model.co_business.co_business", b =>
@@ -1306,7 +2423,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("tin_number");
 
-                    b.ToTable("co_business", (string)null);
+                    b.ToTable("co_business");
                 });
 
             modelBuilder.Entity("Faahi.Model.countries.avl_countries", b =>
@@ -1344,7 +2461,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("avl_countries_id");
 
-                    b.ToTable("avl_countries", (string)null);
+                    b.ToTable("avl_countries");
                 });
 
             modelBuilder.Entity("Faahi.Model.countries.fx_Currencies", b =>
@@ -1379,7 +2496,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("currency_name");
 
-                    b.ToTable("fx_Currencies", (string)null);
+                    b.ToTable("fx_Currencies");
                 });
 
             modelBuilder.Entity("Faahi.Model.countries.fx_timezones", b =>
@@ -1406,7 +2523,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("fx_Currenciescurrency_id");
 
-                    b.ToTable("fx_Timezones", (string)null);
+                    b.ToTable("fx_Timezones");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_AttributeValues", b =>
@@ -1434,7 +2551,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_ProductAttributesattribute_id");
 
-                    b.ToTable("im_AttributeValues", (string)null);
+                    b.ToTable("im_AttributeValues");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptHeaders", b =>
@@ -1566,7 +2683,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "supplier_id", "receipt_date" }, "IX_im_GoodsReceiptHeaders_supplier")
                         .IsDescending();
 
-                    b.ToTable("im_GoodsReceiptHeaders", (string)null);
+                    b.ToTable("im_GoodsReceiptHeaders");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptLineBatches", b =>
@@ -1649,7 +2766,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "business_id", "store_id", "variant_id", "batch_no", "expiry_date" }, "IX_im_GoodsReceiptLineBatches_variant_batch");
 
-                    b.ToTable("im_GoodsReceiptLineBatches", (string)null);
+                    b.ToTable("im_GoodsReceiptLineBatches");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_GoodsReceiptLines", b =>
@@ -1795,7 +2912,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "business_id", "store_id", "variant_id" }, "IX_im_GoodsReceiptLines_variant");
 
-                    b.ToTable("im_GoodsReceiptLines", (string)null);
+                    b.ToTable("im_GoodsReceiptLines");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_InventoryLedger", b =>
@@ -1858,7 +2975,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("variant_id");
 
-                    b.ToTable("im_InventoryLedger", (string)null);
+                    b.ToTable("im_InventoryLedger");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_InventoryTransactions", b =>
@@ -1924,7 +3041,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "transaction_id" }, "IX_transaction_id")
                         .IsUnique();
 
-                    b.ToTable("im_InventoryTransactions", (string)null);
+                    b.ToTable("im_InventoryTransactions");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ItemBatches", b =>
@@ -2031,7 +3148,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "IX_variant_id");
 
-                    b.ToTable("im_itemBatches", null, t =>
+                    b.ToTable("im_itemBatches", t =>
                         {
                             t.HasCheckConstraint("CK_im_itemBatches_expiry_date", "[expiry_date] > GETDATE()");
 
@@ -2094,7 +3211,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("variant_id");
 
-                    b.ToTable("im_Lots", (string)null);
+                    b.ToTable("im_Lots");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_PriceTiers", b =>
@@ -2122,7 +3239,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_product_subvariantsub_variant_id");
 
-                    b.ToTable("im_PriceTiers", (string)null);
+                    b.ToTable("im_PriceTiers");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductAttributes", b =>
@@ -2146,7 +3263,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("name");
 
-                    b.ToTable("im_ProductAttributes", (string)null);
+                    b.ToTable("im_ProductAttributes");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductCategories", b =>
@@ -2187,7 +3304,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("parent_id");
 
-                    b.ToTable("im_ProductCategories", (string)null);
+                    b.ToTable("im_ProductCategories");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductImages", b =>
@@ -2228,7 +3345,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "variant_id");
 
-                    b.ToTable("im_ProductImages", (string)null);
+                    b.ToTable("im_ProductImages");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductVariantPrices", b =>
@@ -2265,7 +3382,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_PriceTiersprice_tier_id");
 
-                    b.ToTable("im_ProductVariantPrices", (string)null);
+                    b.ToTable("im_ProductVariantPrices");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_ProductVariants", b =>
@@ -2342,7 +3459,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "variant_id");
 
-                    b.ToTable("im_ProductVariants", (string)null);
+                    b.ToTable("im_ProductVariants");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_Products", b =>
@@ -2474,7 +3591,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "sub_sub_category_id" }, "sub_sub_category_id");
 
-                    b.ToTable("im_Products", (string)null);
+                    b.ToTable("im_Products");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_SellerInventory", b =>
@@ -2542,7 +3659,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("variant_id");
 
-                    b.ToTable("im_SellerInventory", (string)null);
+                    b.ToTable("im_SellerInventory");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_StoreVariantInventory", b =>
@@ -2585,7 +3702,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "variant_id");
 
-                    b.ToTable("im_StoreVariantInventory", (string)null);
+                    b.ToTable("im_StoreVariantInventory");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_UnitsOfMeasure", b =>
@@ -2602,7 +3719,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("uom_id");
 
-                    b.ToTable("im_UnitsOfMeasures", (string)null);
+                    b.ToTable("im_UnitsOfMeasures");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_VariantAttributes", b =>
@@ -2635,7 +3752,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "varient_attribute_id" }, "varient_attribute_id");
 
-                    b.ToTable("im_VariantAttributes", (string)null);
+                    b.ToTable("im_VariantAttributes");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_bin_location", b =>
@@ -2655,7 +3772,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("bin_location_id");
 
-                    b.ToTable("im_bin_locations", (string)null);
+                    b.ToTable("im_bin_locations");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_item_Category", b =>
@@ -2704,7 +3821,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("item_class_id");
 
-                    b.ToTable("im_item_Category", (string)null);
+                    b.ToTable("im_item_Category");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_item_site", b =>
@@ -2758,7 +3875,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_sitesite_id");
 
-                    b.ToTable("im_item_site", (string)null);
+                    b.ToTable("im_item_site");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_item_subcategory", b =>
@@ -2793,7 +3910,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("im_item_Categoryitem_class_id");
 
-                    b.ToTable("im_item_subcategory", (string)null);
+                    b.ToTable("im_item_subcategory");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_product_subvariant", b =>
@@ -2885,7 +4002,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("sub_variant_id");
 
-                    b.ToTable("im_product_subvariant", (string)null);
+                    b.ToTable("im_product_subvariant");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_products_tag", b =>
@@ -2908,7 +4025,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("tag_id");
 
-                    b.ToTable("im_products_tag", (string)null);
+                    b.ToTable("im_products_tag");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_listing", b =>
@@ -2998,7 +4115,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "vendor_id" }, "vendor_id");
 
-                    b.ToTable("im_purchase_listing", (string)null);
+                    b.ToTable("im_purchase_listing");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_listing_details", b =>
@@ -3126,7 +4243,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "sub_variant_id" }, "sub_variant_id");
 
-                    b.ToTable("im_purchase_listing_details", (string)null);
+                    b.ToTable("im_purchase_listing_details");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_details_line", b =>
@@ -3204,7 +4321,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "return_id" }, "return_id");
 
-                    b.ToTable("im_purchase_return_details_line", (string)null);
+                    b.ToTable("im_purchase_return_details_line");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_purchase_return_header", b =>
@@ -3294,7 +4411,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "vendor_id" }, "vendor_id");
 
-                    b.ToTable("im_purchase_return_header", (string)null);
+                    b.ToTable("im_purchase_return_header");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_site", b =>
@@ -3330,7 +4447,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("site_id");
 
-                    b.ToTable("im_site", (string)null);
+                    b.ToTable("im_site");
                 });
 
             modelBuilder.Entity("Faahi.Model.im_products.im_site_users", b =>
@@ -3394,7 +4511,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("userId");
 
-                    b.ToTable("im_site_users", (string)null);
+                    b.ToTable("im_site_users");
                 });
 
             modelBuilder.Entity("Faahi.Model.pos_tables.pos_DrawerCountDetails", b =>
@@ -3445,7 +4562,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "payment_method_id" }, "IX_payment_method_id");
 
-                    b.ToTable("pos_DrawerCountDetails", (string)null);
+                    b.ToTable("pos_DrawerCountDetails");
                 });
 
             modelBuilder.Entity("Faahi.Model.pos_tables.pos_DrawerSessions", b =>
@@ -3520,7 +4637,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "terminal_id" }, "IX_terminal_id");
 
-                    b.ToTable("pos_DrawerSessions", (string)null);
+                    b.ToTable("pos_DrawerSessions");
                 });
 
             modelBuilder.Entity("Faahi.Model.pos_tables.pos_SalePayments", b =>
@@ -3622,7 +4739,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "terminal_id" }, "IX_terminal_id");
 
-                    b.ToTable("pos_SalePayments", (string)null);
+                    b.ToTable("pos_SalePayments");
                 });
 
             modelBuilder.Entity("Faahi.Model.sales.pos_ReturnsalePayments", b =>
@@ -3724,7 +4841,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "terminal_id" }, "IX_terminal_id");
 
-                    b.ToTable("pos_ReturnsalePayments", (string)null);
+                    b.ToTable("pos_ReturnsalePayments");
                 });
 
             modelBuilder.Entity("Faahi.Model.sales.so_SalesHeaders", b =>
@@ -4013,7 +5130,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "store_id" }, "IX_store_id");
 
-                    b.ToTable("so_SalesHeaders", null, t =>
+                    b.ToTable("so_SalesHeaders", t =>
                         {
                             t.HasCheckConstraint("CK_so_SalesHeaders_Totals_NonNegative", "sub_total >= 0 AND discount_total >= 0 AND tax_total >= 0 AND grand_total >= 0 AND sub_total_base >= 0 AND discount_total_base >= 0 AND tax_total_base >= 0 AND grand_total_base >= 0");
                         });
@@ -4221,7 +5338,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "variant_id" }, "IX_variant_id");
 
-                    b.ToTable("so_SalesLines", null, t =>
+                    b.ToTable("so_SalesLines", t =>
                         {
                             t.HasCheckConstraint("CK_so_SalesLines_Amounts", "unit_price >= 0 AND discount_amount >= 0 AND tax_amount >= 0 AND discount_percent >= 0 AND fx_rate_to_base > 0");
                         });
@@ -4338,7 +5455,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "store_id" }, "IX_store_id");
 
-                    b.ToTable("so_SalesReturnHeaders", (string)null);
+                    b.ToTable("so_SalesReturnHeaders");
                 });
 
             modelBuilder.Entity("Faahi.Model.sales.so_SalesReturnLines", b =>
@@ -4467,7 +5584,7 @@ namespace Faahi.Migrations
                     b.HasIndex(new[] { "sales_return_line_id" }, "IX_sales_return_line_id")
                         .IsUnique();
 
-                    b.ToTable("so_SalesReturnLines", (string)null);
+                    b.ToTable("so_SalesReturnLines");
                 });
 
             modelBuilder.Entity("Faahi.Model.sales.so_payment_type", b =>
@@ -4514,7 +5631,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("business_id");
 
-                    b.ToTable("so_Payment_Types", (string)null);
+                    b.ToTable("so_Payment_Types");
                 });
 
             modelBuilder.Entity("Faahi.Model.st_sellers.st_Users", b =>
@@ -4563,7 +5680,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("status");
 
-                    b.ToTable("st_Users", (string)null);
+                    b.ToTable("st_Users");
                 });
 
             modelBuilder.Entity("Faahi.Model.st_sellers.st_stores", b =>
@@ -4668,7 +5785,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex("store_type");
 
-                    b.ToTable("st_stores", (string)null);
+                    b.ToTable("st_stores");
                 });
 
             modelBuilder.Entity("Faahi.Model.table_key.am_table_next_key", b =>
@@ -4692,7 +5809,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("next_key_id");
 
-                    b.ToTable("am_table_next_key", (string)null);
+                    b.ToTable("am_table_next_key");
                 });
 
             modelBuilder.Entity("Faahi.Model.table_key.super_abi", b =>
@@ -4705,7 +5822,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("description");
 
-                    b.ToTable("super_abi", (string)null);
+                    b.ToTable("super_abi");
                 });
 
             modelBuilder.Entity("Faahi.Model.table_key.super_admin_keys", b =>
@@ -4721,7 +5838,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("name");
 
-                    b.ToTable("super_admin_keys", (string)null);
+                    b.ToTable("super_admin_keys");
                 });
 
             modelBuilder.Entity("Faahi.Model.tax_class_table.tx_TaxClasses", b =>
@@ -4749,7 +5866,7 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "tax_class_name" }, "IX_tax_class_name");
 
-                    b.ToTable("tx_TaxClasses", (string)null);
+                    b.ToTable("tx_TaxClasses");
                 });
 
             modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_purchase_listing_details", b =>
@@ -4855,7 +5972,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("temp_detail_id");
 
-                    b.ToTable("temp_Im_Purchase_Listing_Details", (string)null);
+                    b.ToTable("temp_Im_Purchase_Listing_Details");
                 });
 
             modelBuilder.Entity("Faahi.Model.temp_tables.temp_im_variant", b =>
@@ -4905,7 +6022,226 @@ namespace Faahi.Migrations
 
                     b.HasIndex(new[] { "temp_variant_id" }, "temp_variant_id");
 
-                    b.ToTable("temp_im_variants", (string)null);
+                    b.ToTable("temp_im_variants");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.AccountType", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.AccountType", "Parent")
+                        .WithMany()
+                        .HasForeignKey("AccountParentId");
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_ChequeLines", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.ap_Cheques", "Cheque")
+                        .WithMany("ChequeLines")
+                        .HasForeignKey("ChequeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cheque");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_ChequesAttachments", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.ap_Cheques", "Cheque")
+                        .WithMany("Attachments")
+                        .HasForeignKey("ChequeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cheque");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_ExpenseLines", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.ap_Expenses", "Expense")
+                        .WithMany("ExpenseLines")
+                        .HasForeignKey("ExpenseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Expense");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_ExpensesAttachments", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.ap_Expenses", "Expense")
+                        .WithMany("Attachments")
+                        .HasForeignKey("ExpenseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Expense");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_PaymentAllocations", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.ap_Payments", "Payment")
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_PaymentAttachments", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.ap_Payments", "Payment")
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_PaymentLines", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.gl_Accounts", "ExpenseAccount")
+                        .WithMany()
+                        .HasForeignKey("ExpenseAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Faahi.Model.Accounts.ap_Payments", "Payment")
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExpenseAccount");
+
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_AccountMapping", b =>
+                {
+                    b.HasOne("Faahi.Model.co_business.co_business", "CoBusiness")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Faahi.Model.Accounts.gl_Accounts", "GlAccount")
+                        .WithMany()
+                        .HasForeignKey("GlAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Faahi.Model.st_sellers.st_stores", "Store")
+                        .WithMany()
+                        .HasForeignKey("StoreId");
+
+                    b.Navigation("CoBusiness");
+
+                    b.Navigation("GlAccount");
+
+                    b.Navigation("Store");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_Accounts", b =>
+                {
+                    b.HasOne("Faahi.Model.co_business.co_business", "CoBusiness")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Faahi.Model.Accounts.gl_Accounts", "Parent")
+                        .WithMany()
+                        .HasForeignKey("ParentAccountId");
+
+                    b.Navigation("CoBusiness");
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_BusinessSettings", b =>
+                {
+                    b.HasOne("Faahi.Model.co_business.co_business", "co_business")
+                        .WithMany()
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("co_business");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_FiscalPeriods", b =>
+                {
+                    b.HasOne("Faahi.Model.co_business.co_business", "CoBusiness")
+                        .WithMany()
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CoBusiness");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_JournalAttachments", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.gl_JournalHeaders", "Journal")
+                        .WithMany("Attachments")
+                        .HasForeignKey("JournalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Journal");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_JournalLines", b =>
+                {
+                    b.HasOne("Faahi.Model.Accounts.gl_Accounts", "Account")
+                        .WithMany()
+                        .HasForeignKey("GlAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Faahi.Model.Accounts.gl_JournalHeaders", "Journal")
+                        .WithMany("JournalLines")
+                        .HasForeignKey("JournalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Journal");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_Ledger", b =>
+                {
+                    b.HasOne("Faahi.Model.co_business.co_business", null)
+                        .WithMany()
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Faahi.Model.Accounts.gl_Accounts", "GlAccount")
+                        .WithMany()
+                        .HasForeignKey("GlAccountId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Faahi.Model.Accounts.gl_JournalHeaders", "JournalHeader")
+                        .WithMany()
+                        .HasForeignKey("JournalId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Faahi.Model.Accounts.gl_JournalLines", "JournalLine")
+                        .WithMany()
+                        .HasForeignKey("JournalLineId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("GlAccount");
+
+                    b.Navigation("JournalHeader");
+
+                    b.Navigation("JournalLine");
                 });
 
             modelBuilder.Entity("Faahi.Model.Admin.sa_regions", b =>
@@ -4913,6 +6249,36 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.Admin.sa_country_regions", null)
                         .WithMany("sa_regions")
                         .HasForeignKey("sa_country_regionscountry_region_id");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Finance.fin_BankDepositAttachments", b =>
+                {
+                    b.HasOne("Faahi.Model.Finance.fin_BankDeposits", "Deposit")
+                        .WithMany("Attachments")
+                        .HasForeignKey("DepositId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Deposit");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Finance.fin_BankDepositLines", b =>
+                {
+                    b.HasOne("Faahi.Model.Finance.fin_BankDeposits", "Deposit")
+                        .WithMany("Lines")
+                        .HasForeignKey("DepositId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Faahi.Model.Accounts.gl_Accounts", "SourceAccount")
+                        .WithMany()
+                        .HasForeignKey("SourceAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Deposit");
+
+                    b.Navigation("SourceAccount");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.fin_PartyBankAccounts", b =>
@@ -4980,10 +6346,6 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.am_users.am_user_business_access", b =>
                 {
-                    b.HasOne("Faahi.Model.am_users.am_user_roles", null)
-                        .WithMany("am_user_business_access")
-                        .HasForeignKey("am_user_rolesuser_role_id");
-
                     b.HasOne("Faahi.Model.co_business.co_business", "c_business")
                         .WithMany()
                         .HasForeignKey("business_id");
@@ -4998,7 +6360,13 @@ namespace Faahi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Faahi.Model.am_users.am_user_roles", "am_user_roles")
+                        .WithMany("am_user_business_access")
+                        .HasForeignKey("user_role_id");
+
                     b.Navigation("am_Users");
+
+                    b.Navigation("am_user_roles");
 
                     b.Navigation("c_business");
 
@@ -5007,17 +6375,21 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
                 {
-                    b.HasOne("Faahi.Model.am_users.am_roles", null)
-                        .WithMany("am_user_roles")
-                        .HasForeignKey("am_rolesrole_id");
-
                     b.HasOne("Faahi.Model.co_business.co_business", "c_business")
                         .WithMany()
                         .HasForeignKey("business_id");
 
+                    b.HasOne("Faahi.Model.am_users.am_roles", "am_roles")
+                        .WithMany("am_user_roles")
+                        .HasForeignKey("role_id");
+
                     b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
                         .WithMany()
                         .HasForeignKey("store_id");
+
+                    b.HasOne("Faahi.Model.st_sellers.st_Users", "st_Users")
+                        .WithMany()
+                        .HasForeignKey("store_user_id");
 
                     b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
                         .WithMany()
@@ -5027,9 +6399,13 @@ namespace Faahi.Migrations
 
                     b.Navigation("am_Users");
 
+                    b.Navigation("am_roles");
+
                     b.Navigation("c_business");
 
                     b.Navigation("st_Stores");
+
+                    b.Navigation("st_Users");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_addresses", b =>
@@ -5611,9 +6987,37 @@ namespace Faahi.Migrations
                     b.Navigation("co_business");
                 });
 
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_Cheques", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("ChequeLines");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.ap_Expenses", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("ExpenseLines");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Accounts.gl_JournalHeaders", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("JournalLines");
+                });
+
             modelBuilder.Entity("Faahi.Model.Admin.sa_country_regions", b =>
                 {
                     b.Navigation("sa_regions");
+                });
+
+            modelBuilder.Entity("Faahi.Model.Finance.fin_BankDeposits", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("Faahi.Model.Shared_tables.st_Parties", b =>
