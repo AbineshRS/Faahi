@@ -217,7 +217,7 @@ namespace Faahi.Service.Accounts
 
                 if (isBs)
                 {
-                    if (accounts.OpeningBalance > 0m)
+                    if (accounts.OpeningBalance != 0m)
                     {
                         var obeAccount = await EnsureOpeningBalanceEquityAccountAsync(accounts.CompanyId);
                         var amount = Math.Abs(accounts.OpeningBalance);
@@ -2899,6 +2899,7 @@ namespace Faahi.Service.Accounts
             await _context.SaveChangesAsync();
             return new ServiceResult<string> { Success = true, Status = 1, Message = "Attachments uploaded" };
         }
+
 
         public async Task<ServiceResult<string>> Upload_expense_attachments(Guid expenseId, List<IFormFile> files)
         {
