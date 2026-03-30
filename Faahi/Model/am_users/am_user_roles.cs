@@ -3,6 +3,7 @@ using Faahi.Model.st_sellers;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Faahi.Model.am_users
 {
@@ -14,17 +15,29 @@ namespace Faahi.Model.am_users
         [Column(TypeName = "uniqueidentifier")]
         public Guid user_role_id { get; set; }
 
-
+        [JsonIgnore]
         [ForeignKey(nameof(user_id))]
         public am_users am_Users { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid user_id { get; set; }
+
+        [JsonIgnore]
+        [ForeignKey(nameof(role_id))]
+        public am_roles am_roles { get; set; }
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? role_id { get; set; }
 
 
         [ForeignKey(nameof(business_id))]
         public Faahi.Model.co_business.co_business c_business { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid? business_id { get; set; }=null;
+
+
+        [ForeignKey(nameof(store_user_id))]
+        public st_Users st_Users { get; set; }
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? store_user_id { get; set; }=null;
 
 
         [ForeignKey(nameof(store_id))]

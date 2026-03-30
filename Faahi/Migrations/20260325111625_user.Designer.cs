@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260325111625_user")]
+    partial class user
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1754,9 +1757,6 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("am_usersuserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("description")
                         .HasColumnType("varchar(300)");
 
@@ -1780,12 +1780,12 @@ namespace Faahi.Migrations
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
 
-                    b.Property<Guid>("user_ids")
+                    b.Property<Guid>("userId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("role_id");
 
-                    b.HasIndex("am_usersuserId");
+                    b.HasIndex("userId");
 
                     b.ToTable("am_roles");
                 });
@@ -1799,6 +1799,9 @@ namespace Faahi.Migrations
                     b.Property<string>("access_level")
                         .IsRequired()
                         .HasColumnType("varchar(30)");
+
+                    b.Property<Guid?>("am_user_rolesuser_role_id")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("business_id")
                         .HasColumnType("uniqueidentifier");
@@ -1817,14 +1820,11 @@ namespace Faahi.Migrations
                     b.Property<Guid>("user_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("user_role_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("access_id");
 
-                    b.HasIndex("store_id");
+                    b.HasIndex("am_user_rolesuser_role_id");
 
-                    b.HasIndex("user_role_id");
+                    b.HasIndex("store_id");
 
                     b.HasIndex(new[] { "user_id", "business_id", "store_id" }, "IX_am_user_business_access_user_business_store");
 
@@ -1839,19 +1839,16 @@ namespace Faahi.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("am_rolesrole_id")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("business_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("created_at")
                         .HasColumnType("datetime");
 
-                    b.Property<Guid?>("role_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("store_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("store_user_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("user_id")
@@ -1859,11 +1856,9 @@ namespace Faahi.Migrations
 
                     b.HasKey("user_role_id");
 
-                    b.HasIndex("role_id");
+                    b.HasIndex("am_rolesrole_id");
 
                     b.HasIndex("store_id");
-
-                    b.HasIndex("store_user_id");
 
                     b.HasIndex(new[] { "business_id", "store_id" }, "IX_am_user_roles_business_store");
 
@@ -6339,13 +6334,21 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.am_users.am_roles", b =>
                 {
-                    b.HasOne("Faahi.Model.am_users.am_users", null)
+                    b.HasOne("Faahi.Model.am_users.am_users", "am_users")
                         .WithMany("am_roles")
-                        .HasForeignKey("am_usersuserId");
+                        .HasForeignKey("userId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("am_users");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.am_user_business_access", b =>
                 {
+                    b.HasOne("Faahi.Model.am_users.am_user_roles", null)
+                        .WithMany("am_user_business_access")
+                        .HasForeignKey("am_user_rolesuser_role_id");
+
                     b.HasOne("Faahi.Model.co_business.co_business", "c_business")
                         .WithMany()
                         .HasForeignKey("business_id");
@@ -6360,13 +6363,7 @@ namespace Faahi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Faahi.Model.am_users.am_user_roles", "am_user_roles")
-                        .WithMany("am_user_business_access")
-                        .HasForeignKey("user_role_id");
-
                     b.Navigation("am_Users");
-
-                    b.Navigation("am_user_roles");
 
                     b.Navigation("c_business");
 
@@ -6375,21 +6372,17 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.am_users.am_user_roles", b =>
                 {
+                    b.HasOne("Faahi.Model.am_users.am_roles", null)
+                        .WithMany("am_user_roles")
+                        .HasForeignKey("am_rolesrole_id");
+
                     b.HasOne("Faahi.Model.co_business.co_business", "c_business")
                         .WithMany()
                         .HasForeignKey("business_id");
 
-                    b.HasOne("Faahi.Model.am_users.am_roles", "am_roles")
-                        .WithMany("am_user_roles")
-                        .HasForeignKey("role_id");
-
                     b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
                         .WithMany()
                         .HasForeignKey("store_id");
-
-                    b.HasOne("Faahi.Model.st_sellers.st_Users", "st_Users")
-                        .WithMany()
-                        .HasForeignKey("store_user_id");
 
                     b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
                         .WithMany()
@@ -6399,13 +6392,9 @@ namespace Faahi.Migrations
 
                     b.Navigation("am_Users");
 
-                    b.Navigation("am_roles");
-
                     b.Navigation("c_business");
 
                     b.Navigation("st_Stores");
-
-                    b.Navigation("st_Users");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_addresses", b =>

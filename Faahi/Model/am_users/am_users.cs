@@ -11,7 +11,7 @@ namespace Faahi.Model.am_users
     {
         [Key]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? userId { get; set; }
+        public Guid userId { get; set; }
 
         [Column(TypeName = "varchar(32)")]
         public string? userName { get; set; }
@@ -20,7 +20,7 @@ namespace Faahi.Model.am_users
         public string? password { get; set; } = null;
 
         [Column(TypeName = "varchar(50)")]
-        public string firstName { get; set; } = string.Empty;
+        public string? firstName { get; set; } = string.Empty;
 
         [Column(TypeName = "varchar(50)")]
         public string? lastName { get; set; } = null;

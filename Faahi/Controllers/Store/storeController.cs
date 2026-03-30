@@ -129,7 +129,7 @@ namespace Faahi.Controllers.Store
             var result = await _istore.Create_store_access(st_UserStoreAccess);
             return Ok(result);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_store_by_email/{email}")]
         public async Task<ActionResult> Get_store_by_email(string email)
