@@ -21,6 +21,7 @@ namespace Faahi.Service.Users
         }
         public async Task<ServiceResult<st_Parties>> Create_vendors(st_Parties st_Parties)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_Parties == null)
             {
                 _logger.LogWarning("Create_vendors: No data found");
@@ -81,7 +82,7 @@ namespace Faahi.Service.Users
                 await _context.st_Parties.AddAsync(st_Parties);
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<st_Parties>
                 {
                     Success = true,
@@ -92,6 +93,7 @@ namespace Faahi.Service.Users
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "An error occurred while creating a vendor.");
                 return new ServiceResult<st_Parties>
                 {
@@ -106,6 +108,7 @@ namespace Faahi.Service.Users
         }
         public async Task<ServiceResult<st_Parties>> Create_customer(st_Parties st_Parties)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_Parties == null)
             {
                 _logger.LogWarning("Create_customer: No data found");
@@ -169,7 +172,7 @@ namespace Faahi.Service.Users
                 await _context.st_Parties.AddAsync(st_Parties);
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<st_Parties>
                 {
                     Success = true,
@@ -181,6 +184,7 @@ namespace Faahi.Service.Users
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "An error occurred while creating a customer.");
                 return new ServiceResult<st_Parties>
                 {
@@ -193,310 +197,344 @@ namespace Faahi.Service.Users
         }
         public async Task<ServiceResult<ar_Customers>> Update_arcustomer(Guid customer_id, ar_Customers ar_Customers)
         {
-            if (customer_id == null || ar_Customers == null)
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                _logger.LogWarning("No data to found insert");
+                if (customer_id == null || ar_Customers == null)
+                {
+                    _logger.LogWarning("No data to found insert");
+                    return new ServiceResult<ar_Customers>
+                    {
+                        Status = -1,
+                        Success = false,
+                        Message = "No data found to insert",
+                        Data = null
+                    };
+                }
+                var customer = await _context.ar_Customers.Include(a => a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.customer_id == customer_id);
+
+                customer.contact_name = ar_Customers.contact_name;
+                customer.contact_phone1 = ar_Customers.contact_phone1;
+                customer.contact_phone2 = ar_Customers.contact_phone2;
+                customer.contact_email = ar_Customers.contact_email;
+                customer.credit_limit = ar_Customers.credit_limit;
+                customer.tex_identification_number = ar_Customers.tex_identification_number;
+                customer.default_currency = ar_Customers.default_currency;
+                customer.updated_at = DateTime.Now;
+
+                var existing_bank = await _context.fin_PartyBankAccounts.Where(a => a.customer_id == customer_id).ToListAsync();
+                var newbank = ar_Customers.fin_PartyBankAccounts.Select(a => a.party_account_id).ToList();
+                var delete_bank = existing_bank.Where(a => !newbank.Contains(a.party_account_id)).ToList();
+                if (delete_bank.Any())
+                {
+                    foreach (var bank in delete_bank)
+                    {
+                        _context.fin_PartyBankAccounts.Remove(bank);
+                    }
+                }
+
+                var exisitng_add = await _context.st_PartyAddresses.Where(a => a.customer_id == customer_id).ToListAsync();
+                var newAddressIds = ar_Customers.st_PartyAddresses.Select(c => c.address_id).ToList();
+                var delete_address = exisitng_add.Where(a => !newAddressIds.Contains(a.address_id)).ToList();
+                if (delete_address.Any())
+                {
+                    foreach (var addre in delete_address)
+                    {
+                        _context.st_PartyAddresses.Remove(addre);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+                foreach (var bank in ar_Customers.fin_PartyBankAccounts)
+                {
+                    var existing_bank_details = await _context.fin_PartyBankAccounts.FirstOrDefaultAsync(a => a.party_account_id == bank.party_account_id);
+                    if (existing_bank_details != null)
+                    {
+                        existing_bank_details.customer_id = customer.customer_id;
+                        existing_bank_details.bank_name = bank.bank_name;
+                        existing_bank_details.account_holder_name = bank.account_holder_name;
+                        existing_bank_details.account_number = bank.account_number;
+                        existing_bank_details.routing_number = bank.routing_number;
+                        existing_bank_details.swift_code = bank.swift_code;
+                        existing_bank_details.iban = bank.iban;
+                        existing_bank_details.currency = bank.currency;
+                        existing_bank_details.created_at = bank.created_at;
+                        existing_bank_details.is_default = bank.is_default;
+                        _context.fin_PartyBankAccounts.Update(existing_bank_details);
+                        customer.fin_PartyBankAccounts.Add(existing_bank_details);
+                    }
+                    else
+                    {
+                        bank.party_account_id = Guid.CreateVersion7();
+                        bank.customer_id = customer.customer_id;
+                        bank.bank_name = bank.bank_name;
+                        bank.account_holder_name = bank.account_holder_name;
+                        bank.account_number = bank.account_number;
+                        bank.routing_number = bank.routing_number;
+                        bank.swift_code = bank.swift_code;
+                        bank.iban = bank.iban;
+                        bank.currency = bank.currency;
+                        bank.created_at = bank.created_at;
+                        bank.is_default = bank.is_default;
+                        _context.fin_PartyBankAccounts.Add(bank);
+                        customer.fin_PartyBankAccounts.Add(bank);
+                    }
+
+                }
+                foreach (var address in ar_Customers.st_PartyAddresses)
+                {
+
+                    var existing_address = await _context.st_PartyAddresses.FirstOrDefaultAsync(a => a.address_id == address.address_id);
+                    if (existing_address == null)
+                    {
+                        st_PartyAddresses st_PartyAddresses = new st_PartyAddresses();
+                        st_PartyAddresses.address_id = Guid.CreateVersion7();
+                        st_PartyAddresses.customer_id = customer_id;
+                        st_PartyAddresses.address_type = address.address_type;
+                        st_PartyAddresses.line1 = address.line1;
+                        st_PartyAddresses.line2 = address.line2;
+                        st_PartyAddresses.region = address.region;
+                        st_PartyAddresses.postal_code = address.postal_code;
+                        st_PartyAddresses.country = address.country;
+                        st_PartyAddresses.created_at = DateTime.Now;
+                        st_PartyAddresses.updated_at = DateTime.Now;
+                        st_PartyAddresses.is_default = address.is_default;
+                        if (address.address_type == "shipping" && address.is_default == "T")
+                        {
+                            customer.default_shipping_address_id = st_PartyAddresses.address_id;
+
+                        }
+                        else if (address.address_type == "shipping" && address.is_default == "F")
+                        {
+                            customer.default_shipping_address_id = null;
+                        }
+                        if (address.address_type == "billing" && address.is_default == "T")
+                        {
+                            customer.default_billing_address_id = st_PartyAddresses.address_id;
+
+                        }
+                        else if (address.address_type == "billing" && address.is_default == "F")
+                        {
+                            customer.default_billing_address_id = null;
+                        }
+
+                        _context.st_PartyAddresses.Add(st_PartyAddresses);
+                        customer.st_PartyAddresses.Add(st_PartyAddresses);
+                    }
+                    else
+                    {
+                        existing_address.address_type = address.address_type;
+                        existing_address.line1 = address.line1;
+                        existing_address.line2 = address.line2;
+                        existing_address.region = address.region;
+                        existing_address.postal_code = address.postal_code;
+                        existing_address.country = address.country;
+                        existing_address.updated_at = DateTime.Now;
+                        existing_address.is_default = address.is_default;
+
+                        if (address.address_type == "shipping" && address.is_default == "T")
+                        {
+                            customer.default_shipping_address_id = existing_address.address_id;
+
+                        }
+                        else if (address.address_type == "shipping" && address.is_default == "F")
+                        {
+                            customer.default_shipping_address_id = null;
+                        }
+
+                        if (address.address_type == "billing" && address.is_default == "T")
+                        {
+                            customer.default_billing_address_id = existing_address.address_id;
+
+                        }
+                        else if (address.address_type == "billing" && address.is_default == "F")
+                        {
+                            customer.default_billing_address_id = null;
+                        }
+
+
+
+                        _context.st_PartyAddresses.Update(existing_address);
+                        customer.st_PartyAddresses.Add(existing_address);
+
+                    }
+
+
+                }
+                _context.ar_Customers.Update(customer);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<ar_Customers>
                 {
-                    Status = -1,
-                    Success = false,
-                    Message = "No data found to insert",
-                    Data = null
+                    Status = 1,
+                    Success = true,
+                    Message = "updated",
+                    Data = customer
                 };
             }
-            var customer = await _context.ar_Customers.Include(a=>a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.customer_id == customer_id);
-
-            customer.contact_name = ar_Customers.contact_name;
-            customer.contact_phone1 = ar_Customers.contact_phone1;
-            customer.contact_phone2 = ar_Customers.contact_phone2;
-            customer.contact_email = ar_Customers.contact_email;
-            customer.credit_limit = ar_Customers.credit_limit;
-            customer.tex_identification_number = ar_Customers.tex_identification_number;
-            customer.default_currency = ar_Customers.default_currency;
-            customer.updated_at = DateTime.Now;
-
-            var existing_bank = await _context.fin_PartyBankAccounts.Where(a => a.customer_id == customer_id).ToListAsync();
-            var newbank = ar_Customers.fin_PartyBankAccounts.Select(a => a.party_account_id).ToList();
-            var delete_bank = existing_bank.Where(a => !newbank.Contains(a.party_account_id)).ToList();
-            if (delete_bank.Any())
+            catch(Exception ex)
             {
-                foreach (var bank in delete_bank)
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "An error occurred while updating a customer.");
+                return new ServiceResult<ar_Customers>
                 {
-                    _context.fin_PartyBankAccounts.Remove(bank);
-                }
+                    Success = false,
+                    Message = "An error occurred while updating the customer.",
+                    Status = -1
+                };
             }
-
-            var exisitng_add = await _context.st_PartyAddresses.Where(a => a.customer_id == customer_id).ToListAsync();
-            var newAddressIds = ar_Customers.st_PartyAddresses.Select(c => c.address_id).ToList();
-            var delete_address = exisitng_add.Where(a => !newAddressIds.Contains(a.address_id)).ToList();
-            if (delete_address.Any())
-            {
-                foreach (var addre in delete_address)
-                {
-                    _context.st_PartyAddresses.Remove(addre);
-                }
-                await _context.SaveChangesAsync();
-            }
-            foreach (var bank in ar_Customers.fin_PartyBankAccounts)
-            {
-                var existing_bank_details = await _context.fin_PartyBankAccounts.FirstOrDefaultAsync(a => a.party_account_id == bank.party_account_id);
-                if (existing_bank_details != null)
-                {
-                    existing_bank_details.customer_id = customer.customer_id;
-                    existing_bank_details.bank_name = bank.bank_name;
-                    existing_bank_details.account_holder_name = bank.account_holder_name;
-                    existing_bank_details.account_number = bank.account_number;
-                    existing_bank_details.routing_number = bank.routing_number;
-                    existing_bank_details.swift_code = bank.swift_code;
-                    existing_bank_details.iban = bank.iban;
-                    existing_bank_details.currency = bank.currency;
-                    existing_bank_details.created_at = bank.created_at;
-                    existing_bank_details.is_default = bank.is_default;
-                    _context.fin_PartyBankAccounts.Update(existing_bank_details);
-                    customer.fin_PartyBankAccounts.Add(existing_bank_details);
-                }
-                else
-                {
-                    bank.party_account_id = Guid.CreateVersion7();
-                    bank.customer_id = customer.customer_id;
-                    bank.bank_name = bank.bank_name;
-                    bank.account_holder_name = bank.account_holder_name;
-                    bank.account_number = bank.account_number;
-                    bank.routing_number = bank.routing_number;
-                    bank.swift_code = bank.swift_code;
-                    bank.iban = bank.iban;
-                    bank.currency = bank.currency;
-                    bank.created_at = bank.created_at;
-                    bank.is_default = bank.is_default;
-                    _context.fin_PartyBankAccounts.Add(bank);
-                    customer.fin_PartyBankAccounts.Add(bank);
-                }
-
-            }
-            foreach (var address in ar_Customers.st_PartyAddresses)
-            {
-
-                var existing_address = await _context.st_PartyAddresses.FirstOrDefaultAsync(a => a.address_id == address.address_id);
-                if (existing_address == null)
-                {
-                    st_PartyAddresses st_PartyAddresses = new st_PartyAddresses();
-                    st_PartyAddresses.address_id = Guid.CreateVersion7();
-                    st_PartyAddresses.customer_id = customer_id;
-                    st_PartyAddresses.address_type = address.address_type;
-                    st_PartyAddresses.line1 = address.line1;
-                    st_PartyAddresses.line2 = address.line2;
-                    st_PartyAddresses.region = address.region;
-                    st_PartyAddresses.postal_code = address.postal_code;
-                    st_PartyAddresses.country = address.country;
-                    st_PartyAddresses.created_at = DateTime.Now;
-                    st_PartyAddresses.updated_at = DateTime.Now;
-                    st_PartyAddresses.is_default = address.is_default;
-                    if (address.address_type == "shipping" && address.is_default == "T")
-                    {
-                        customer.default_shipping_address_id = st_PartyAddresses.address_id;
-
-                    }
-                    else if (address.address_type == "shipping" && address.is_default == "F")
-                    {
-                        customer.default_shipping_address_id = null;
-                    }
-                    if (address.address_type == "billing" && address.is_default == "T")
-                    {
-                        customer.default_billing_address_id = st_PartyAddresses.address_id;
-
-                    }
-                    else if (address.address_type == "billing" && address.is_default == "F")
-                    {
-                        customer.default_billing_address_id = null;
-                    }
-
-                    _context.st_PartyAddresses.Add(st_PartyAddresses);
-                    customer.st_PartyAddresses.Add(st_PartyAddresses);
-                }
-                else
-                {
-                    existing_address.address_type = address.address_type;
-                    existing_address.line1 = address.line1;
-                    existing_address.line2 = address.line2;
-                    existing_address.region = address.region;
-                    existing_address.postal_code = address.postal_code;
-                    existing_address.country = address.country;
-                    existing_address.updated_at = DateTime.Now;
-                    existing_address.is_default = address.is_default;
-
-                    if (address.address_type == "shipping" && address.is_default == "T")
-                    {
-                        customer.default_shipping_address_id = existing_address.address_id;
-
-                    }
-                    else if (address.address_type == "shipping" && address.is_default == "F")
-                    {
-                        customer.default_shipping_address_id = null;
-                    }
-
-                    if (address.address_type == "billing" && address.is_default == "T")
-                    {
-                        customer.default_billing_address_id = existing_address.address_id;
-
-                    }
-                    else if (address.address_type == "billing" && address.is_default == "F")
-                    {
-                        customer.default_billing_address_id = null;
-                    }
-
-
-
-                    _context.st_PartyAddresses.Update(existing_address);
-                    customer.st_PartyAddresses.Add(existing_address);
-
-                }
-
-
-            }
-            _context.ar_Customers.Update(customer);
-            await _context.SaveChangesAsync();
-            return new ServiceResult<ar_Customers>
-            {
-                Status = 1,
-                Success = true,
-                Message = "updated",
-                Data = customer
-            };
+            
         }
         public async Task<ServiceResult<ap_Vendors>> Update_apvendor(Guid vendor_id, ap_Vendors ap_Vendors)
         {
-            if (vendor_id == null || ap_Vendors == null)
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                _logger.LogWarning("No data to found insert");
+                if (vendor_id == null || ap_Vendors == null)
+                {
+                    _logger.LogWarning("No data to found insert");
+                    return new ServiceResult<ap_Vendors>
+                    {
+                        Status = -1,
+                        Success = false,
+                        Message = "No data found to insert",
+                        Data = null
+                    };
+                }
+                var vendor = await _context.ap_Vendors.Include(a => a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
+
+                vendor.contact_name = ap_Vendors.contact_name;
+                vendor.contact_phone1 = ap_Vendors.contact_phone1;
+                vendor.contact_phone2 = ap_Vendors.contact_phone2;
+                vendor.contact_email = ap_Vendors.contact_email;
+                vendor.tex_identification_number = ap_Vendors.tex_identification_number;
+                vendor.preferred_payment_method = ap_Vendors.preferred_payment_method;
+                vendor.default_currency = ap_Vendors.default_currency;
+                vendor.updated_at = DateTime.Now;
+
+                //Bank Details
+                var existing_bank = await _context.fin_PartyBankAccounts.Where(a => a.vendor_id == vendor_id).ToListAsync();
+                var newbank = ap_Vendors.fin_PartyBankAccounts.Select(a => a.party_account_id).ToList();
+                var delete_bank = existing_bank.Where(a => !newbank.Contains(a.party_account_id)).ToList();
+                if (delete_bank.Any())
+                {
+                    foreach (var bank in delete_bank)
+                    {
+                        _context.fin_PartyBankAccounts.Remove(bank);
+                    }
+                }
+
+                //Address
+                var exisitng_add = await _context.st_PartyAddresses.Where(a => a.vendor_id == vendor_id).ToListAsync();
+                var newAddressIds = ap_Vendors.st_PartyAddresses.Select(c => c.address_id).ToList();
+                var delete_address = exisitng_add.Where(a => !newAddressIds.Contains(a.address_id)).ToList();
+                if (delete_address.Any())
+                {
+                    foreach (var addre in delete_address)
+                    {
+                        _context.st_PartyAddresses.Remove(addre);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+
+                foreach (var bank in ap_Vendors.fin_PartyBankAccounts)
+                {
+                    var existing_bank_details = await _context.fin_PartyBankAccounts.FirstOrDefaultAsync(a => a.party_account_id == bank.party_account_id);
+                    if (existing_bank_details != null)
+                    {
+                        existing_bank_details.vendor_id = vendor_id;
+                        existing_bank_details.party_id = vendor.vendor_id;
+                        existing_bank_details.bank_name = bank.bank_name;
+                        existing_bank_details.account_holder_name = bank.account_holder_name;
+                        existing_bank_details.account_number = bank.account_number;
+                        existing_bank_details.routing_number = bank.routing_number;
+                        existing_bank_details.swift_code = bank.swift_code;
+                        existing_bank_details.iban = bank.iban;
+                        existing_bank_details.currency = bank.currency;
+                        existing_bank_details.created_at = bank.created_at;
+                        existing_bank_details.is_default = bank.is_default;
+                        _context.fin_PartyBankAccounts.Update(existing_bank_details);
+                        vendor.fin_PartyBankAccounts.Add(existing_bank_details);
+                    }
+                    else
+                    {
+                        bank.party_account_id = Guid.CreateVersion7();
+                        bank.vendor_id = vendor_id;
+                        bank.party_id = vendor.vendor_id;
+                        bank.bank_name = bank.bank_name;
+                        bank.account_holder_name = bank.account_holder_name;
+                        bank.account_number = bank.account_number;
+                        bank.routing_number = bank.routing_number;
+                        bank.swift_code = bank.swift_code;
+                        bank.iban = bank.iban;
+                        bank.currency = bank.currency;
+                        bank.created_at = bank.created_at;
+                        bank.is_default = bank.is_default;
+                        _context.fin_PartyBankAccounts.Add(bank);
+                        vendor.fin_PartyBankAccounts.Add(bank);
+                    }
+
+                }
+
+                foreach (var address in ap_Vendors.st_PartyAddresses)
+                {
+
+                    var existing_address = await _context.st_PartyAddresses.FirstOrDefaultAsync(a => a.address_id == address.address_id);
+                    if (existing_address == null)
+                    {
+                        st_PartyAddresses st_PartyAddresses = new st_PartyAddresses();
+                        st_PartyAddresses.address_id = Guid.CreateVersion7();
+                        st_PartyAddresses.vendor_id = vendor_id;
+                        st_PartyAddresses.address_type = address.address_type;
+                        st_PartyAddresses.line1 = address.line1;
+                        st_PartyAddresses.line2 = address.line2;
+                        st_PartyAddresses.region = address.region;
+                        st_PartyAddresses.postal_code = address.postal_code;
+                        st_PartyAddresses.country = address.country;
+                        st_PartyAddresses.created_at = DateTime.Now;
+                        st_PartyAddresses.updated_at = DateTime.Now;
+                        st_PartyAddresses.is_default = address.is_default;
+                        _context.st_PartyAddresses.Add(st_PartyAddresses);
+                        vendor.st_PartyAddresses.Add(st_PartyAddresses);
+                    }
+                    else
+                    {
+                        existing_address.address_type = address.address_type;
+                        existing_address.line1 = address.line1;
+                        existing_address.line2 = address.line2;
+                        existing_address.region = address.region;
+                        existing_address.postal_code = address.postal_code;
+                        existing_address.country = address.country;
+                        existing_address.updated_at = DateTime.Now;
+                        existing_address.is_default = address.is_default;
+                        _context.st_PartyAddresses.Update(existing_address);
+                        vendor.st_PartyAddresses.Add(existing_address);
+
+                    }
+                }
+                _context.ap_Vendors.Update(vendor);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<ap_Vendors>
                 {
-                    Status = -1,
-                    Success = false,
-                    Message = "No data found to insert",
-                    Data = null
+                    Status = 1,
+                    Success = true,
+                    Message = "updated",
+                    Data = vendor
                 };
             }
-            var vendor = await _context.ap_Vendors.Include(a => a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
-
-            vendor.contact_name = ap_Vendors.contact_name;
-            vendor.contact_phone1 = ap_Vendors.contact_phone1;
-            vendor.contact_phone2 = ap_Vendors.contact_phone2;
-            vendor.contact_email = ap_Vendors.contact_email;
-            vendor.tex_identification_number = ap_Vendors.tex_identification_number;
-            vendor.preferred_payment_method = ap_Vendors.preferred_payment_method;
-            vendor.default_currency = ap_Vendors.default_currency;
-            vendor.updated_at = DateTime.Now;
-
-            //Bank Details
-            var existing_bank = await _context.fin_PartyBankAccounts.Where(a => a.vendor_id == vendor_id).ToListAsync();
-            var newbank = ap_Vendors.fin_PartyBankAccounts.Select(a => a.party_account_id).ToList();
-            var delete_bank = existing_bank.Where(a => !newbank.Contains(a.party_account_id)).ToList();
-            if (delete_bank.Any())
+            catch(Exception ex)
             {
-                foreach (var bank in delete_bank)
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "An error occurred while updating a vendor.");
+                return new ServiceResult<ap_Vendors>
                 {
-                    _context.fin_PartyBankAccounts.Remove(bank);
-                }
+                    Success = false,
+                    Message = "An error occurred while updating the vendor.",
+                    Status = -1
+                };
             }
-
-            //Address
-            var exisitng_add = await _context.st_PartyAddresses.Where(a => a.vendor_id == vendor_id).ToListAsync();
-            var newAddressIds = ap_Vendors.st_PartyAddresses.Select(c => c.address_id).ToList();
-            var delete_address = exisitng_add.Where(a => !newAddressIds.Contains(a.address_id)).ToList();
-            if (delete_address.Any())
-            {
-                foreach (var addre in delete_address)
-                {
-                    _context.st_PartyAddresses.Remove(addre);
-                }
-                await _context.SaveChangesAsync();
-            }
-
-
-            foreach (var bank in ap_Vendors.fin_PartyBankAccounts)
-            {
-                var existing_bank_details = await _context.fin_PartyBankAccounts.FirstOrDefaultAsync(a => a.party_account_id == bank.party_account_id);
-                if (existing_bank_details != null)
-                {
-                    existing_bank_details.vendor_id = vendor_id;
-                    existing_bank_details.party_id = vendor.vendor_id;
-                    existing_bank_details.bank_name = bank.bank_name;
-                    existing_bank_details.account_holder_name = bank.account_holder_name;
-                    existing_bank_details.account_number = bank.account_number;
-                    existing_bank_details.routing_number = bank.routing_number;
-                    existing_bank_details.swift_code = bank.swift_code;
-                    existing_bank_details.iban = bank.iban;
-                    existing_bank_details.currency = bank.currency;
-                    existing_bank_details.created_at = bank.created_at;
-                    existing_bank_details.is_default = bank.is_default;
-                    _context.fin_PartyBankAccounts.Update(existing_bank_details);
-                    vendor.fin_PartyBankAccounts.Add(existing_bank_details);
-                }
-                else
-                {
-                    bank.party_account_id = Guid.CreateVersion7();
-                    bank.vendor_id = vendor_id;
-                    bank.party_id = vendor.vendor_id;
-                    bank.bank_name = bank.bank_name;
-                    bank.account_holder_name = bank.account_holder_name;
-                    bank.account_number = bank.account_number;
-                    bank.routing_number = bank.routing_number;
-                    bank.swift_code = bank.swift_code;
-                    bank.iban = bank.iban;
-                    bank.currency = bank.currency;
-                    bank.created_at = bank.created_at;
-                    bank.is_default = bank.is_default;
-                    _context.fin_PartyBankAccounts.Add(bank);
-                    vendor.fin_PartyBankAccounts.Add(bank);
-                }
-                   
-            }
-
-            foreach (var address in ap_Vendors.st_PartyAddresses)
-            {
-
-                var existing_address = await _context.st_PartyAddresses.FirstOrDefaultAsync(a => a.address_id == address.address_id);
-                if (existing_address == null)
-                {
-                    st_PartyAddresses st_PartyAddresses = new st_PartyAddresses();
-                    st_PartyAddresses.address_id = Guid.CreateVersion7();
-                    st_PartyAddresses.vendor_id = vendor_id;
-                    st_PartyAddresses.address_type = address.address_type;
-                    st_PartyAddresses.line1 = address.line1;
-                    st_PartyAddresses.line2 = address.line2;
-                    st_PartyAddresses.region = address.region;
-                    st_PartyAddresses.postal_code = address.postal_code;
-                    st_PartyAddresses.country = address.country;
-                    st_PartyAddresses.created_at = DateTime.Now;
-                    st_PartyAddresses.updated_at = DateTime.Now;
-                    st_PartyAddresses.is_default = address.is_default;
-                    _context.st_PartyAddresses.Add(st_PartyAddresses);
-                    vendor.st_PartyAddresses.Add(st_PartyAddresses);
-                }
-                else
-                {
-                    existing_address.address_type = address.address_type;
-                    existing_address.line1 = address.line1;
-                    existing_address.line2 = address.line2;
-                    existing_address.region = address.region;
-                    existing_address.postal_code = address.postal_code;
-                    existing_address.country = address.country;
-                    existing_address.updated_at = DateTime.Now;
-                    existing_address.is_default = address.is_default;
-                    _context.st_PartyAddresses.Update(existing_address);
-                    vendor.st_PartyAddresses.Add(existing_address);
-
-                }
-            }
-            _context.ap_Vendors.Update(vendor);
-            await _context.SaveChangesAsync();
-            return new ServiceResult<ap_Vendors>
-            {
-                Status = 1,
-                Success = true,
-                Message = "updated",
-                Data = vendor
-            };
+            
         }
         public async Task<ServiceResult<ar_Customers>> Get_customer(Guid customer_id)
         {
@@ -512,7 +550,15 @@ namespace Faahi.Service.Users
             }
             try
             {
-                var customer = await _context.ar_Customers.Include(a=>a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.customer_id == customer_id);
+                var jsonresult = await _context.Database
+                            .SqlQueryRaw<string>(
+                                "EXEC dbo.sp_Getusers @customer_id=@customer_id,@opr_parm=@opr_parm",
+                                new SqlParameter("@customer_id", customer_id),
+                                new SqlParameter("@opr_parm", 4)
+                            )
+                            .FirstOrDefaultAsync(); 
+                var customer = JsonConvert.DeserializeObject<ar_Customers>(jsonresult);
+                //var customer = await _context.ar_Customers.Include(a=>a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.customer_id == customer_id);
                 if (customer == null)
                 {
                     _logger.LogWarning("no data found in ar_customer table");
@@ -558,11 +604,16 @@ namespace Faahi.Service.Users
             }
             try
             {
-                var jsonresult = _context.Database.SqlQueryRaw<string>(
-                    "EXEC dbo.sp_Getusers @VendorId=@passing_vendor_id,@opr=@opr_parm",
-                    new SqlParameter("@passing_vendor_id",vendor_id),
-                    new SqlParameter("@opr_parm",1)
-                    ).AsEnumerable().FirstOrDefault();
+                var jsonList = await _context.Database
+                                .SqlQueryRaw<string>(
+                                    "EXEC dbo.sp_Getusers @VendorId=@VendorId,@opr=@opr",
+                                    new SqlParameter("@VendorId", vendor_id),
+                                    new SqlParameter("@opr", 1)
+                                )
+                                .AsNoTracking()
+                                .ToListAsync();
+
+                var jsonresult = jsonList.FirstOrDefault();
 
                 var vendor = JsonConvert.DeserializeObject<ap_Vendors>(jsonresult);
 
@@ -609,8 +660,28 @@ namespace Faahi.Service.Users
                     Status = -1
                 };
             }
+            var jsonList = await _context.Database
+                                .SqlQueryRaw<string>(
+                                    "EXEC dbo.sp_Getusers @company_id=@company_id,@opr=@opr",
+                                    new SqlParameter("@company_id", company_id),
+                                    new SqlParameter("@opr", 6)
+                                )
+                                .AsNoTracking()
+                                .ToListAsync();
+
+            var jsonresult = jsonList.FirstOrDefault();
+            if (jsonresult == null)
+            {
+                return new ServiceResult<List<ar_Customers>>
+                {
+                    Status = 300,
+                    Success = false
+                };
+            }
+
+            var customers = JsonConvert.DeserializeObject<List<ar_Customers>>(jsonresult);
             //var im_site = await _context.im_site.FirstOrDefaultAsync(s => s.site_id == company_id || s.company_id == company_id);
-            var customers = await _context.ar_Customers.Where(c => c.company_id == company_id).ToListAsync();
+            //var customers = await _context.ar_Customers.Where(c => c.company_id == company_id).ToListAsync();
             if (customers == null || customers.Count == 0)
             {
                 return new ServiceResult<List<ar_Customers>>
@@ -681,6 +752,7 @@ namespace Faahi.Service.Users
             }
             
         }
+
         public async Task<ServiceResult<List<ap_Vendors>>> get_all_vendors_search(Guid company_id,string search_text)
         {
             try
@@ -733,7 +805,6 @@ namespace Faahi.Service.Users
             
         }
 
-
         public async Task<ServiceResult<List<ap_Vendors>>> Get_all_vendors(Guid company_id)
         {
             if (company_id == null)
@@ -745,7 +816,26 @@ namespace Faahi.Service.Users
                     Status = -1
                 };
             }
-            var vendors = await _context.ap_Vendors.Include(a=>a.st_PartyAddresses).Include(a=>a.fin_PartyBankAccounts).Where(v => v.company_id == company_id).ToListAsync();
+            var jsonList = await _context.Database
+                                .SqlQueryRaw<string>(
+                                    "EXEC dbo.sp_Getusers @company_id=@company_id,@opr=@opr",
+                                    new SqlParameter("@company_id", company_id),
+                                    new SqlParameter("@opr", 5)
+                                )
+                                .AsNoTracking()
+                                .ToListAsync();
+
+            var jsonresult = jsonList.FirstOrDefault();
+            if (jsonresult == null)
+            {
+                return new ServiceResult<List<ap_Vendors>>
+                {
+                    Status = 300,
+                    Success = false
+                };
+            }
+            var vendors = JsonConvert.DeserializeObject<List<ap_Vendors>>(jsonresult);
+            //var vendors = await _context.ap_Vendors.Include(a=>a.st_PartyAddresses).Include(a=>a.fin_PartyBankAccounts).Where(v => v.company_id == company_id).ToListAsync();
             if (vendors == null || vendors.Count == 0)
             {
                 return new ServiceResult<List<ap_Vendors>>
@@ -767,6 +857,7 @@ namespace Faahi.Service.Users
 
         public async Task<ServiceResult<st_Parties>> Create_other_party(st_Parties st_Parties)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_Parties == null)
             {
                 _logger.LogWarning("Create_other_party: No data found");
@@ -798,7 +889,7 @@ namespace Faahi.Service.Users
 
                 await _context.st_Parties.AddAsync(st_Parties);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<st_Parties>
                 {
                     Success = true,
@@ -809,6 +900,7 @@ namespace Faahi.Service.Users
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "An error occurred while creating other party.");
                 return new ServiceResult<st_Parties>
                 {

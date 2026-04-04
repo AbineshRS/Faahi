@@ -18,6 +18,7 @@ namespace Faahi.Service.im_products.category
 
         public async Task<ServiceResult<im_item_Category>> Create_category(im_item_Category im_Item_)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (im_Item_ == null)
             {
                 _logger.LogWarning("Create_category called with null im_Item_");
@@ -58,6 +59,7 @@ namespace Faahi.Service.im_products.category
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_item_Category>
                 {
                     Success = true,
@@ -68,6 +70,7 @@ namespace Faahi.Service.im_products.category
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while creating category");
                 return new ServiceResult<im_item_Category>
                 {
@@ -81,6 +84,7 @@ namespace Faahi.Service.im_products.category
         }
         public async Task<ServiceResult<im_item_subcategory>> Create_sub_category(im_item_subcategory subcategory, string item_class_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (subcategory == null || string.IsNullOrWhiteSpace(item_class_id))
             {
                 _logger.LogWarning("Create_sub_category called with null subcategory or empty item_class_id");
@@ -131,7 +135,7 @@ namespace Faahi.Service.im_products.category
 
                 // Save all changes
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<im_item_subcategory>
                 {
                     Success = true,
@@ -142,6 +146,7 @@ namespace Faahi.Service.im_products.category
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while creating subcategory");
                 return new ServiceResult<im_item_subcategory>
                 {
@@ -197,6 +202,7 @@ namespace Faahi.Service.im_products.category
         }
         public async Task<ServiceResult<im_item_Category>> Update(im_item_Category im_Item_, string item_class_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();  
             if (im_Item_ == null)
             {
                 _logger.LogWarning("Update called with null im_Item_");
@@ -252,7 +258,7 @@ namespace Faahi.Service.im_products.category
                 _context.im_item_Category.Update(category);
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<im_item_Category>
                 {
                     Success = true,
@@ -263,6 +269,7 @@ namespace Faahi.Service.im_products.category
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating category");
                 return new ServiceResult<im_item_Category>
                 {
@@ -308,6 +315,7 @@ namespace Faahi.Service.im_products.category
         /// <returns></returns>
         public async Task<ServiceResult<im_ProductCategories>> Create_product_category(im_ProductCategories im_ProductCategories)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (im_ProductCategories == null)
             {
                 _logger.LogWarning("Create_product_category called with null im_ProductCategories");
@@ -341,6 +349,7 @@ namespace Faahi.Service.im_products.category
                 im_ProductCategories.is_active = im_ProductCategories.is_active;
                 _context.im_ProductCategories.Add(im_ProductCategories);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_ProductCategories>
                 {
                     Success = true,
@@ -351,6 +360,7 @@ namespace Faahi.Service.im_products.category
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while creating product category");
                 return new ServiceResult<im_ProductCategories>
                 {
@@ -362,6 +372,7 @@ namespace Faahi.Service.im_products.category
         }
         public async Task<ServiceResult<im_ProductCategories>> Create_sub_product_categories(im_ProductCategories im_ProductCategories)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (im_ProductCategories == null)
             {
                 _logger.LogWarning("Update_product_category called with null im_ProductCategories");
@@ -393,6 +404,7 @@ namespace Faahi.Service.im_products.category
                 im_ProductCategories.is_active = im_ProductCategories.is_active;
                 _context.im_ProductCategories.Add(im_ProductCategories);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_ProductCategories>
                 {
                     Success = true,
@@ -403,6 +415,7 @@ namespace Faahi.Service.im_products.category
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating product category");
                 return new ServiceResult<im_ProductCategories>
                 {
@@ -492,6 +505,7 @@ namespace Faahi.Service.im_products.category
         }
         public async Task<ServiceResult<List<st_StoreCategories>>> Create_StoreCategories(List<st_StoreCategories> st_StoreCategories)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_StoreCategories == null)
             {
                 _logger.LogWarning("Create_StoreCategories called with null st_StoreCategories");
@@ -526,6 +540,7 @@ namespace Faahi.Service.im_products.category
                 }
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<List<st_StoreCategories>>
                 {
                     Success = true,
@@ -536,6 +551,7 @@ namespace Faahi.Service.im_products.category
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while creating store category");
                 return new ServiceResult<List<st_StoreCategories>>
                 {

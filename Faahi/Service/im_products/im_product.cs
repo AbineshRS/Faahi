@@ -178,6 +178,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ServiceResult<List<im_ProductVariants>>> Add_varient(List<im_ProductVariants> im_ProductVariants, Guid product_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 if (im_ProductVariants == null)
@@ -252,6 +253,7 @@ namespace Faahi.Service.im_products
                 }
                 _context.im_Products.Update(im_product);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<List<im_ProductVariants>>
                 {
                     Status = 201,
@@ -261,6 +263,8 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Add_varient: An error occurred while adding variants to the product");
                 return new ServiceResult<List<im_ProductVariants>>
                 {
                     Status = 500,
@@ -273,6 +277,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ActionResult<ServiceResult<string>>> UploadProductAsync(IFormFile formFile, Guid product_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (formFile == null || formFile.Length == 0)
             {
                 _logger.LogWarning("UploadProductAsync: No file uploaded");
@@ -367,7 +372,7 @@ namespace Faahi.Service.im_products
                 product.thumbnail_url = $"https://cdn.faahi.com/{key}";
                 _context.im_Products.Update(product);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 // Return cache-busted URL to client
                 var cacheBustedUrl = $"{product.thumbnail_url}?v={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
 
@@ -381,6 +386,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "UploadProductAsync: An error occurred while uploading the file");
                 return new ServiceResult<string>
                 {
@@ -422,6 +428,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ActionResult<ServiceResult<string>>> UploadMutiple_image(IFormFile[] formFile, string product_id, string variant_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (formFile == null || formFile.Length == 0)
             {
                 return new ServiceResult<string>
@@ -533,7 +540,7 @@ namespace Faahi.Service.im_products
                 }
                 _context.im_ProductVariants.Update(variant);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
 
                 return new ServiceResult<string>
                 {
@@ -545,6 +552,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "UploadMutiple_image error");
 
                 return new ServiceResult<string>
@@ -559,6 +567,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ServiceResult<DeleteImageDto>> Delete_ProductImage(DeleteImageDto deleteImageDto)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();  
             if (deleteImageDto == null || deleteImageDto.Deleted_Images == null || !deleteImageDto.Deleted_Images.Any())
             {
                 _logger.LogWarning("Delete_ProductImage: No images provided");
@@ -594,7 +603,7 @@ namespace Faahi.Service.im_products
 
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<DeleteImageDto>
                 {
                     Success = true,
@@ -604,6 +613,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Delete_ProductImage: Error while deleting images");
                 return new ServiceResult<DeleteImageDto>
                 {
@@ -615,6 +625,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ActionResult<ServiceResult<string>>> Upload_vedio(IFormFile[] formFile, string product_id, string variant_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (formFile == null || formFile.Length == 0)
             {
                 _logger.LogWarning("Upload_vedio: No video files were uploaded");
@@ -708,7 +719,7 @@ namespace Faahi.Service.im_products
 
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Status = 1,
@@ -719,6 +730,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Upload_vedio: An error occurred while uploading video files");
                 return new ServiceResult<string>
                 {
@@ -1097,6 +1109,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ActionResult<ServiceResult<im_Products>>> Update_Product(Guid product_id, im_Products im_products)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (product_id == null)
             {
                 _logger.LogWarning("Update_Product: No product ID provided");
@@ -1173,6 +1186,7 @@ namespace Faahi.Service.im_products
 
                 }
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_Products>
                 {
                     Status = 201,
@@ -1184,6 +1198,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Update_Product: An error occurred while updating the product");
                 return new ServiceResult<im_Products>
                 {
@@ -1196,6 +1211,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ServiceResult<im_Products>> Update_Mutiple_Product(Guid product_id, im_Products im_Products)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (product_id == null)
             {
                 _logger.LogWarning("Update_Mutiple_Product: No product ID provided");
@@ -1330,6 +1346,7 @@ namespace Faahi.Service.im_products
                     }
                 }
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_Products>
                 {
                     Status = 201,
@@ -1340,6 +1357,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Update_Mutiple_Product: An error occurred while updating the product");
                 return new ServiceResult<im_Products>
                 {
@@ -1351,6 +1369,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ActionResult<ServiceResult<im_ProductVariants>>> Add_subCategory(string product_id, im_ProductVariants im_varint)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (product_id == null)
             {
                 _logger.LogWarning("Add_subCategory: No product ID provided");
@@ -1457,6 +1476,7 @@ namespace Faahi.Service.im_products
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_ProductVariants>
                 {
                     Success = true,
@@ -1467,6 +1487,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Add_subCategory: An error occurred while adding subcategory");
                 return new ServiceResult<im_ProductVariants>
                 {
@@ -1609,6 +1630,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ServiceResult<im_ProductAttributes>> Create_Attribute(im_ProductAttributes im_ProductAttributes)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (im_ProductAttributes == null)
             {
                 _logger.LogWarning("NO data found to inset");
@@ -1663,7 +1685,7 @@ namespace Faahi.Service.im_products
                 }
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<im_ProductAttributes>
                 {
                     Status = 1,
@@ -1674,6 +1696,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Add_subCategory: An error occurred while adding subcategory");
                 return new ServiceResult<im_ProductAttributes>
                 {
@@ -1797,6 +1820,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ServiceResult<im_product>> product_transfer_store(Guid product_id, Guid store_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 if (product_id == null)
@@ -1839,6 +1863,7 @@ namespace Faahi.Service.im_products
                 }
                 _context.im_Products.Update(existing_prodct);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_product>
                 {
                     Status = 200,
@@ -1848,6 +1873,8 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
+                _logger.LogInformation("Error while product_transfer_store");
                 return new ServiceResult<im_product>
                 {
                     Status = 500,

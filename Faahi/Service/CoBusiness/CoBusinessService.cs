@@ -140,11 +140,9 @@ namespace Faahi.Service.CoBusiness
 
                 foreach (var address in business.co_addresses)
                 {
-
                     address.company_address_id = Guid.CreateVersion7();
                     address.company_id = business.company_id;
                     address.edit_date_time = DateTime.Now;
-
                 }
 
                 am_users am_Users = new am_users
@@ -376,6 +374,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ActionResult<ServiceResult<string>>> Upload_logo(IFormFile formFile, Guid company_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (formFile == null || formFile.Length == 0)
             {
                 _logger.LogWarning("No file uploaded");
@@ -461,7 +460,7 @@ namespace Faahi.Service.CoBusiness
                 co_buss.logo_fileName = relativePath;
                 _context.co_business.Update(co_buss);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Success = true,
@@ -471,6 +470,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (AmazonS3Exception s3Ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(s3Ex, "Wasabi S3 error: {Message}", s3Ex.Message);
                 return new ServiceResult<string>
                 {
@@ -688,6 +688,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<string>> send_reset_password(string email)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email == null)
             {
                 _logger.LogWarning("No email found", email);
@@ -777,6 +778,7 @@ namespace Faahi.Service.CoBusiness
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Success = true,
@@ -787,6 +789,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while send reset password");
                 return new ServiceResult<string>
                 {
@@ -802,6 +805,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<am_emailVerifications>> verify(string email, string token, string userType)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("No email found", email);
@@ -861,7 +865,7 @@ namespace Faahi.Service.CoBusiness
 
                 _context.am_emailVerifications.Update(am_email);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -872,6 +876,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while email verify");
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -885,6 +890,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<am_emailVerifications>> Password_Verify(string email, string token)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("No email found", email);
@@ -941,7 +947,7 @@ namespace Faahi.Service.CoBusiness
 
                 _context.am_emailVerifications.Update(am_email);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -952,6 +958,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while password verify");
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -965,6 +972,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email == null)
             {
                 _logger.LogWarning("No email found", email);
@@ -1038,6 +1046,7 @@ namespace Faahi.Service.CoBusiness
                 }
                 _context.co_business.Update(co_business);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Success = true,
@@ -1049,6 +1058,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while reset password");
                 return new ServiceResult<string>
                 {
@@ -1086,6 +1096,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<co_business>> Update_profile(co_business user, string company_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (user == null)
             {
                 _logger.LogWarning("No user data provided for update", user);
@@ -1134,6 +1145,7 @@ namespace Faahi.Service.CoBusiness
                 }
                 _context.co_business.Update(existing);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<co_business>
                 {
                     Status = 200,
@@ -1144,6 +1156,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating co_business");
                 return new ServiceResult<co_business>
                 {
@@ -1157,6 +1170,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<ActionResult>> Inactive_company(Guid company_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (company_id == Guid.Empty)
             {
                 _logger.LogWarning("No company ID provided for inactivation", company_id);
@@ -1182,6 +1196,7 @@ namespace Faahi.Service.CoBusiness
                 existing.status = "F";
                 _context.co_business.Update(existing);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<ActionResult>
                 {
                     Success = true,
@@ -1191,6 +1206,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while inactivating company");
                 return new ServiceResult<ActionResult>
                 {
@@ -1203,6 +1219,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (co_Avl_Countries == null || co_Avl_Countries == null || string.IsNullOrWhiteSpace(co_Avl_Countries.name))
             {
                 _logger.LogWarning("Invalid or missing country data", co_Avl_Countries);
@@ -1262,7 +1279,7 @@ namespace Faahi.Service.CoBusiness
 
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<co_avl_countries>
                 {
                     Success = true,
@@ -1273,6 +1290,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while creating available country");
                 return new ServiceResult<co_avl_countries>
                 {
@@ -1377,6 +1395,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<im_site>> Create_im_site(im_site im_site)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (im_site == null)
             {
                 _logger.LogWarning("No im_site data provided for creation", im_site);
@@ -1451,6 +1470,7 @@ namespace Faahi.Service.CoBusiness
 
                 _context.im_site.Add(im_site);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_site>
                 {
                     Success = true,
@@ -1460,6 +1480,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "error occurred adding im_site");
                 return new ServiceResult<im_site>
                 {
@@ -1564,6 +1585,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<im_site>> Update_imsite(string site_id, im_site imsite)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (site_id == null || imsite == null)
             {
                 _logger.LogWarning("No site_id or imsite data provided for update", site_id, imsite);
@@ -1625,6 +1647,7 @@ namespace Faahi.Service.CoBusiness
 
                 }
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_site>
                 {
                     Success = true,
@@ -1635,6 +1658,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating im_site");
                 return new ServiceResult<im_site>
                 {
@@ -1648,6 +1672,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<im_site_users>> Add_site_users(im_site_users im_Site_Users)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (im_Site_Users == null)
             {
                 _logger.LogWarning("No im_site_users data provided for creation", im_Site_Users);
@@ -1705,7 +1730,7 @@ namespace Faahi.Service.CoBusiness
                 im_Site_Users.status = "T";
                 _context.im_site_users.Add(im_Site_Users);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 var email_send = Send_Emails.EmailBody_site_users(im_Site_Users.fullName, im_Site_Users.site_user_code, without_hased_password);
                 string subject = "Welcome to Faahi – Your Site User Account is Ready!";
                 var emailService = new EmailService(_configuration);
@@ -1721,6 +1746,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while adding site user");
                 return new ServiceResult<im_site_users>
                 {
@@ -1792,6 +1818,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<im_site_users>> Update_site_users(Guid userId, im_site_users im_Site_Users)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (userId == null || im_Site_Users == null)
             {
                 _logger.LogWarning("No userId or im_site_users data provided for update", userId, im_Site_Users);
@@ -1821,6 +1848,7 @@ namespace Faahi.Service.CoBusiness
 
                 _context.im_site_users.Update(site_user);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_site_users>
                 {
                     Success = true,
@@ -1831,6 +1859,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating site user");
                 return new ServiceResult<im_site_users>
                 {

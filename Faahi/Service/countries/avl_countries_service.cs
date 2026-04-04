@@ -20,6 +20,7 @@ namespace Faahi.Service.countries
 
         public async Task<ServiceResult<avl_countries>> CreateAvailableCountry(avl_countries Avl_Countries)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (Avl_Countries == null || Avl_Countries == null || string.IsNullOrWhiteSpace(Avl_Countries.name))
             {
                 return new ServiceResult<avl_countries>
@@ -78,12 +79,13 @@ namespace Faahi.Service.countries
 
                 await _context.SaveChangesAsync();
 
-
+                await transaction.CommitAsync();
                 _logger.LogInformation("Adding countrys", Avl_Countries);
 
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, Avl_Countries.avl_countries_id.ToString());
                 return new ServiceResult<avl_countries>
                 {
