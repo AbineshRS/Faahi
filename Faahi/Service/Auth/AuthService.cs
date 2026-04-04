@@ -71,6 +71,7 @@ namespace Faahi.Service.Auth
 
         public async Task<ServiceResult<am_users>> am_user_login(string username, string password)
         {
+
             try
             {
                 if (username == null || password == null)
@@ -196,8 +197,8 @@ namespace Faahi.Service.Auth
         {
             var claims = new List<Claim>
             {
-                 new Claim(ClaimTypes.NameIdentifier, userId.ToString() ?? companyId.ToString()), // important for RefreshToken
-                 new Claim(ClaimTypes.Name, userId.ToString() ?? companyId.ToString() ?? store_id.ToString()),
+                 new Claim(ClaimTypes.NameIdentifier,userId?.ToString() ?? companyId?.ToString() ?? store_id?.ToString() ?? ""),
+                 new Claim(ClaimTypes.Name,userId?.ToString() ?? companyId?.ToString() ?? store_id?.ToString() ?? ""),
                  new Claim("userRole", userRole ?? ""),
                  new Claim("company_id", companyId.ToString() ?? companyId.ToString()),
                  new Claim("store_id", store_id.ToString() ?? store_id.ToString()),
@@ -211,7 +212,7 @@ namespace Faahi.Service.Auth
             var tokendescription = new JwtSecurityToken(
                 issuer: _configuration.GetValue<string>("AppSettings:Issuer"),
                 audience: _configuration.GetValue<string>("AppSettings:Audience"),
-                claims = claims,
+                claims : claims,
                 expires: DateTime.UtcNow.AddMinutes(minutes),
                 signingCredentials: creds
                 );
@@ -279,10 +280,12 @@ namespace Faahi.Service.Auth
             }
             catch (SecurityTokenExpiredException)
             {
+                _logger.LogWarning("Refresh token expired.");
                 return null; // token expired
             }
             catch
             {
+                _logger.LogWarning("Invalid refresh token.");
                 return null; // invalid token
             }
         }
@@ -305,6 +308,7 @@ namespace Faahi.Service.Auth
 
         public async Task<ServiceResult<am_users>> Create_account(am_users user)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (user == null)
             {
                 _logger.LogWarning("Attempt to create account with null user data.");
@@ -459,6 +463,7 @@ namespace Faahi.Service.Auth
                 //am_table.next_key = key + 1;
                 //_context.am_table_next_key.Update(am_table);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 var emailService = new EmailService(_configuration);
                 await emailService.SendEmailAsync(email, subject, body);
 
@@ -472,6 +477,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while creating account for user {Username}", user.userName);
                 return new ServiceResult<am_users>
                 {
@@ -515,6 +521,7 @@ namespace Faahi.Service.Auth
         /// <returns></returns>
         public async Task<ServiceResult<am_emailVerifications>> email_verification(string email, string userType)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("Attempt to verify email with null email address.");
@@ -587,6 +594,7 @@ namespace Faahi.Service.Auth
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -598,6 +606,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred during email verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -616,6 +625,7 @@ namespace Faahi.Service.Auth
         /// <returns></returns>
         public async Task<ServiceResult<am_emailVerifications>> User_Email_verify(string email)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("Attempt to verify user email with null email address.");
@@ -675,6 +685,7 @@ namespace Faahi.Service.Auth
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -686,6 +697,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred during user email verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -699,6 +711,7 @@ namespace Faahi.Service.Auth
 
         public async Task<ServiceResult<am_emailVerifications>> Resend_verification(string email, string userType)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("Attempt to re  send verification with null email address.");
@@ -775,6 +788,7 @@ namespace Faahi.Service.Auth
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -784,6 +798,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while attempting to resend verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -802,6 +817,7 @@ namespace Faahi.Service.Auth
         /// <returns></returns>
         public async Task<ServiceResult<am_emailVerifications>> _User_Resend_verification(string email)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("Attempt to resend user verification with null email address.");
@@ -878,6 +894,7 @@ namespace Faahi.Service.Auth
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -887,6 +904,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while attempting to resend user verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -906,6 +924,7 @@ namespace Faahi.Service.Auth
         /// <returns></returns>
         public async Task<ServiceResult<am_emailVerifications>> verify(string email, string token)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("Attempt to verify email with null email address.");
@@ -962,7 +981,7 @@ namespace Faahi.Service.Auth
 
                 _context.am_emailVerifications.Update(am_email);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -973,6 +992,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred during email verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -998,7 +1018,7 @@ namespace Faahi.Service.Auth
 
         public async Task<ServiceResult<am_users>> Update_profile(am_users am_users, string userId)
         {
-
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (am_users == null)
             {
                 _logger.LogWarning("Attempt to update profile with null user data.");
@@ -1016,6 +1036,7 @@ namespace Faahi.Service.Auth
                 user.phoneNumber = am_users.phoneNumber;
                 _context.am_users.Update(user);
                 await _context.SaveChangesAsync();
+                 await transaction.CommitAsync();
                 return new ServiceResult<am_users>
                 {
                     Success = true,
@@ -1025,6 +1046,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating profile for user ID {UserId}", userId);
                 return new ServiceResult<am_users>
                 {
@@ -1042,6 +1064,7 @@ namespace Faahi.Service.Auth
         /// <returns></returns>
         public async Task<ServiceResult<string>> send_reset_password(string email)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email == null)
             {
                 _logger.LogWarning("Attempt to send reset password with null email address.");
@@ -1131,6 +1154,7 @@ namespace Faahi.Service.Auth
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Success = true,
@@ -1142,6 +1166,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while attempting to send reset password for {Email}", email);
                 return new ServiceResult<string>
                 {
@@ -1162,6 +1187,7 @@ namespace Faahi.Service.Auth
         /// <returns></returns>
         public async Task<ServiceResult<am_emailVerifications>> User_verify(string email, string token)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("Attempt to verify user email with null email address.");
@@ -1218,7 +1244,7 @@ namespace Faahi.Service.Auth
 
                 _context.am_emailVerifications.Update(am_email);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -1229,6 +1255,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred during user email verification for {Email}", email);
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -1242,6 +1269,7 @@ namespace Faahi.Service.Auth
 
         public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email == null)
             {
                 _logger.LogWarning("Attempt to reset password with null email address.");
@@ -1313,6 +1341,7 @@ namespace Faahi.Service.Auth
                 }
                 _context.am_users.Update(am_User);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Success = true,
@@ -1323,6 +1352,7 @@ namespace Faahi.Service.Auth
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while attempting to reset password for {Email}", email);
                 return new ServiceResult<string>
                 {

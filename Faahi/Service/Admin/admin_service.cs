@@ -27,6 +27,7 @@ namespace Faahi.Service.Admin
         }
         public async Task<ServiceResult<super_admin>> AddAdminAsync(super_admin admin)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (admin == null)
             {
                 _logger.LogError("Admin data is null in AddAdminAsync method");
@@ -51,6 +52,7 @@ namespace Faahi.Service.Admin
                 admin.status = admin.status;
                 await _context.super_admin.AddAsync(admin);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<super_admin>
                 {
                     Status = 201,
@@ -135,6 +137,7 @@ namespace Faahi.Service.Admin
 
         public async Task<ServiceResult<sa_country_regions>> Addcountry(sa_country_regions regions)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (regions == null)
             {
                 _logger.LogError("Regions data is null in AddRegionsAsync method");
@@ -181,6 +184,7 @@ namespace Faahi.Service.Admin
                 }
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<sa_country_regions>
                 {
                     Status = 201,
@@ -191,6 +195,7 @@ namespace Faahi.Service.Admin
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Exception occurred in AddRegionsAsync method");
                 return new ServiceResult<sa_country_regions>
                 {
@@ -203,6 +208,7 @@ namespace Faahi.Service.Admin
         }
         public async Task<ServiceResult<sa_regions>> Addregion(sa_regions countries)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (countries == null)
             {
                 _logger.LogError("Countries data is null in AddCountriesAsync method");
@@ -227,6 +233,7 @@ namespace Faahi.Service.Admin
 
                 _context.sa_country_regions.Update(country);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<sa_regions>
                 {
                     Status = 201,
@@ -237,6 +244,7 @@ namespace Faahi.Service.Admin
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Exception occurred in AddCountriesAsync method");
                 return new ServiceResult<sa_regions>
                 {

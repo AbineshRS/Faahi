@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Utilities.Collections;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -40,6 +41,7 @@ namespace Faahi.Service.Store
 
         public async Task<ServiceResult<Store_users>> Create_sellers(Store_users Store_users)
         {
+
             var transaction = await _context.Database.BeginTransactionAsync();
             if (Store_users == null)
             {
@@ -160,7 +162,7 @@ namespace Faahi.Service.Store
                     var email_exist = await _context.st_Users.FirstOrDefaultAsync(a => a.email == st_Users.email);
                     if (email_exist == null)
                     {
-                        var email_auth = await _authService.email_verification(st_Users.email, "st-seller");
+                        //var email_auth = await _authService.email_verification(st_Users.email, "st-seller");
 
                     }
                 }
@@ -286,6 +288,7 @@ namespace Faahi.Service.Store
 
         public async Task<ServiceResult<st_stores>> Create_stores(st_stores store_Add)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (store_Add == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_stores: st_stores is null");
@@ -309,6 +312,10 @@ namespace Faahi.Service.Store
                         Message = "Store limit reached for this company",
                     };
                 }
+                var table = "st_stores";
+                var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == co_business.company_id);
+                var key = Convert.ToInt16(am_table.next_key);
+
                 st_stores st_Stores = new st_stores();
                 st_Stores.store_id = Guid.CreateVersion7();
                 st_Stores.company_id = store_Add.company_id;
@@ -336,6 +343,7 @@ namespace Faahi.Service.Store
                 st_Stores.plastic_bag_tax_amount = store_Add.plastic_bag_tax_amount;
                 st_Stores.message_on_receipt = store_Add.message_on_receipt;
                 st_Stores.message_on_invoice = store_Add.message_on_invoice;
+                st_Stores.store_code = Convert.ToString(key + 1);
 
 
                store_Add.store_id = st_Stores.store_id;
@@ -364,7 +372,9 @@ namespace Faahi.Service.Store
                 }
 
                 await _context.st_stores.AddAsync(st_Stores);
-                await _context.SaveChangesAsync();
+
+                am_table.next_key = key + 1;
+                _context.am_table_next_key.Update(am_table);
 
                 if (co_business != null)
                 {
@@ -373,6 +383,8 @@ namespace Faahi.Service.Store
                     _context.SaveChanges();
                 }
 
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<st_stores>
                 {
                     Success = true,
@@ -383,6 +395,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_stores: Exception occurred while creating store");
                 return new ServiceResult<st_stores>
                 {
@@ -689,6 +702,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<st_UserRoles>> Create_roles(st_UserRoles st_UserRoles)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_UserRoles == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_roles: st_UserRoles is null");
@@ -718,6 +732,7 @@ namespace Faahi.Service.Store
                 st_UserRoles.description = st_UserRoles.description;
                 await _context.st_UserRoles.AddAsync(st_UserRoles);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<st_UserRoles>
                 {
                     Success = true,
@@ -728,6 +743,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_roles: Exception occurred while creating role");
                 return new ServiceResult<st_UserRoles>
                 {
@@ -772,6 +788,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<st_UserStoreAccess>> Create_store_access(st_UserStoreAccess st_UserStoreAccess)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_UserStoreAccess == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_store_access: st_UserStoreAccess is null");
@@ -792,6 +809,7 @@ namespace Faahi.Service.Store
                 st_UserStoreAccess.created_at = DateTime.Now;
                 await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<st_UserStoreAccess>
                 {
                     Success = true,
@@ -802,6 +820,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_store_access: Exception occurred while creating store access");
                 return new ServiceResult<st_UserStoreAccess>
                 {
@@ -940,6 +959,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<st_stores>> Update_store(Guid store_id, st_stores st_Stores)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_Stores == null || store_id == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Update_store: st_Stores is null,store_id is null");
@@ -1069,6 +1089,7 @@ namespace Faahi.Service.Store
 
                 _context.st_stores.Update(existingStore);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<st_stores>
                 {
                     Success = true,
@@ -1079,6 +1100,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Update_store: Exception occurred while updating store");
                 return new ServiceResult<st_stores>
                 {
@@ -1090,6 +1112,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<List<st_StoreCategories>>> update_category(List<st_StoreCategories> st_StoreCategories)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_StoreCategories == null)
             {
                 _logger.LogWarning("update_category called with null st_StoreCategories");
@@ -1140,6 +1163,7 @@ namespace Faahi.Service.Store
                         await _context.SaveChangesAsync();
                     }
                 }
+                await transaction.CommitAsync();
                 return new ServiceResult<List<st_StoreCategories>>
                 {
                     Success = true,
@@ -1150,6 +1174,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating store category");
                 return new ServiceResult<List<st_StoreCategories>>
                 {
@@ -1161,6 +1186,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<st_StoresAddres>> add_sub_address(Guid store_id, st_StoresAddres st_StoresAddres)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (store_id == null)
             {
                 return new ServiceResult<st_StoresAddres>
@@ -1224,7 +1250,7 @@ namespace Faahi.Service.Store
 
                 _context.st_stores.Update(exising_data);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<st_StoresAddres>
                 {
                     Status = 1,
@@ -1236,6 +1262,7 @@ namespace Faahi.Service.Store
             }
             catch(Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating store ");
                 return new ServiceResult<st_StoresAddres>
                 {
@@ -1337,7 +1364,8 @@ namespace Faahi.Service.Store
 
         public async Task<ServiceResult<st_invoice_template>> Add_templates(st_invoice_template st_Invoice_Template)
         {
-            if(st_Invoice_Template == null)
+            var transaction = await _context.Database.BeginTransactionAsync();
+            if (st_Invoice_Template == null)
             {
                 _logger.LogInformation("Add_templates not found");
                 return new ServiceResult<st_invoice_template>
@@ -1352,6 +1380,8 @@ namespace Faahi.Service.Store
             st_Invoice_Template.invoices_temp_description = st_Invoice_Template.invoices_temp_description;
             _context.st_Invoice_Templates.Add(st_Invoice_Template);
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+                
             return new ServiceResult<st_invoice_template>
             {
                 Status = 200,

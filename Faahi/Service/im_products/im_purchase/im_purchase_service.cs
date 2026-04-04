@@ -2,13 +2,17 @@
 using Faahi.Dto;
 using Faahi.Dto.Purchase_dto;
 using Faahi.Dto.sales_dto;
+using Faahi.Model.Accounts;
 using Faahi.Model.im_products;
+using Faahi.Model.st_sellers;
 using Faahi.Model.temp_tables;
+using Faahi.Service.table_key;
 using MailKit.Net.Imap;
 using MailKit.Search;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using System.Xml;
@@ -229,7 +233,7 @@ namespace Faahi.Service.im_products.im_purchase
                         if (existing_purchase == null)
                         {
                             item.detail_id = Guid.CreateVersion7();
-                            item.detail_code= "DT" + year + "-" + Convert.ToString(key_3 + 1);
+                            item.detail_code = "DT" + year + "-" + Convert.ToString(key_3 + 1);
                             item.listing_code = existing_im_purchase.listing_code;
                             item.listing_id = im_Purchase_Listing.listing_id;
                             item.product_id = item.product_id;
@@ -750,7 +754,7 @@ namespace Faahi.Service.im_products.im_purchase
                             item.detail_id = Guid.CreateVersion7();
                             item.listing_id = im_Purchase_Listing.listing_id;
                             item.listing_code = existing_purchase.listing_code;
-                            item.detail_code= "DT" + year + "-" + Convert.ToString(key_3 + 1);
+                            item.detail_code = "DT" + year + "-" + Convert.ToString(key_3 + 1);
                             item.product_id = item.product_id;
                             item.sub_variant_id = item.sub_variant_id;
                             item.uom_name = item.uom_name;
@@ -863,6 +867,17 @@ namespace Faahi.Service.im_products.im_purchase
                                 Status = 500,
                                 Success = false,
                                 Message = goodsHeaderResult.Message
+                            };
+                        }
+                        var accountResult = await Add_Journal_header(listing_id);
+                        if(!accountResult.Success)
+                        {
+                            await transaction.RollbackAsync();
+                            return new ServiceResult<im_purchase_listing>
+                            {
+                                Status = 500,
+                                Success = false,
+                                Message = accountResult.Message
                             };
                         }
 
@@ -1123,7 +1138,7 @@ namespace Faahi.Service.im_products.im_purchase
                 im_GoodsReceiptHeaders.supplier_id = exisitng_purchase?.vendor_id;
                 im_GoodsReceiptHeaders.purchase_order_id = exisitng_purchase.listing_id;
                 im_GoodsReceiptHeaders.purchase_entry_id = exisitng_purchase.listing_id;
-                im_GoodsReceiptHeaders.Goods_recipt_code= "GH" + year + "-" + Convert.ToString(key_3 + 1);
+                im_GoodsReceiptHeaders.Goods_recipt_code = "GH" + year + "-" + Convert.ToString(key_3 + 1);
                 im_GoodsReceiptHeaders.warehouse_id = exisitng_purchase.edit_user_id;
                 im_GoodsReceiptHeaders.received_by = exisitng_purchase.vendor_id;
                 im_GoodsReceiptHeaders.created_by = exisitng_purchase.vendor_id;
@@ -2160,7 +2175,7 @@ namespace Faahi.Service.im_products.im_purchase
                 }
                 var jsonResult = _context.Database.SqlQueryRaw<string>("EXEC dbo.im_purchase_list @SearchText=@SearchText,@opr=@opr",
                     new SqlParameter("@SearchText", searchText),
-                    new SqlParameter("@opr",1)).AsEnumerable().FirstOrDefault();
+                    new SqlParameter("@opr", 1)).AsEnumerable().FirstOrDefault();
                 var list_deatils = JsonConvert.DeserializeObject<List<im_purchase_listing>>(jsonResult);
                 return new ServiceResult<List<im_purchase_listing>>
                 {
@@ -2252,11 +2267,11 @@ namespace Faahi.Service.im_products.im_purchase
                     im_GoodsReceiptLines.business_id = goods_header.business_id;
                     im_GoodsReceiptLines.store_id = goods_header.store_id;
                     im_GoodsReceiptLines.supplier_id = goods_header.supplier_id;
-                    im_GoodsReceiptLines.variant_id = im_Purchase_Return_Details_Line?.sub_variant_id??Guid.Empty;
-                    im_GoodsReceiptLines.product_id = im_Purchase_Return_Details_Line?.product_id??Guid.Empty;
+                    im_GoodsReceiptLines.variant_id = im_Purchase_Return_Details_Line?.sub_variant_id ?? Guid.Empty;
+                    im_GoodsReceiptLines.product_id = im_Purchase_Return_Details_Line?.product_id ?? Guid.Empty;
                     im_GoodsReceiptLines.uom_code = im_Purchase_Return_Details_Line.uom_name;
                     im_GoodsReceiptLines.line_no = 1;
-                    im_GoodsReceiptLines.trans_type= "RETURN_PURCHASE";
+                    im_GoodsReceiptLines.trans_type = "RETURN_PURCHASE";
                     im_GoodsReceiptLines.ordered_qty = 0;
                     im_GoodsReceiptLines.received_qty = 0;
                     im_GoodsReceiptLines.free_qty = 0;
@@ -2266,7 +2281,7 @@ namespace Faahi.Service.im_products.im_purchase
                     im_GoodsReceiptLines.discount_percent = im_GoodsReceiptLines.discount_percent = im_GoodsReceiptLines.rejected_qty != 0 ? Convert.ToDecimal(item.discount_amount) / Convert.ToDecimal(im_GoodsReceiptLines.rejected_qty) * 100 : 0m;
                     im_GoodsReceiptLines.discount_amount = Convert.ToDecimal(item.discount_amount);
                     im_GoodsReceiptLines.tax_amount = Convert.ToDecimal(item.tax_amount);
-                    im_GoodsReceiptLines.tax_percent =0;
+                    im_GoodsReceiptLines.tax_percent = 0;
                     im_GoodsReceiptLines.line_amount = Convert.ToDecimal(im_GoodsReceiptLines.unit_cost) * Convert.ToDecimal(im_GoodsReceiptLines.rejected_qty);
                     im_GoodsReceiptLines.net_unit_cost = Convert.ToDecimal(item.line_net_cost);
                     im_GoodsReceiptLines.net_amount = Convert.ToDecimal(item.selling_price);
@@ -2381,8 +2396,8 @@ namespace Faahi.Service.im_products.im_purchase
                     im_Purchase_Return_Header.im_purchase_return_details_line = im_Purchase_Return_Details_Lines;
                 }
 
-                
-                decimal taxableAmount =Convert.ToDecimal( sub_total - (im_Purchase_Return_Header.discount_amount ?? 0) + (im_Purchase_Return_Header.freight_amount ?? 0) + other_expenses + ((im_Purchase_Return_Header.plastic_bag ?? 0) * (im_Purchase_Return_Header.exchange_rate ?? 1)));
+
+                decimal taxableAmount = Convert.ToDecimal(sub_total - (im_Purchase_Return_Header.discount_amount ?? 0) + (im_Purchase_Return_Header.freight_amount ?? 0) + other_expenses + ((im_Purchase_Return_Header.plastic_bag ?? 0) * (im_Purchase_Return_Header.exchange_rate ?? 1)));
                 decimal gstPercent = Convert.ToDecimal(im_Purchase_Return_Header.tax_amount ?? 0);
                 decimal gstAmount = taxableAmount * gstPercent / 100;
                 im_Purchase_Return_Header.tax_amount = gstAmount;
@@ -2390,7 +2405,7 @@ namespace Faahi.Service.im_products.im_purchase
                 im_Purchase_Return_Header.total_amount = taxableAmount + gstAmount;
                 im_Purchase_Return_Header.sub_total = sub_total;
                 im_Purchase_Return_Header.discount_amount = im_Purchase_Return_Header.discount_amount;
-                sub_total =0;
+                sub_total = 0;
                 other_expenses = 0;
                 am_table.next_key = key + 1;
                 _context.am_table_next_key.Update(am_table);
@@ -2417,11 +2432,11 @@ namespace Faahi.Service.im_products.im_purchase
             }
         }
 
-        public async Task<ServiceResult<Dictionary<string,List<im_GoodsReceiptLines>>>> Get_inventory(Guid store_id, Guid variant_id)
+        public async Task<ServiceResult<Dictionary<string, List<im_GoodsReceiptLines>>>> Get_inventory(Guid store_id, Guid variant_id)
         {
             try
             {
-                if(store_id==null|| variant_id == null)
+                if (store_id == null || variant_id == null)
                 {
                     return new ServiceResult<Dictionary<string, List<im_GoodsReceiptLines>>>
                     {
@@ -2431,20 +2446,20 @@ namespace Faahi.Service.im_products.im_purchase
                 }
                 var transaction_list = await _context.im_GoodsReceiptLines.FromSqlRaw<im_GoodsReceiptLines>(
                     "EXEC dbo.im_purchase_list @opr=@opr,@store_id=@store_id,@variant_id=@variant_id",
-                    new SqlParameter("@opr",2),
-                    new SqlParameter("@store_id",store_id),
-                    new SqlParameter("@variant_id",variant_id)).ToListAsync();
+                    new SqlParameter("@opr", 2),
+                    new SqlParameter("@store_id", store_id),
+                    new SqlParameter("@variant_id", variant_id)).ToListAsync();
 
-                if(transaction_list.Count==0 || transaction_list == null)
+                if (transaction_list.Count == 0 || transaction_list == null)
                 {
                     return new ServiceResult<Dictionary<string, List<im_GoodsReceiptLines>>>
                     {
                         Status = 300,
                         Success = false,
-                        Message="No data found"
+                        Message = "No data found"
                     };
                 }
-                var grouped_=transaction_list.GroupBy(a=>a.trans_type).ToDictionary(a=>a.Key,a=>a.ToList());
+                var grouped_ = transaction_list.GroupBy(a => a.trans_type).ToDictionary(a => a.Key, a => a.ToList());
                 return new ServiceResult<Dictionary<string, List<im_GoodsReceiptLines>>>
                 {
                     Success = true,
@@ -2452,7 +2467,8 @@ namespace Faahi.Service.im_products.im_purchase
                     Data = grouped_
                 };
 
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogInformation("Error while Get_inventory");
                 return new ServiceResult<Dictionary<string, List<im_GoodsReceiptLines>>>
@@ -2478,19 +2494,19 @@ namespace Faahi.Service.im_products.im_purchase
                         Message = "No store_id found"
                     };
                 }
-               
 
-               
+
+
                 var jsonResult = _context.Database.SqlQueryRaw<string>("EXEC dbo.im_purchase_list @opr=@opr, @store_id=@store_id, @StartDate=@StartDate, @EndDate=@EndDate,@vendor_id=@vendor_id,@searchText=@searchText",
                      new SqlParameter("@opr", 3),
                                      new SqlParameter("@store_id", store_id),
                                      new SqlParameter("@StartDate", start_date.HasValue ? (object)start_date.Value : DBNull.Value),
                                      new SqlParameter("@EndDate", end_date.HasValue ? (object)end_date.Value : DBNull.Value),
                                      new SqlParameter("@vendor_id", vendor_id.HasValue ? (object)vendor_id.Value : DBNull.Value),
-                                     new SqlParameter("@searchText", (object?)searchText ?? DBNull.Value) 
+                                     new SqlParameter("@searchText", (object?)searchText ?? DBNull.Value)
                                      ).AsEnumerable().FirstOrDefault();
 
-                var list_deatils = string.IsNullOrEmpty(jsonResult)? new List<im_purchase_listing>(): JsonConvert.DeserializeObject<List<im_purchase_listing>>(jsonResult);
+                var list_deatils = string.IsNullOrEmpty(jsonResult) ? new List<im_purchase_listing>() : JsonConvert.DeserializeObject<List<im_purchase_listing>>(jsonResult);
 
                 if (list_deatils.Count == 0)
                 {
@@ -2522,6 +2538,213 @@ namespace Faahi.Service.im_products.im_purchase
             }
         }
 
+        public async Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header(Guid listing_id)
+        {
+            gl_JournalHeaders gl_Journal_Header = new gl_JournalHeaders();
+            List<gl_JournalLines> gl_Journal_Lines_List = new List<gl_JournalLines>();
+            try
+            {
+                Decimal ToalCedit = 0;
+                Decimal ToalDebit = 0;
+                bool isTaxInserted = false;
+                var existing_list = await _context.im_purchase_listing.Include(a => a.im_purchase_listing_details).FirstOrDefaultAsync(a => a.listing_id == listing_id);
+                var im_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == existing_list.site_id);
+                var year = DateTime.Now.Year;
+                var table = "gl_JournalHeaders";
+
+                var table_key_ = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_store.company_id);
+                var key = Convert.ToInt16(table_key_.next_key);
+                Guid guid = Guid.Parse("019D4E16-BCC5-7C0B-A7F7-890E83B8BD23");
+                var gl_account = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.PurposeCode == "Inventory Assets" && a.CompanyId == guid);
+                var current_balance = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a=>a.AccountId== gl_account.GlAccountId);
+
+                gl_Journal_Header.JournalId = Guid.CreateVersion7();
+                gl_Journal_Header.BusinessId = im_store?.company_id ?? Guid.Empty;
+                gl_Journal_Header.JournalDate=DateTime.Now;
+                gl_Journal_Header.PostingDate=DateTime.Now;
+                gl_Journal_Header.JournalNo = "JE" + year + "-" + Convert.ToString(key + 1); ;
+                gl_Journal_Header.SourceId = existing_list.listing_id;
+                gl_Journal_Header.SourceType = "Inventory Assets";
+                gl_Journal_Header.JournalMemo= $"Journal entry for purchase order {existing_list.listing_id}";
+                gl_Journal_Header.Status = "POSTED";
+                gl_Journal_Header.CreatedAt= DateTime.Now;
+                gl_Journal_Header.CreatedBy = "";
+                gl_Journal_Header.BaseCurrencyCode = existing_list.currency_code;
+                gl_Journal_Header.ExchangeRate= existing_list.exchange_rate;
+                gl_Journal_Header.IsSystemGenerated = true;
+                gl_Journal_Header.PostedAt=DateTime.Now;
+                gl_Journal_Header.PostedBy="";
+                gl_Journal_Header.ReferenceNo= existing_list.supplier_invoice_no;
+                gl_Journal_Header.Remarks= $"Journal entry for purchase order {existing_list.listing_id} with invoice number {existing_list.supplier_invoice_no}";
+                gl_Journal_Header.StoreId = im_store.store_id;
+                gl_Journal_Header.TotalCreditBC = existing_list.doc_total;
+                gl_Journal_Header.TotalCreditFC = existing_list.doc_total;
+                gl_Journal_Header.TotalDebitBC = existing_list.doc_total;
+                gl_Journal_Header.TotalDebitFC = existing_list.doc_total;
+                foreach(var item in existing_list.im_purchase_listing_details)
+                {
+                    gl_JournalLines gl_Journal_Lines = new gl_JournalLines();
+
+                    if (existing_list.tax_amount > 0 && !isTaxInserted)
+                    {
+                        gl_Journal_Lines.JournalLineId = Guid.CreateVersion7();
+                        gl_Journal_Lines.JournalId = gl_Journal_Header.JournalId;
+                        gl_Journal_Lines.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Journal_Lines.StoreId = im_store.store_id;
+                        gl_Journal_Lines.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        //gl_Journal_Lines.DebitAmountBC =Convert.ToDecimal( item.line_total);
+                        //gl_Journal_Lines.DebitAmountFC =Convert.ToDecimal( item.line_total);
+                        gl_Journal_Lines.Description = item.Product_title;
+                        gl_Journal_Lines.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(existing_list.tax_amount);
+                        //ToalCedit+= Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Journal_Lines.ExchangeRate = existing_list.exchange_rate;
+                        gl_Journal_Lines.SourceLineId = item.detail_id;
+                        gl_Journal_Lines.SourceType = "Input Tax";
+                        gl_Journal_Lines.SupplierId = existing_list.vendor_id;
+                        gl_Journal_Lines.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines.UpdatedAt = DateTime.Now;
+
+                        gl_Ledger gl_Ledger = new gl_Ledger();
+                        gl_Ledger.LedgerId = Guid.CreateVersion7();
+                        gl_Ledger.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Ledger.StoreId = im_store.store_id;
+                        gl_Ledger.JournalId = gl_Journal_Header.JournalId;
+                        gl_Ledger.JournalLineId = gl_Journal_Lines.JournalLineId;
+                        gl_Ledger.GlAccountId= gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger.PostingDate = DateTime.Now;
+                        gl_Ledger.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger.ReferenceNo = existing_list.supplier_invoice_no;
+                        gl_Ledger.Module = "PURCHASE";
+                        gl_Ledger.Description = $"Ledger entry for purchase order {existing_list.listing_id} with invoice number {existing_list.supplier_invoice_no}";
+                        gl_Ledger.CreatedAt = DateTime.Now;
+                        gl_Ledger.CreatedBy = "";
+                        gl_Ledger.ExchangeRate = existing_list.exchange_rate;
+                        gl_Ledger.SourceId = existing_list.listing_id;
+                        gl_Ledger.SourceType = "Input Tax";
+                        gl_Ledger.SourceLineId = item.detail_id;
+                        gl_Ledger.TransactionDate = DateTime.Now;
+                        gl_Ledger.UpdatedAt = DateTime.Now;
+                        gl_Ledger.BaseCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        //gl_Ledger.CreditAmountBC= Convert.ToDecimal( item.line_total);
+                        //gl_Ledger.CreditAmountFC= Convert.ToDecimal( item.line_total);
+                        gl_Ledger.DebitAmountBC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Ledger.DebitAmountFC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Ledger.TransactionCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        _context.gl_ledger.Add(gl_Ledger);
+
+                        _context.gl_JournalLines.Add(gl_Journal_Lines);
+                        gl_Journal_Lines_List.Add(gl_Journal_Lines);
+                        isTaxInserted = true;
+
+                    }
+                    if (existing_list.tax_amount !=0)
+                    {
+                        gl_JournalLines gl_Journal_Lines2 = new gl_JournalLines();
+
+                        gl_Journal_Lines2.JournalLineId = Guid.CreateVersion7();
+                        gl_Journal_Lines2.JournalId = gl_Journal_Header.JournalId;
+                        gl_Journal_Lines2.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Journal_Lines2.StoreId = im_store.store_id;
+                        gl_Journal_Lines2.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Journal_Lines2.DebitAmountBC = Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.DebitAmountFC = Convert.ToDecimal(item.line_total);
+                        ToalDebit+= Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.Description = item.Product_title;
+                        gl_Journal_Lines2.CreatedAt = DateTime.Now;
+                        //gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(item.line_total);
+                        //gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Journal_Lines2.ExchangeRate = existing_list.exchange_rate;
+                        gl_Journal_Lines2.SourceLineId = item.detail_id;
+                        gl_Journal_Lines2.SourceType = "Inventory Assets";
+                        gl_Journal_Lines2.SupplierId = existing_list.vendor_id;
+                        gl_Journal_Lines2.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines2.UpdatedAt = DateTime.Now;
+
+                        gl_Ledger gl_Ledger2 = new gl_Ledger();
+                        gl_Ledger2.LedgerId = Guid.CreateVersion7();
+                        gl_Ledger2.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Ledger2.StoreId = im_store.store_id;
+                        gl_Ledger2.JournalId = gl_Journal_Header.JournalId;
+                        gl_Ledger2.JournalLineId = gl_Journal_Lines2.JournalLineId;
+                        gl_Ledger2.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger2.PostingDate = DateTime.Now;
+                        gl_Ledger2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger2.ReferenceNo = existing_list.supplier_invoice_no;
+                        gl_Ledger2.Module = "PURCHASE";
+                        gl_Ledger2.Description = $"Ledger entry for purchase order {existing_list.listing_id} with invoice number {existing_list.supplier_invoice_no}";
+                        gl_Ledger2.CreatedAt = DateTime.Now;
+                        gl_Ledger2.CreatedBy = "";
+                        gl_Ledger2.ExchangeRate = existing_list.exchange_rate;
+                        gl_Ledger2.SourceId = existing_list.listing_id;
+                        gl_Ledger2.SourceType = "Inventory Assets";
+                        gl_Ledger2.SourceLineId = item.detail_id;
+                        gl_Ledger2.TransactionDate = DateTime.Now;
+                        gl_Ledger2.UpdatedAt = DateTime.Now;
+                        gl_Ledger2.BaseCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger2.CreditAmountBC = Convert.ToDecimal(item.line_total);
+                        gl_Ledger2.CreditAmountFC = Convert.ToDecimal(item.line_total);
+                        //gl_Ledger.DebitAmountBC = Convert.ToDecimal(item.line_total);
+                        //gl_Ledger.DebitAmountFC = Convert.ToDecimal(item.line_total);
+                        gl_Ledger2.TransactionCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        _context.gl_ledger.Add(gl_Ledger2);
+
+                        _context.gl_JournalLines.Add(gl_Journal_Lines2);
+                        gl_Journal_Lines_List.Add(gl_Journal_Lines2);
+                    }
+                    
+                    
+                }
+                if (existing_list.tax_amount > 0)
+                {
+                     ToalCedit = Convert.ToDecimal( ToalDebit+existing_list.tax_amount);
+                    if (existing_list.doc_total != ToalCedit)
+                    {
+                        return new ServiceResult<gl_JournalHeaders>
+                        {
+                            Status = 400,
+                            Success = false,
+                            Message = "Total debit and credit amount should be equal"
+                        };
+                    }
+                }
+                if (current_balance != null)
+                {
+                    current_balance.CurrentBalance += ToalDebit+ToalCedit;
+                    _context.gl_AccountCurrentBalances.Update(current_balance);
+                }
+                if (table != null)
+                {
+                    table_key_.next_key = key + 1;
+                    _context.am_table_next_key.Update(table_key_);
+                }
+                gl_Journal_Header.JournalLines=gl_Journal_Lines_List;
+                _context.gl_JournalHeaders.Add(gl_Journal_Header);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<gl_JournalHeaders>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Journal header added successfully",
+                    Data = gl_Journal_Header
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error while Add_Journal_header");
+                return new ServiceResult<gl_JournalHeaders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
     }
 
 }

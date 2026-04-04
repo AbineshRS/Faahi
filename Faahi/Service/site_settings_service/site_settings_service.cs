@@ -16,6 +16,7 @@ namespace Faahi.Service.site_settings_service
 
         public async Task<ServiceResult<tx_TaxClasses>> Add_tax_class(tx_TaxClasses tx_TaxClasses)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 if (tx_TaxClasses == null)
@@ -34,6 +35,7 @@ namespace Faahi.Service.site_settings_service
                 tx_TaxClasses.rate_percent = tx_TaxClasses.rate_percent;
                 _context.tx_TaxClasses.Add(tx_TaxClasses);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<tx_TaxClasses>
                 {
                     Status = 201,
@@ -44,6 +46,7 @@ namespace Faahi.Service.site_settings_service
             }
             catch(Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogInformation("Error While Add_tax_class");
                 return new ServiceResult<tx_TaxClasses>
                 {
@@ -57,6 +60,7 @@ namespace Faahi.Service.site_settings_service
 
         public async Task<ServiceResult<tx_TaxClasses>> Update_tax(Guid tax_class_id,tx_TaxClasses tx_TaxClasses)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();  
             try
             {
                 if (tax_class_id == null)
@@ -74,6 +78,7 @@ namespace Faahi.Service.site_settings_service
                 existing_tax.created_at = DateTime.Now;
                 _context.tx_TaxClasses.Update(existing_tax);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<tx_TaxClasses>
                 {
                     Status = 201,
@@ -84,6 +89,7 @@ namespace Faahi.Service.site_settings_service
             }
             catch(Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogInformation("Error while Update_tax");
                 return new ServiceResult<tx_TaxClasses>
                 {
