@@ -20,7 +20,7 @@ namespace Faahi.Service.Store
 
         Task<ServiceResult<st_UserRoles>> Create_roles(st_UserRoles st_UserRoles);
 
-        Task<ServiceResult<List<st_UserRoles>>> Get_roles_by_company_id();
+        Task<ServiceResult<List<st_UserRoles>>> Get_roles_by_company_id(Guid company_id);
 
         Task<ServiceResult<st_UserStoreAccess>> Create_store_access(st_UserStoreAccess st_UserStoreAccess);
 
