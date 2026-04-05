@@ -109,11 +109,15 @@ namespace Faahi.Controllers.Store
         }
         [Authorize]
         [HttpGet]
-        [Route("get_roles_by_company_id")]
-        public async Task<ActionResult> Get_roles_by_company_id()
+        [Route("get_roles_by/{company_id}")]
+        public async Task<ActionResult> Get_roles_by_company_id(Guid company_id)
         {
             
-            var result = await _istore.Get_roles_by_company_id();
+            if(company_id == Guid.Empty)
+            {
+                return Ok("No data found");
+            }
+            var result = await _istore.Get_roles_by_company_id(company_id);
             return Ok(result);
         }
         [Authorize]
