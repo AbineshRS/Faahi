@@ -158,17 +158,17 @@ namespace Faahi.Service.CoBusiness
                     status = "T",
                     phoneNumber = business.phoneNumber,
 
-                    am_roles = new List<am_roles>() 
+                    am_roles = new List<am_roles>()
                 }; var role = new am_roles
                 {
                     role_id = Guid.CreateVersion7(),
                     role_code = "CO",
                     user_ids = am_Users.userId,
-                    role_group ="CO-ADMIN",
+                    role_group = "CO-ADMIN",
                     role_name = "CO-ADMIN",
                     description = "Whole Access",
                     is_system_role = "T",
-                    am_user_roles = new List<am_user_roles>() 
+                    am_user_roles = new List<am_user_roles>()
                 };
 
                 var userRole = new am_user_roles
@@ -178,7 +178,7 @@ namespace Faahi.Service.CoBusiness
                     role_id = role.role_id,
                     business_id = business.company_id,
                     created_at = DateTime.Now,
-                    am_user_business_access = new List<am_user_business_access>() 
+                    am_user_business_access = new List<am_user_business_access>()
                 };
 
                 var businessAccess = new am_user_business_access
@@ -346,7 +346,6 @@ namespace Faahi.Service.CoBusiness
             }
 
         }
-
 
         public async Task<ServiceResult<List<co_business>>> Company_list()
         {
@@ -790,7 +789,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
-                    await transaction.RollbackAsync();
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while send reset password");
                 return new ServiceResult<string>
                 {
