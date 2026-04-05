@@ -1,6 +1,7 @@
-﻿using Faahi.Dto;
+using Faahi.Dto;
 using Faahi.Model.Accounts;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Faahi.Service.Accounts
 {
@@ -57,6 +58,16 @@ namespace Faahi.Service.Accounts
         Task<ServiceResult<string>> Upload_cheque_attachments(Guid chequeId, List<IFormFile> files);
         Task<ServiceResult<object>> DeleteCheque(Guid chequeId);
         Task<ServiceResult<ap_Cheques>> UpdateCheque(Guid chequeId, ap_Cheques dto);
+
+        // Template and MappingTemplate Methods
+        Task<ServiceResult<object>> GetTemplates();
+        Task<ServiceResult<object>> CreateTemplate(JsonElement body);
+        Task<ServiceResult<object>> UpdateTemplate(Guid templateId, JsonElement body);
+        Task<ServiceResult<object>> DeleteTemplate(Guid templateId);
+        Task<ServiceResult<object>> GetMappingTemplates();
+        Task<ServiceResult<object>> CreateMappingTemplate(JsonElement body);
+        Task<ServiceResult<object>> UpdateMappingTemplate(Guid templateId, JsonElement body);
+        Task<ServiceResult<object>> DeleteMappingTemplate(Guid templateId);
 
     }
 }

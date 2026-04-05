@@ -347,6 +347,7 @@ namespace Faahi.Service.CoBusiness
 
         }
 
+
         public async Task<ServiceResult<List<co_business>>> Company_list()
         {
             try
