@@ -1,12 +1,9 @@
-﻿using Faahi.Dto;
-using Dapper;
-using Microsoft.Extensions.Configuration;
+using Faahi.Dto;
 using Faahi.Model.Accounts;
 using Faahi.Service.Accounts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 using System.Text.Json;
@@ -17,13 +14,11 @@ namespace Faahi.Controllers
     [ApiController]
     public class AccountsController : ControllerBase
     {
-        private readonly IConfiguration _config;
         private readonly IAccountService _accountService;
 
-        public AccountsController(IAccountService accountService, IConfiguration config)
+        public AccountsController(IAccountService accountService)
         {
             _accountService = accountService;
-            _config = config;
         }
 
         [HttpGet("types")]
@@ -655,390 +650,57 @@ namespace Faahi.Controllers
         [HttpGet("templates")]
         public async Task<IActionResult> GetTemplates()
         {
-            using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-            var sql = @"
-            SELECT
-                TemplateId, AccountNumber, AccountName, AccountType, DetailType,
-                ParentTemplateId, IsPostable, IsActive, CurrencyCode, OpeningBalance,
-                Description, BalanceType, NormalBalance, SortOrder, CreatedAt, UpdatedAt
-            FROM dbo.gl_AccountTemplates
-            ORDER BY SortOrder, AccountNumber";
-
-            var rows = await con.QueryAsync(sql);
-            return Ok(new { status = 200, data = rows });
+            var result = await _accountService.GetTemplates();
+            return StatusCode(result.Status, result.Data);
         }
-
-        //[HttpDelete("templates/{templateId:guid}")]
-        //public async Task<IActionResult> DeleteTemplate(Guid templateId)
-        //{
-        //    using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-        //    // Check if template exists
-        //    var exists = await con.ExecuteScalarAsync<int>(
-        //        "SELECT COUNT(1) FROM dbo.gl_AccountTemplates WHERE TemplateId = @templateId",
-        //        new { templateId });
-
-        //    if (exists == 0)
-        //    {
-        //        return NotFound(new { status = 404, message = "Template not found." });
-        //    }
-
-        //    // Check children (because FK ON DELETE NO ACTION)
-        //    var childCount = await con.ExecuteScalarAsync<int>(
-        //        "SELECT COUNT(1) FROM dbo.gl_AccountTemplates WHERE ParentTemplateId = @templateId",
-        //        new { templateId });
-
-        //    if (childCount > 0)
-        //    {
-        //        // Soft delete if children exist
-        //        await con.ExecuteAsync(
-        //            @"UPDATE dbo.gl_AccountTemplates
-        //      SET IsActive = 'F', UpdatedAt = GETDATE()
-        //      WHERE TemplateId = @templateId",
-        //            new { templateId });
-
-        //        return Ok(new { status = 200, message = "Template has children; marked inactive instead of hard delete." });
-        //    }
-
-        //    // Hard delete if no children
-        //    await con.ExecuteAsync(
-        //        "DELETE FROM dbo.gl_AccountTemplates WHERE TemplateId = @templateId",
-        //        new { templateId });
-
-        //    return Ok(new { status = 200, message = "Template deleted successfully." });
-        //}
 
         [HttpDelete("templates/{templateId:guid}")]
         public async Task<IActionResult> DeleteTemplate(Guid templateId)
         {
-            using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-            var exists = await con.ExecuteScalarAsync<int>(
-                "SELECT COUNT(1) FROM dbo.gl_AccountTemplates WHERE TemplateId = @templateId",
-                new { templateId });
-
-            if (exists == 0)
-                return NotFound(new { status = 404, message = "Template not found." });
-
-            var childCount = await con.ExecuteScalarAsync<int>(
-                "SELECT COUNT(1) FROM dbo.gl_AccountTemplates WHERE ParentTemplateId = @templateId",
-                new { templateId });
-
-            if (childCount > 0)
-            {
-                await con.ExecuteAsync(
-                    "UPDATE dbo.gl_AccountTemplates SET IsActive='F', UpdatedAt=GETDATE() WHERE TemplateId=@templateId",
-                    new { templateId });
-
-                return Ok(new { status = 200, message = "Template has children; marked inactive." });
-            }
-
-            await con.ExecuteAsync(
-                "DELETE FROM dbo.gl_AccountTemplates WHERE TemplateId = @templateId",
-                new { templateId });
-
-            return Ok(new { status = 200, message = "Template deleted successfully." });
+            var result = await _accountService.DeleteTemplate(templateId);
+            return StatusCode(result.Status, result.Data);
         }
 
         [HttpPut("templates/{templateId:guid}")]
         public async Task<IActionResult> UpdateTemplate(Guid templateId, [FromBody] JsonElement body)
         {
-            if (templateId == Guid.Empty)
-                return BadRequest(new { status = 400, message = "Invalid template id." });
-
-            using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-            var exists = await con.ExecuteScalarAsync<int>(
-                "SELECT COUNT(1) FROM dbo.gl_AccountTemplates WHERE TemplateId = @templateId",
-                new { templateId });
-
-            if (exists == 0)
-                return NotFound(new { status = 404, message = "Template not found." });
-
-            var accountNumber = GetString(body, "AccountNumber") ?? "";
-            var accountName = GetString(body, "AccountName") ?? "";
-            var accountType = GetString(body, "AccountType") ?? "";
-            var isPostable = GetString(body, "IsPostable") ?? "T";
-            var isActive = GetString(body, "IsActive") ?? "T";
-            var openingBalance = GetDecimal(body, "OpeningBalance") ?? 0m;
-            var description = GetString(body, "Description");
-            var sortOrder = GetInt(body, "SortOrder") ?? 0;
-            var detailType = GetString(body, "DetailType");
-            var currencyCode = GetString(body, "CurrencyCode");
-            var balanceType = GetString(body, "BalanceType");
-            var normalBalance = GetString(body, "NormalBalance");
-
-            Guid? parentTemplateId = null;
-            var parentRaw = GetString(body, "ParentTemplateId");
-            if (!string.IsNullOrWhiteSpace(parentRaw) && Guid.TryParse(parentRaw, out var parentGuid))
-                parentTemplateId = parentGuid;
-
-            if (parentTemplateId.HasValue && parentTemplateId.Value == templateId)
-                return BadRequest(new { status = 400, message = "Template cannot be its own parent." });
-
-            var sql = @"
-            UPDATE dbo.gl_AccountTemplates
-            SET
-                AccountNumber = @AccountNumber,
-                AccountName = @AccountName,
-                AccountType = @AccountType,
-                DetailType = @DetailType,
-                ParentTemplateId = @ParentTemplateId,
-                IsPostable = @IsPostable,
-                IsActive = @IsActive,
-                CurrencyCode = @CurrencyCode,
-                OpeningBalance = @OpeningBalance,
-                Description = @Description,
-                BalanceType = @BalanceType,
-                NormalBalance = @NormalBalance,
-                SortOrder = @SortOrder,
-                UpdatedAt = GETDATE()
-            WHERE TemplateId = @TemplateId";
-
-            await con.ExecuteAsync(sql, new
-            {
-                TemplateId = templateId,
-                AccountNumber = accountNumber,
-                AccountName = accountName,
-                AccountType = accountType,
-                DetailType = detailType,
-                ParentTemplateId = parentTemplateId,
-                IsPostable = isPostable,
-                IsActive = isActive,
-                CurrencyCode = currencyCode,
-                OpeningBalance = openingBalance,
-                Description = description,
-                BalanceType = balanceType,
-                NormalBalance = normalBalance,
-                SortOrder = sortOrder
-            });
-
-            return Ok(new { status = 200, message = "Template updated successfully." });
+            var result = await _accountService.UpdateTemplate(templateId, body);
+            return StatusCode(result.Status, result.Data);
         }
 
         [HttpPost("templates")]
         public async Task<IActionResult> CreateTemplate([FromBody] JsonElement body)
         {
-            using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-            var accountNumber = GetString(body, "AccountNumber") ?? "";
-            var accountName = GetString(body, "AccountName") ?? "";
-            var accountType = GetString(body, "AccountType") ?? "";
-
-            if (string.IsNullOrWhiteSpace(accountNumber) ||
-                string.IsNullOrWhiteSpace(accountName) ||
-                string.IsNullOrWhiteSpace(accountType))
-            {
-                return BadRequest(new { status = 400, message = "AccountNumber, AccountName, and AccountType are required." });
-            }
-
-            Guid? parentTemplateId = null;
-            var parentRaw = GetString(body, "ParentTemplateId");
-            if (!string.IsNullOrWhiteSpace(parentRaw) && Guid.TryParse(parentRaw, out var parentGuid))
-                parentTemplateId = parentGuid;
-
-            var isPostable = GetString(body, "IsPostable") ?? "T";
-            var isActive = GetString(body, "IsActive") ?? "T";
-            var openingBalance = GetDecimal(body, "OpeningBalance") ?? 0m;
-            var description = GetString(body, "Description");
-            var sortOrder = GetInt(body, "SortOrder") ?? 0;
-
-            // optional extra fields from your table
-            var detailType = GetString(body, "DetailType");
-            var currencyCode = GetString(body, "CurrencyCode");
-            var balanceType = GetString(body, "BalanceType");
-            var normalBalance = GetString(body, "NormalBalance");
-
-            var sql = @"INSERT INTO dbo.gl_AccountTemplates
-            (
-                AccountNumber, AccountName, AccountType, DetailType,
-                ParentTemplateId, IsPostable, IsActive, CurrencyCode, OpeningBalance,
-                Description, BalanceType, NormalBalance, SortOrder, CreatedAt, UpdatedAt
-            )
-            VALUES
-            (
-                @AccountNumber, @AccountName, @AccountType, @DetailType,
-                @ParentTemplateId, @IsPostable, @IsActive, @CurrencyCode, @OpeningBalance,
-                @Description, @BalanceType, @NormalBalance, @SortOrder, GETDATE(), GETDATE()
-            )";
-
-            await con.ExecuteAsync(sql, new
-            {
-                AccountNumber = accountNumber,
-                AccountName = accountName,
-                AccountType = accountType,
-                DetailType = detailType,
-                ParentTemplateId = parentTemplateId,
-                IsPostable = isPostable,
-                IsActive = isActive,
-                CurrencyCode = currencyCode,
-                OpeningBalance = openingBalance,
-                Description = description,
-                BalanceType = balanceType,
-                NormalBalance = normalBalance,
-                SortOrder = sortOrder
-            });
-
-            return Ok(new { status = 201, message = "Template created successfully." });
+            var result = await _accountService.CreateTemplate(body);
+            return StatusCode(result.Status, result.Data);
         }
 
         [HttpGet("mapping-templates")]
         public async Task<IActionResult> GetMappingTemplates()
         {
-            using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-            var sql = @"
-            SELECT
-            TemplateId, Module, PurposeCode, AccountNumber,
-            IsRequired, SortOrder, Description, CreatedAt, UpdatedAt
-            FROM dbo.gl_AccountMappingTemplate
-            ORDER BY SortOrder, Module, PurposeCode, AccountNumber";
-
-            var rows = await con.QueryAsync(sql);
-            return Ok(new { status = 200, data = rows });
+            var result = await _accountService.GetMappingTemplates();
+            return StatusCode(result.Status, result.Data);
         }
 
         [HttpPost("mapping-templates")]
         public async Task<IActionResult> CreateMappingTemplate([FromBody] JsonElement body)
         {
-            using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-            var module = GetString(body, "Module") ?? "";
-            var purposeCode = GetString(body, "PurposeCode") ?? "";
-            var accountNumber = GetString(body, "AccountNumber") ?? "";
-
-            if (string.IsNullOrWhiteSpace(module) ||
-                string.IsNullOrWhiteSpace(purposeCode) ||
-                string.IsNullOrWhiteSpace(accountNumber))
-            {
-                return BadRequest(new { status = 400, message = "Module, PurposeCode and AccountNumber are required." });
-            }
-
-            var isRequired = GetString(body, "IsRequired") ?? "T";
-            var sortOrder = GetInt(body, "SortOrder") ?? 0;
-            var description = GetString(body, "Description");
-
-            var sql = @"
-                INSERT INTO dbo.gl_AccountMappingTemplate
-                (
-                    Module, PurposeCode, AccountNumber, IsRequired,
-                    SortOrder, Description, CreatedAt, UpdatedAt
-                )
-                VALUES
-                (
-                    @Module, @PurposeCode, @AccountNumber, @IsRequired,
-                    @SortOrder, @Description, GETDATE(), GETDATE()
-                )";
-
-            await con.ExecuteAsync(sql, new
-            {
-                Module = module,
-                PurposeCode = purposeCode,
-                AccountNumber = accountNumber,
-                IsRequired = isRequired,
-                SortOrder = sortOrder,
-                Description = description
-            });
-
-            return Ok(new { status = 201, message = "Mapping template created successfully." });
+            var result = await _accountService.CreateMappingTemplate(body);
+            return StatusCode(result.Status, result.Data);
         }
 
         [HttpPut("mapping-templates/{templateId:guid}")]
         public async Task<IActionResult> UpdateMappingTemplate(Guid templateId, [FromBody] JsonElement body)
         {
-            if (templateId == Guid.Empty)
-                return BadRequest(new { status = 400, message = "Invalid template id." });
-
-            using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-            var exists = await con.ExecuteScalarAsync<int>(
-                "SELECT COUNT(1) FROM dbo.gl_AccountMappingTemplate WHERE TemplateId = @templateId",
-                new { templateId });
-
-            if (exists == 0)
-                return NotFound(new { status = 404, message = "Template not found." });
-
-            var module = GetString(body, "Module") ?? "";
-            var purposeCode = GetString(body, "PurposeCode") ?? "";
-            var accountNumber = GetString(body, "AccountNumber") ?? "";
-            var isRequired = GetString(body, "IsRequired") ?? "T";
-            var sortOrder = GetInt(body, "SortOrder") ?? 0;
-            var description = GetString(body, "Description");
-
-            if (string.IsNullOrWhiteSpace(module) ||
-                string.IsNullOrWhiteSpace(purposeCode) ||
-                string.IsNullOrWhiteSpace(accountNumber))
-            {
-                return BadRequest(new { status = 400, message = "Module, PurposeCode and AccountNumber are required." });
-            }
-
-            var sql = @"
-            UPDATE dbo.gl_AccountMappingTemplate
-            SET
-                Module = @Module,
-                PurposeCode = @PurposeCode,
-                AccountNumber = @AccountNumber,
-                IsRequired = @IsRequired,
-                SortOrder = @SortOrder,
-                Description = @Description,
-                UpdatedAt = GETDATE()
-            WHERE TemplateId = @TemplateId";
-
-            await con.ExecuteAsync(sql, new
-            {
-                TemplateId = templateId,
-                Module = module,
-                PurposeCode = purposeCode,
-                AccountNumber = accountNumber,
-                IsRequired = isRequired,
-                SortOrder = sortOrder,
-                Description = description
-            });
-
-            return Ok(new { status = 200, message = "Mapping template updated successfully." });
+            var result = await _accountService.UpdateMappingTemplate(templateId, body);
+            return StatusCode(result.Status, result.Data);
         }
 
         [HttpDelete("mapping-templates/{templateId:guid}")]
         public async Task<IActionResult> DeleteMappingTemplate(Guid templateId)
         {
-            using var con = new SqlConnection(_config.GetConnectionString("DefaultConnection"));
-
-            var exists = await con.ExecuteScalarAsync<int>(
-                "SELECT COUNT(1) FROM dbo.gl_AccountMappingTemplate WHERE TemplateId = @templateId",
-                new { templateId });
-
-            if (exists == 0)
-                return NotFound(new { status = 404, message = "Template not found." });
-
-            await con.ExecuteAsync(
-                "DELETE FROM dbo.gl_AccountMappingTemplate WHERE TemplateId = @templateId",
-                new { templateId });
-
-            return Ok(new { status = 200, message = "Mapping template deleted successfully." });
-        }
-
-        private static string? GetString(JsonElement body, string name)
-        {
-            if (!body.TryGetProperty(name, out var p)) return null;
-            if (p.ValueKind == JsonValueKind.Null || p.ValueKind == JsonValueKind.Undefined) return null;
-            return p.ValueKind == JsonValueKind.String ? p.GetString() : p.ToString();
-        }
-
-        private static int? GetInt(JsonElement body, string name)
-        {
-            if (!body.TryGetProperty(name, out var p)) return null;
-            if (p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out var v)) return v;
-            if (p.ValueKind == JsonValueKind.String && int.TryParse(p.GetString(), out v)) return v;
-            return null;
-        }
-
-        private static decimal? GetDecimal(JsonElement body, string name)
-        {
-            if (!body.TryGetProperty(name, out var p)) return null;
-            if (p.ValueKind == JsonValueKind.Number && p.TryGetDecimal(out var v)) return v;
-            if (p.ValueKind == JsonValueKind.String && decimal.TryParse(p.GetString(), out v)) return v;
-            return null;
+            var result = await _accountService.DeleteMappingTemplate(templateId);
+            return StatusCode(result.Status, result.Data);
         }
     }
 }

@@ -1,5 +1,6 @@
-﻿using Amazon.S3;
+using Amazon.S3;
 using Amazon.S3.Model;
+using Dapper;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Model.Accounts;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Text.Json;
 
 namespace Faahi.Service.Accounts
 {
@@ -2872,25 +2874,53 @@ namespace Faahi.Service.Accounts
 
         public async Task<ServiceResult<string>> Upload_cheque_attachments(Guid chequeId, List<IFormFile> files)
         {
-            if (!files.Any())
+            if (files == null || files.Count == 0)
                 return new ServiceResult<string> { Success = false, Message = "No files provided", Status = -1 };
 
-            var uploadPath = Path.Combine("wwwroot", "uploads", "cheques", chequeId.ToString());
-            Directory.CreateDirectory(uploadPath);
+            var cheque = await _context.ap_Cheques
+                .FirstOrDefaultAsync(c => c.ChequeId == chequeId);
+
+            if (cheque == null)
+                return new ServiceResult<string> { Success = false, Message = "Invalid cheque ID", Status = 404 };
+
+            var business = await _context.co_business
+                .FirstOrDefaultAsync(c => c.company_id == cheque.BusinessId);
+
+            if (business == null)
+                return new ServiceResult<string> { Success = false, Message = "Company not found", Status = 404 };
+
+            var bucketName = _configure["Wasabi:BucketName"];
+            int fileNumber = 0;
 
             foreach (var file in files)
             {
-                var uniqueName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-                var filePath = Path.Combine(uploadPath, uniqueName);
-                using var stream = new FileStream(filePath, FileMode.Create);
-                await file.CopyToAsync(stream);
+                fileNumber++;
+                var fileInfo = new FileInfo(file.FileName);
+                string timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                string safeFileName = $"attachment_{fileNumber}_{timestamp}{fileInfo.Extension}";
+                string key = $"faahi/company/{business.company_code}/cheque_{chequeId}/attachments/{safeFileName}";
+
+                using var stream = file.OpenReadStream();
+                var request = new PutObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = key,
+                    InputStream = stream,
+                    ContentType = file.ContentType,
+                    CannedACL = S3CannedACL.PublicRead,
+                    Headers = { CacheControl = "public,max-age=604800" }
+                };
+
+                await _s3Client.PutObjectAsync(request);
+
+                string canonicalUrl = $"https://cdn.faahi.com/{key}";
 
                 var attachment = new ap_ChequesAttachments
                 {
                     AttachmentId = Guid.CreateVersion7(),
                     ChequeId = chequeId,
                     FileName = file.FileName,
-                    image_url = $"/uploads/cheques/{chequeId}/{uniqueName}",
+                    image_url = canonicalUrl,
                     UploadedAt = DateTime.UtcNow
                 };
                 await _context.ap_ChequesAttachments.AddAsync(attachment);
@@ -2903,25 +2933,53 @@ namespace Faahi.Service.Accounts
 
         public async Task<ServiceResult<string>> Upload_expense_attachments(Guid expenseId, List<IFormFile> files)
         {
-            if (!files.Any())
+            if (files == null || files.Count == 0)
                 return new ServiceResult<string> { Success = false, Message = "No files provided", Status = -1 };
 
-            var uploadPath = Path.Combine("wwwroot", "uploads", "expenses", expenseId.ToString());
-            Directory.CreateDirectory(uploadPath);
+            var expense = await _context.ap_Expenses
+                .FirstOrDefaultAsync(e => e.ExpenseId == expenseId);
+
+            if (expense == null)
+                return new ServiceResult<string> { Success = false, Message = "Invalid expense ID", Status = 404 };
+
+            var business = await _context.co_business
+                .FirstOrDefaultAsync(c => c.company_id == expense.BusinessId);
+
+            if (business == null)
+                return new ServiceResult<string> { Success = false, Message = "Company not found", Status = 404 };
+
+            var bucketName = _configure["Wasabi:BucketName"];
+            int fileNumber = 0;
 
             foreach (var file in files)
             {
-                var uniqueName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-                var filePath = Path.Combine(uploadPath, uniqueName);
-                using var stream = new FileStream(filePath, FileMode.Create);
-                await file.CopyToAsync(stream);
+                fileNumber++;
+                var fileInfo = new FileInfo(file.FileName);
+                string timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                string safeFileName = $"attachment_{fileNumber}_{timestamp}{fileInfo.Extension}";
+                string key = $"faahi/company/{business.company_code}/expense_{expenseId}/attachments/{safeFileName}";
+
+                using var stream = file.OpenReadStream();
+                var request = new PutObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = key,
+                    InputStream = stream,
+                    ContentType = file.ContentType,
+                    CannedACL = S3CannedACL.PublicRead,
+                    Headers = { CacheControl = "public,max-age=604800" }
+                };
+
+                await _s3Client.PutObjectAsync(request);
+
+                string canonicalUrl = $"https://cdn.faahi.com/{key}";
 
                 var attachment = new ap_ExpensesAttachments
                 {
                     AttachmentId = Guid.CreateVersion7(),
                     ExpenseId = expenseId,
                     FileName = file.FileName,
-                    image_url = $"/uploads/expenses/{expenseId}/{uniqueName}",
+                    image_url = canonicalUrl,
                     UploadedAt = DateTime.UtcNow
                 };
                 await _context.ap_ExpensesAttachments.AddAsync(attachment);
@@ -3249,6 +3307,562 @@ namespace Faahi.Service.Accounts
             }
 
             originalJournal.Status = "REVERSED";
+        }
+
+        public async Task<ServiceResult<object>> GetTemplates()
+        {
+            try
+            {
+                using var con = new SqlConnection(_configure.GetConnectionString("DefaultConnection"));
+
+                var sql = @"
+            SELECT
+                TemplateId, AccountNumber, AccountName, AccountType, DetailType,
+                ParentTemplateId, IsPostable, IsActive, CurrencyCode, OpeningBalance,
+                Description, BalanceType, NormalBalance, SortOrder, CreatedAt, UpdatedAt
+            FROM dbo.gl_AccountTemplates
+            ORDER BY SortOrder, AccountNumber";
+
+                var rows = await con.QueryAsync(sql);
+                return new ServiceResult<object>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = new { status = 200, data = rows }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching templates");
+                return new ServiceResult<object>
+                {
+                    Success = false,
+                    Status = 500,
+                    Data = new { status = 500, message = ex.Message }
+                };
+            }
+        }
+
+        public async Task<ServiceResult<object>> DeleteTemplate(Guid templateId)
+        {
+            try
+            {
+                using var con = new SqlConnection(_configure.GetConnectionString("DefaultConnection"));
+
+                var exists = await con.ExecuteScalarAsync<int>(
+                    "SELECT COUNT(1) FROM dbo.gl_AccountTemplates WHERE TemplateId = @templateId",
+                    new { templateId });
+
+                if (exists == 0)
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 404,
+                        Data = new { status = 404, message = "Template not found." }
+                    };
+                }
+
+                var childCount = await con.ExecuteScalarAsync<int>(
+                    "SELECT COUNT(1) FROM dbo.gl_AccountTemplates WHERE ParentTemplateId = @templateId",
+                    new { templateId });
+
+                if (childCount > 0)
+                {
+                    await con.ExecuteAsync(
+                        "UPDATE dbo.gl_AccountTemplates SET IsActive='F', UpdatedAt=GETDATE() WHERE TemplateId=@templateId",
+                        new { templateId });
+
+                    return new ServiceResult<object>
+                    {
+                        Success = true,
+                        Status = 200,
+                        Data = new { status = 200, message = "Template has children; marked inactive." }
+                    };
+                }
+
+                await con.ExecuteAsync(
+                    "DELETE FROM dbo.gl_AccountTemplates WHERE TemplateId = @templateId",
+                    new { templateId });
+
+                return new ServiceResult<object>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = new { status = 200, message = "Template deleted successfully." }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting template {TemplateId}", templateId);
+                return new ServiceResult<object>
+                {
+                    Success = false,
+                    Status = 500,
+                    Data = new { status = 500, message = ex.Message }
+                };
+            }
+        }
+
+        public async Task<ServiceResult<object>> UpdateTemplate(Guid templateId, JsonElement body)
+        {
+            try
+            {
+                if (templateId == Guid.Empty)
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 400,
+                        Data = new { status = 400, message = "Invalid template id." }
+                    };
+                }
+
+                using var con = new SqlConnection(_configure.GetConnectionString("DefaultConnection"));
+
+                var exists = await con.ExecuteScalarAsync<int>(
+                    "SELECT COUNT(1) FROM dbo.gl_AccountTemplates WHERE TemplateId = @templateId",
+                    new { templateId });
+
+                if (exists == 0)
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 404,
+                        Data = new { status = 404, message = "Template not found." }
+                    };
+                }
+
+                var accountNumber = GetString(body, "AccountNumber") ?? "";
+                var accountName = GetString(body, "AccountName") ?? "";
+                var accountType = GetString(body, "AccountType") ?? "";
+                var isPostable = GetString(body, "IsPostable") ?? "T";
+                var isActive = GetString(body, "IsActive") ?? "T";
+                var openingBalance = GetDecimal(body, "OpeningBalance") ?? 0m;
+                var description = GetString(body, "Description");
+                var sortOrder = GetInt(body, "SortOrder") ?? 0;
+                var detailType = GetString(body, "DetailType");
+                var currencyCode = GetString(body, "CurrencyCode");
+                var balanceType = GetString(body, "BalanceType");
+                var normalBalance = GetString(body, "NormalBalance");
+
+                Guid? parentTemplateId = null;
+                var parentRaw = GetString(body, "ParentTemplateId");
+                if (!string.IsNullOrWhiteSpace(parentRaw) && Guid.TryParse(parentRaw, out var parentGuid))
+                {
+                    parentTemplateId = parentGuid;
+                }
+
+                if (parentTemplateId.HasValue && parentTemplateId.Value == templateId)
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 400,
+                        Data = new { status = 400, message = "Template cannot be its own parent." }
+                    };
+                }
+
+                var sql = @"
+            UPDATE dbo.gl_AccountTemplates
+            SET
+                AccountNumber = @AccountNumber,
+                AccountName = @AccountName,
+                AccountType = @AccountType,
+                DetailType = @DetailType,
+                ParentTemplateId = @ParentTemplateId,
+                IsPostable = @IsPostable,
+                IsActive = @IsActive,
+                CurrencyCode = @CurrencyCode,
+                OpeningBalance = @OpeningBalance,
+                Description = @Description,
+                BalanceType = @BalanceType,
+                NormalBalance = @NormalBalance,
+                SortOrder = @SortOrder,
+                UpdatedAt = GETDATE()
+            WHERE TemplateId = @TemplateId";
+
+                await con.ExecuteAsync(sql, new
+                {
+                    TemplateId = templateId,
+                    AccountNumber = accountNumber,
+                    AccountName = accountName,
+                    AccountType = accountType,
+                    DetailType = detailType,
+                    ParentTemplateId = parentTemplateId,
+                    IsPostable = isPostable,
+                    IsActive = isActive,
+                    CurrencyCode = currencyCode,
+                    OpeningBalance = openingBalance,
+                    Description = description,
+                    BalanceType = balanceType,
+                    NormalBalance = normalBalance,
+                    SortOrder = sortOrder
+                });
+
+                return new ServiceResult<object>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = new { status = 200, message = "Template updated successfully." }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating template {TemplateId}", templateId);
+                return new ServiceResult<object>
+                {
+                    Success = false,
+                    Status = 500,
+                    Data = new { status = 500, message = ex.Message }
+                };
+            }
+        }
+
+        public async Task<ServiceResult<object>> CreateTemplate(JsonElement body)
+        {
+            try
+            {
+                using var con = new SqlConnection(_configure.GetConnectionString("DefaultConnection"));
+
+                var accountNumber = GetString(body, "AccountNumber") ?? "";
+                var accountName = GetString(body, "AccountName") ?? "";
+                var accountType = GetString(body, "AccountType") ?? "";
+
+                if (string.IsNullOrWhiteSpace(accountNumber) ||
+                    string.IsNullOrWhiteSpace(accountName) ||
+                    string.IsNullOrWhiteSpace(accountType))
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 400,
+                        Data = new { status = 400, message = "AccountNumber, AccountName, and AccountType are required." }
+                    };
+                }
+
+                Guid? parentTemplateId = null;
+                var parentRaw = GetString(body, "ParentTemplateId");
+                if (!string.IsNullOrWhiteSpace(parentRaw) && Guid.TryParse(parentRaw, out var parentGuid))
+                {
+                    parentTemplateId = parentGuid;
+                }
+
+                var isPostable = GetString(body, "IsPostable") ?? "T";
+                var isActive = GetString(body, "IsActive") ?? "T";
+                var openingBalance = GetDecimal(body, "OpeningBalance") ?? 0m;
+                var description = GetString(body, "Description");
+                var sortOrder = GetInt(body, "SortOrder") ?? 0;
+                var detailType = GetString(body, "DetailType");
+                var currencyCode = GetString(body, "CurrencyCode");
+                var balanceType = GetString(body, "BalanceType");
+                var normalBalance = GetString(body, "NormalBalance");
+
+                var sql = @"INSERT INTO dbo.gl_AccountTemplates
+            (
+                AccountNumber, AccountName, AccountType, DetailType,
+                ParentTemplateId, IsPostable, IsActive, CurrencyCode, OpeningBalance,
+                Description, BalanceType, NormalBalance, SortOrder, CreatedAt, UpdatedAt
+            )
+            VALUES
+            (
+                @AccountNumber, @AccountName, @AccountType, @DetailType,
+                @ParentTemplateId, @IsPostable, @IsActive, @CurrencyCode, @OpeningBalance,
+                @Description, @BalanceType, @NormalBalance, @SortOrder, GETDATE(), GETDATE()
+            )";
+
+                await con.ExecuteAsync(sql, new
+                {
+                    AccountNumber = accountNumber,
+                    AccountName = accountName,
+                    AccountType = accountType,
+                    DetailType = detailType,
+                    ParentTemplateId = parentTemplateId,
+                    IsPostable = isPostable,
+                    IsActive = isActive,
+                    CurrencyCode = currencyCode,
+                    OpeningBalance = openingBalance,
+                    Description = description,
+                    BalanceType = balanceType,
+                    NormalBalance = normalBalance,
+                    SortOrder = sortOrder
+                });
+
+                return new ServiceResult<object>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = new { status = 201, message = "Template created successfully." }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating template");
+                return new ServiceResult<object>
+                {
+                    Success = false,
+                    Status = 500,
+                    Data = new { status = 500, message = ex.Message }
+                };
+            }
+        }
+
+        public async Task<ServiceResult<object>> GetMappingTemplates()
+        {
+            try
+            {
+                using var con = new SqlConnection(_configure.GetConnectionString("DefaultConnection"));
+
+                var sql = @"
+            SELECT
+            TemplateId, Module, PurposeCode, AccountNumber,
+            IsRequired, SortOrder, Description, CreatedAt, UpdatedAt
+            FROM dbo.gl_AccountMappingTemplate
+            ORDER BY SortOrder, Module, PurposeCode, AccountNumber";
+
+                var rows = await con.QueryAsync(sql);
+                return new ServiceResult<object>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = new { status = 200, data = rows }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching mapping templates");
+                return new ServiceResult<object>
+                {
+                    Success = false,
+                    Status = 500,
+                    Data = new { status = 500, message = ex.Message }
+                };
+            }
+        }
+
+        public async Task<ServiceResult<object>> CreateMappingTemplate(JsonElement body)
+        {
+            try
+            {
+                using var con = new SqlConnection(_configure.GetConnectionString("DefaultConnection"));
+
+                var module = GetString(body, "Module") ?? "";
+                var purposeCode = GetString(body, "PurposeCode") ?? "";
+                var accountNumber = GetString(body, "AccountNumber") ?? "";
+
+                if (string.IsNullOrWhiteSpace(module) ||
+                    string.IsNullOrWhiteSpace(purposeCode) ||
+                    string.IsNullOrWhiteSpace(accountNumber))
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 400,
+                        Data = new { status = 400, message = "Module, PurposeCode and AccountNumber are required." }
+                    };
+                }
+
+                var isRequired = GetString(body, "IsRequired") ?? "T";
+                var sortOrder = GetInt(body, "SortOrder") ?? 0;
+                var description = GetString(body, "Description");
+
+                var sql = @"
+                INSERT INTO dbo.gl_AccountMappingTemplate
+                (
+                    Module, PurposeCode, AccountNumber, IsRequired,
+                    SortOrder, Description, CreatedAt, UpdatedAt
+                )
+                VALUES
+                (
+                    @Module, @PurposeCode, @AccountNumber, @IsRequired,
+                    @SortOrder, @Description, GETDATE(), GETDATE()
+                )";
+
+                await con.ExecuteAsync(sql, new
+                {
+                    Module = module,
+                    PurposeCode = purposeCode,
+                    AccountNumber = accountNumber,
+                    IsRequired = isRequired,
+                    SortOrder = sortOrder,
+                    Description = description
+                });
+
+                return new ServiceResult<object>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = new { status = 201, message = "Mapping template created successfully." }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating mapping template");
+                return new ServiceResult<object>
+                {
+                    Success = false,
+                    Status = 500,
+                    Data = new { status = 500, message = ex.Message }
+                };
+            }
+        }
+
+        public async Task<ServiceResult<object>> UpdateMappingTemplate(Guid templateId, JsonElement body)
+        {
+            try
+            {
+                if (templateId == Guid.Empty)
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 400,
+                        Data = new { status = 400, message = "Invalid template id." }
+                    };
+                }
+
+                using var con = new SqlConnection(_configure.GetConnectionString("DefaultConnection"));
+
+                var exists = await con.ExecuteScalarAsync<int>(
+                    "SELECT COUNT(1) FROM dbo.gl_AccountMappingTemplate WHERE TemplateId = @templateId",
+                    new { templateId });
+
+                if (exists == 0)
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 404,
+                        Data = new { status = 404, message = "Template not found." }
+                    };
+                }
+
+                var module = GetString(body, "Module") ?? "";
+                var purposeCode = GetString(body, "PurposeCode") ?? "";
+                var accountNumber = GetString(body, "AccountNumber") ?? "";
+                var isRequired = GetString(body, "IsRequired") ?? "T";
+                var sortOrder = GetInt(body, "SortOrder") ?? 0;
+                var description = GetString(body, "Description");
+
+                if (string.IsNullOrWhiteSpace(module) ||
+                    string.IsNullOrWhiteSpace(purposeCode) ||
+                    string.IsNullOrWhiteSpace(accountNumber))
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 400,
+                        Data = new { status = 400, message = "Module, PurposeCode and AccountNumber are required." }
+                    };
+                }
+
+                var sql = @"
+            UPDATE dbo.gl_AccountMappingTemplate
+            SET
+                Module = @Module,
+                PurposeCode = @PurposeCode,
+                AccountNumber = @AccountNumber,
+                IsRequired = @IsRequired,
+                SortOrder = @SortOrder,
+                Description = @Description,
+                UpdatedAt = GETDATE()
+            WHERE TemplateId = @TemplateId";
+
+                await con.ExecuteAsync(sql, new
+                {
+                    TemplateId = templateId,
+                    Module = module,
+                    PurposeCode = purposeCode,
+                    AccountNumber = accountNumber,
+                    IsRequired = isRequired,
+                    SortOrder = sortOrder,
+                    Description = description
+                });
+
+                return new ServiceResult<object>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = new { status = 200, message = "Mapping template updated successfully." }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating mapping template {TemplateId}", templateId);
+                return new ServiceResult<object>
+                {
+                    Success = false,
+                    Status = 500,
+                    Data = new { status = 500, message = ex.Message }
+                };
+            }
+        }
+
+        public async Task<ServiceResult<object>> DeleteMappingTemplate(Guid templateId)
+        {
+            try
+            {
+                using var con = new SqlConnection(_configure.GetConnectionString("DefaultConnection"));
+
+                var exists = await con.ExecuteScalarAsync<int>(
+                    "SELECT COUNT(1) FROM dbo.gl_AccountMappingTemplate WHERE TemplateId = @templateId",
+                    new { templateId });
+
+                if (exists == 0)
+                {
+                    return new ServiceResult<object>
+                    {
+                        Success = false,
+                        Status = 404,
+                        Data = new { status = 404, message = "Template not found." }
+                    };
+                }
+
+                await con.ExecuteAsync(
+                    "DELETE FROM dbo.gl_AccountMappingTemplate WHERE TemplateId = @templateId",
+                    new { templateId });
+
+                return new ServiceResult<object>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = new { status = 200, message = "Mapping template deleted successfully." }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting mapping template {TemplateId}", templateId);
+                return new ServiceResult<object>
+                {
+                    Success = false,
+                    Status = 500,
+                    Data = new { status = 500, message = ex.Message }
+                };
+            }
+        }
+
+        private static string? GetString(JsonElement body, string name)
+        {
+            if (!body.TryGetProperty(name, out var p)) return null;
+            if (p.ValueKind == JsonValueKind.Null || p.ValueKind == JsonValueKind.Undefined) return null;
+            return p.ValueKind == JsonValueKind.String ? p.GetString() : p.ToString();
+        }
+
+        private static int? GetInt(JsonElement body, string name)
+        {
+            if (!body.TryGetProperty(name, out var p)) return null;
+            if (p.ValueKind == JsonValueKind.Number && p.TryGetInt32(out var v)) return v;
+            if (p.ValueKind == JsonValueKind.String && int.TryParse(p.GetString(), out v)) return v;
+            return null;
+        }
+
+        private static decimal? GetDecimal(JsonElement body, string name)
+        {
+            if (!body.TryGetProperty(name, out var p)) return null;
+            if (p.ValueKind == JsonValueKind.Number && p.TryGetDecimal(out var v)) return v;
+            if (p.ValueKind == JsonValueKind.String && decimal.TryParse(p.GetString(), out v)) return v;
+            return null;
         }
     }
 }
