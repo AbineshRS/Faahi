@@ -92,6 +92,6 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "varchar(400)")]
         public string? notes { get; set; }
 
-        public ICollection<im_purchase_return_details_line>? im_purchase_return_details_line { get; set; } = null;
+        public ICollection<im_purchase_return_details_line>? im_purchase_return_details_line { get; set; } = new List<im_purchase_return_details_line>();
     }
 }

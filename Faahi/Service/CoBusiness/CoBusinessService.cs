@@ -96,6 +96,7 @@ namespace Faahi.Service.CoBusiness
                     _context.am_table_next_key.Add(am_Table_Next_Key);
                     await _context.SaveChangesAsync();
                 }
+                co_avl_countries co_Avl_Countries = new co_avl_countries();
 
                 var table = "co_business";
                 var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == business.company_id);
@@ -122,16 +123,79 @@ namespace Faahi.Service.CoBusiness
                 business.sites_allowed = 2;
                 business.sites_users_allowed = 2;
 
+                var co_avl = await _context.avl_countries.FirstOrDefaultAsync(a => a.name == business.country);
+
+                co_Avl_Countries.avl_countries_id = Guid.CreateVersion7();
+                co_Avl_Countries.name = co_avl.name;
+                co_Avl_Countries.country_code = co_avl.country_code;
+                co_Avl_Countries.flag = co_avl.flag;
+                co_Avl_Countries.dialling_code = co_avl.dialling_code;
+                co_Avl_Countries.currency_code = co_avl.currency_code;
+                co_Avl_Countries.currency_name = co_avl.currency_name;
+                co_Avl_Countries.exchange_rate = 1;
+                co_Avl_Countries.company_id = business.company_id;
+                co_Avl_Countries.serv_available = "T";
+                _context.co_avl_countries.Add(co_Avl_Countries);
+
+
                 foreach (var address in business.co_addresses)
                 {
-
                     address.company_address_id = Guid.CreateVersion7();
                     address.company_id = business.company_id;
                     address.edit_date_time = DateTime.Now;
-
                 }
 
-             
+                am_users am_Users = new am_users
+                {
+                    userId = Guid.CreateVersion7(),
+                    userName = business.email,
+                    password = hashedPassword,
+                    email = business.email,
+                    fullName = business.business_name,
+                    emailVerified = "T",
+                    created_at = DateTime.Now,
+                    edit_date_time = DateTime.Now,
+                    status = "T",
+                    phoneNumber = business.phoneNumber,
+
+                    am_roles = new List<am_roles>() 
+                }; var role = new am_roles
+                {
+                    role_id = Guid.CreateVersion7(),
+                    role_code = "CO",
+                    user_ids = am_Users.userId,
+                    role_group ="CO-ADMIN",
+                    role_name = "CO-ADMIN",
+                    description = "Whole Access",
+                    is_system_role = "T",
+                    am_user_roles = new List<am_user_roles>() 
+                };
+
+                var userRole = new am_user_roles
+                {
+                    user_role_id = Guid.CreateVersion7(),
+                    user_id = am_Users.userId,
+                    role_id = role.role_id,
+                    business_id = business.company_id,
+                    created_at = DateTime.Now,
+                    am_user_business_access = new List<am_user_business_access>() 
+                };
+
+                var businessAccess = new am_user_business_access
+                {
+                    access_id = Guid.CreateVersion7(),
+                    user_role_id = userRole.user_role_id,
+                    user_id = am_Users.userId,
+                    business_id = business.company_id,
+                    access_level = "Whole Access",
+                    status = "T",
+                    created_at = DateTime.Now
+                };
+
+                userRole.am_user_business_access.Add(businessAccess);
+                role.am_user_roles.Add(userRole);
+                am_Users.am_roles.Add(role);
+                _context.am_users.Add(am_Users);
 
 
                 await _context.co_business.AddAsync(business);
@@ -151,106 +215,106 @@ namespace Faahi.Service.CoBusiness
 
                 string subject = "Congratulations! Your Seller Account on Faahi is Ready";
                 string body = @"
-                    <!DOCTYPE html>
-                    <html lang='en'>
-                    <head>
-                        <meta charset='UTF-8'>
-                        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                        <title>Welcome to Faahi Seller Platform</title>
-                        <style>
-                            body {
-                                font-family: 'Arial', sans-serif;
-                                background-color: #f7f7f7;
-                                margin: 0;
-                                padding: 0;
-                                color: #333;
-                            }
-                            .email-container {
-                                width: 100%;
-                                max-width: 600px;
-                                margin: 0 auto;
-                                background-color: #fff;
-                                border-radius: 8px;
-                                overflow: hidden;
-                                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                            }
-                            .email-header {
-                                background-color: #28a745;
-                                color: #fff;
-                                padding: 20px;
-                                text-align: center;
-                            }
-                            .email-header h1 {
-                                margin: 0;
-                                font-size: 24px;
-                            }
-                            .email-body {
-                                padding: 30px;
-                                text-align: left;
-                                font-size: 16px;
-                                line-height: 1.6;
-                            }
-                            .email-body p {
-                                margin-bottom: 15px;
-                            }
-                            .email-body strong {
-                                color: #28a745;
-                            }
-                            .email-footer {
-                                background-color: #f1f1f1;
-                                padding: 20px;
-                                text-align: center;
-                                font-size: 12px;
-                                color: #777;
-                            }
-                            .email-footer a {
-                                color: #28a745;
-                                text-decoration: none;
-                            }
-                            .button {
-                                background-color: #28a745;
-                                color: #fff;
-                                padding: 12px 24px;
-                                text-align: center;
-                                display: inline-block;
-                                border-radius: 5px;
-                                text-decoration: none;
-                                font-weight: bold;
-                                margin-top: 20px;
-                                width: 100%;
-                                max-width: 220px;
-                                margin-left: auto;
-                                margin-right: auto;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class='email-container'>
-                            <div class='email-header'>
-                                <h1>Welcome to Faahi Seller Platform</h1>
-                            </div>
-                            <div class='email-body'>
-                                <p>Dear " + business.name + @",</p>
-                                <p>Congratulations! You have successfully registered as a seller on <strong>Faahi</strong>.</p>
-                                <p>We are excited to have you join our marketplace. As a seller, you'll now have the ability to manage your products, track your sales, and connect with customers across the globe.</p>
-                                <p>Here are a few next steps to get started:</p>
-                                <ul>
-                                    <li><strong>Set up your store</strong> – Personalize your storefront and manage your brand.</li>
-                                    <li><strong>Upload your products</strong> – Start adding your products to our platform.</li>
-                                    <li><strong>Start selling</strong> – Once your products are live, customers can start buying from you!</li>
-                                </ul>
-                                <p>If you have any questions or need assistance, our support team is here to help.</p>
-                                <a href='mailto:support@faahi.com' class='button'>Contact Support</a>
-                            </div>
-                            <div class='email-footer'>
-                                <p>Best regards,</p>
-                                <p>The Faahi Team</p>
-                                <p><small>If you need assistance, feel free to reach out to us at <a href='mailto:support@faahi.com'>support@faahi.com</a>.</small></p>
-                            </div>
-                        </div>
-                    </body>
-                    </html>
-                    ";
+                            <!DOCTYPE html>
+                            <html lang='en'>
+                            <head>
+                                <meta charset='UTF-8'>
+                                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                                <title>Welcome to Faahi Seller Platform</title>
+                                <style>
+                                    body {
+                                        font-family: 'Arial', sans-serif;
+                                        background-color: #f7f7f7;
+                                        margin: 0;
+                                        padding: 0;
+                                        color: #333;
+                                    }
+                                    .email-container {
+                                        width: 100%;
+                                        max-width: 600px;
+                                        margin: 0 auto;
+                                        background-color: #fff;
+                                        border-radius: 8px;
+                                        overflow: hidden;
+                                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                                    }
+                                    .email-header {
+                                        background-color: #28a745;
+                                        color: #fff;
+                                        padding: 20px;
+                                        text-align: center;
+                                    }
+                                    .email-header h1 {
+                                        margin: 0;
+                                        font-size: 24px;
+                                    }
+                                    .email-body {
+                                        padding: 30px;
+                                        text-align: left;
+                                        font-size: 16px;
+                                        line-height: 1.6;
+                                    }
+                                    .email-body p {
+                                        margin-bottom: 15px;
+                                    }
+                                    .email-body strong {
+                                        color: #28a745;
+                                    }
+                                    .email-footer {
+                                        background-color: #f1f1f1;
+                                        padding: 20px;
+                                        text-align: center;
+                                        font-size: 12px;
+                                        color: #777;
+                                    }
+                                    .email-footer a {
+                                        color: #28a745;
+                                        text-decoration: none;
+                                    }
+                                    .button {
+                                        background-color: #28a745;
+                                        color: #fff;
+                                        padding: 12px 24px;
+                                        text-align: center;
+                                        display: inline-block;
+                                        border-radius: 5px;
+                                        text-decoration: none;
+                                        font-weight: bold;
+                                        margin-top: 20px;
+                                        width: 100%;
+                                        max-width: 220px;
+                                        margin-left: auto;
+                                        margin-right: auto;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <div class='email-container'>
+                                    <div class='email-header'>
+                                        <h1>Welcome to Faahi Seller Platform</h1>
+                                    </div>
+                                    <div class='email-body'>
+                                        <p>Dear " + business.name + @",</p>
+                                        <p>Congratulations! You have successfully registered as a seller on <strong>Faahi</strong>.</p>
+                                        <p>We are excited to have you join our marketplace. As a seller, you'll now have the ability to manage your products, track your sales, and connect with customers across the globe.</p>
+                                        <p>Here are a few next steps to get started:</p>
+                                        <ul>
+                                            <li><strong>Set up your store</strong> – Personalize your storefront and manage your brand.</li>
+                                            <li><strong>Upload your products</strong> – Start adding your products to our platform.</li>
+                                            <li><strong>Start selling</strong> – Once your products are live, customers can start buying from you!</li>
+                                        </ul>
+                                        <p>If you have any questions or need assistance, our support team is here to help.</p>
+                                        <a href='mailto:support@faahi.com' class='button'>Contact Support</a>
+                                    </div>
+                                    <div class='email-footer'>
+                                        <p>Best regards,</p>
+                                        <p>The Faahi Team</p>
+                                        <p><small>If you need assistance, feel free to reach out to us at <a href='mailto:support@faahi.com'>support@faahi.com</a>.</small></p>
+                                    </div>
+                                </div>
+                            </body>
+                            </html>
+                            ";
                 am_table.next_key = key + 1;
                 _context.am_table_next_key.Update(am_table);
 
@@ -288,7 +352,7 @@ namespace Faahi.Service.CoBusiness
         {
             try
             {
-                var company_list = await _context.co_business.Include(a=>a.co_addresses).OrderByDescending(a=>a.company_code).ToListAsync();
+                var company_list = await _context.co_business.Include(a => a.co_addresses).OrderByDescending(a => a.company_code).ToListAsync();
                 return new ServiceResult<List<co_business>>
                 {
                     Status = 1,
@@ -311,6 +375,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ActionResult<ServiceResult<string>>> Upload_logo(IFormFile formFile, Guid company_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (formFile == null || formFile.Length == 0)
             {
                 _logger.LogWarning("No file uploaded");
@@ -347,7 +412,7 @@ namespace Faahi.Service.CoBusiness
                 using var s3Client = new AmazonS3Client(accessKey, secretKey, s3Config);
 
                 // ✅ Delete old logo if exists
-                var co_buss = await _context.co_business.FirstOrDefaultAsync(a=>a.company_id==company_id);
+                var co_buss = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == company_id);
                 if (co_buss != null && !string.IsNullOrEmpty(co_buss.logo_fileName))
                 {
                     try
@@ -396,7 +461,7 @@ namespace Faahi.Service.CoBusiness
                 co_buss.logo_fileName = relativePath;
                 _context.co_business.Update(co_buss);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Success = true,
@@ -406,6 +471,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (AmazonS3Exception s3Ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(s3Ex, "Wasabi S3 error: {Message}", s3Ex.Message);
                 return new ServiceResult<string>
                 {
@@ -513,7 +579,7 @@ namespace Faahi.Service.CoBusiness
                 var user = _context.co_business.FirstOrDefault(a => a.name == username || a.email == username);
                 if (user is null)
                 {
-                    
+
                     var store_user = await _context.st_Users.FirstOrDefaultAsync(a => a.email == username);
                     var accessToken_site_users = CreatTokensite_user(store_user, 15);   // 15 minutes
                     var refreshToken_site_users = CreatTokensite_user(store_user, 10080); // 7 days (in minutes)
@@ -522,7 +588,7 @@ namespace Faahi.Service.CoBusiness
                     {
                         return new AuthResponse
                         {
-                            status=2,
+                            status = 2,
                             AccessToken = accessToken_site_users,
                             RefreshToken = refreshToken_site_users
                         };
@@ -535,10 +601,10 @@ namespace Faahi.Service.CoBusiness
                     {
                         return null;
                     }
-                   
+
                     return new AuthResponse
                     {
-                        status=0,
+                        status = 0,
                         AccessToken = accessToken_site_users,
                         RefreshToken = refreshToken_site_users
                     };
@@ -553,7 +619,7 @@ namespace Faahi.Service.CoBusiness
 
                 return new AuthResponse
                 {
-                    status=1,
+                    status = 1,
                     AccessToken = accessToken,
                     RefreshToken = refreshToken
                 };
@@ -623,6 +689,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<string>> send_reset_password(string email)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email == null)
             {
                 _logger.LogWarning("No email found", email);
@@ -712,6 +779,7 @@ namespace Faahi.Service.CoBusiness
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Success = true,
@@ -722,6 +790,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                    await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while send reset password");
                 return new ServiceResult<string>
                 {
@@ -737,6 +806,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<am_emailVerifications>> verify(string email, string token, string userType)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("No email found", email);
@@ -766,7 +836,7 @@ namespace Faahi.Service.CoBusiness
                         Success = false,
                         Message = "You have already verifyed",
                         Status = -4,
-                        Data=am_email
+                        Data = am_email
 
                     };
                 }
@@ -788,7 +858,7 @@ namespace Faahi.Service.CoBusiness
                         Success = false,
                         Message = "Invalid or expired token",
                         Status = -3,
-                        Data=am_email
+                        Data = am_email
                     };
                 }
                 am_email.verified = "T";
@@ -796,7 +866,7 @@ namespace Faahi.Service.CoBusiness
 
                 _context.am_emailVerifications.Update(am_email);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -807,6 +877,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while email verify");
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -820,6 +891,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<am_emailVerifications>> Password_Verify(string email, string token)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email is null)
             {
                 _logger.LogWarning("No email found", email);
@@ -876,7 +948,7 @@ namespace Faahi.Service.CoBusiness
 
                 _context.am_emailVerifications.Update(am_email);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = true,
@@ -887,6 +959,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while password verify");
                 return new ServiceResult<am_emailVerifications>
                 {
@@ -900,6 +973,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (email == null)
             {
                 _logger.LogWarning("No email found", email);
@@ -973,6 +1047,7 @@ namespace Faahi.Service.CoBusiness
                 }
                 _context.co_business.Update(co_business);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<string>
                 {
                     Success = true,
@@ -984,6 +1059,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while reset password");
                 return new ServiceResult<string>
                 {
@@ -1021,6 +1097,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<co_business>> Update_profile(co_business user, string company_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (user == null)
             {
                 _logger.LogWarning("No user data provided for update", user);
@@ -1040,7 +1117,7 @@ namespace Faahi.Service.CoBusiness
                 {
                     return new ServiceResult<co_business>
                     {
-                        Status=400,
+                        Status = 400,
                         Success = false,
                         Message = "User not found",
                         Data = null
@@ -1069,9 +1146,10 @@ namespace Faahi.Service.CoBusiness
                 }
                 _context.co_business.Update(existing);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<co_business>
                 {
-                    Status=200,
+                    Status = 200,
                     Success = true,
                     Message = "User profile updated successfully",
                     Data = existing
@@ -1079,6 +1157,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating co_business");
                 return new ServiceResult<co_business>
                 {
@@ -1092,6 +1171,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<ActionResult>> Inactive_company(Guid company_id)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (company_id == Guid.Empty)
             {
                 _logger.LogWarning("No company ID provided for inactivation", company_id);
@@ -1117,6 +1197,7 @@ namespace Faahi.Service.CoBusiness
                 existing.status = "F";
                 _context.co_business.Update(existing);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<ActionResult>
                 {
                     Success = true,
@@ -1126,6 +1207,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while inactivating company");
                 return new ServiceResult<ActionResult>
                 {
@@ -1138,6 +1220,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (co_Avl_Countries == null || co_Avl_Countries == null || string.IsNullOrWhiteSpace(co_Avl_Countries.name))
             {
                 _logger.LogWarning("Invalid or missing country data", co_Avl_Countries);
@@ -1152,7 +1235,7 @@ namespace Faahi.Service.CoBusiness
             {
                 // Check if country already exists
                 var existingData = await _context.co_avl_countries
-                    .FirstOrDefaultAsync(a => a.name.ToLower() == co_Avl_Countries.name.ToLower()&& a.company_id== co_Avl_Countries.company_id);
+                    .FirstOrDefaultAsync(a => a.name.ToLower() == co_Avl_Countries.name.ToLower() && a.company_id == co_Avl_Countries.company_id);
 
                 if (existingData != null)
                 {
@@ -1197,7 +1280,7 @@ namespace Faahi.Service.CoBusiness
 
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<co_avl_countries>
                 {
                     Success = true,
@@ -1208,6 +1291,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while creating available country");
                 return new ServiceResult<co_avl_countries>
                 {
@@ -1301,7 +1385,7 @@ namespace Faahi.Service.CoBusiness
                     Message = "no data found"
                 };
             }
-            var currency_list = await _context.co_avl_countries.Where(a=>a.company_id==company_id).ToListAsync();
+            var currency_list = await _context.co_avl_countries.Where(a => a.company_id == company_id).ToListAsync();
             return new ServiceResult<List<co_avl_countries>>
             {
                 Success = true,
@@ -1312,6 +1396,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<im_site>> Create_im_site(im_site im_site)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (im_site == null)
             {
                 _logger.LogWarning("No im_site data provided for creation", im_site);
@@ -1386,6 +1471,7 @@ namespace Faahi.Service.CoBusiness
 
                 _context.im_site.Add(im_site);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_site>
                 {
                     Success = true,
@@ -1395,6 +1481,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "error occurred adding im_site");
                 return new ServiceResult<im_site>
                 {
@@ -1499,6 +1586,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<im_site>> Update_imsite(string site_id, im_site imsite)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (site_id == null || imsite == null)
             {
                 _logger.LogWarning("No site_id or imsite data provided for update", site_id, imsite);
@@ -1560,6 +1648,7 @@ namespace Faahi.Service.CoBusiness
 
                 }
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_site>
                 {
                     Success = true,
@@ -1570,6 +1659,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating im_site");
                 return new ServiceResult<im_site>
                 {
@@ -1583,6 +1673,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<im_site_users>> Add_site_users(im_site_users im_Site_Users)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (im_Site_Users == null)
             {
                 _logger.LogWarning("No im_site_users data provided for creation", im_Site_Users);
@@ -1640,7 +1731,7 @@ namespace Faahi.Service.CoBusiness
                 im_Site_Users.status = "T";
                 _context.im_site_users.Add(im_Site_Users);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 var email_send = Send_Emails.EmailBody_site_users(im_Site_Users.fullName, im_Site_Users.site_user_code, without_hased_password);
                 string subject = "Welcome to Faahi – Your Site User Account is Ready!";
                 var emailService = new EmailService(_configuration);
@@ -1656,6 +1747,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while adding site user");
                 return new ServiceResult<im_site_users>
                 {
@@ -1727,6 +1819,7 @@ namespace Faahi.Service.CoBusiness
 
         public async Task<ServiceResult<im_site_users>> Update_site_users(Guid userId, im_site_users im_Site_Users)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (userId == null || im_Site_Users == null)
             {
                 _logger.LogWarning("No userId or im_site_users data provided for update", userId, im_Site_Users);
@@ -1756,6 +1849,7 @@ namespace Faahi.Service.CoBusiness
 
                 _context.im_site_users.Update(site_user);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_site_users>
                 {
                     Success = true,
@@ -1766,6 +1860,7 @@ namespace Faahi.Service.CoBusiness
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating site user");
                 return new ServiceResult<im_site_users>
                 {
@@ -1801,7 +1896,7 @@ namespace Faahi.Service.CoBusiness
             };
         }
 
-        
+
 
     }
 }

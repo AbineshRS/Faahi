@@ -18,6 +18,7 @@ namespace Faahi.Service.PartyService
 
         public async Task<ServiceResult<st_Parties>> Create_partys(st_Parties parties)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (parties == null)
             {
                 _logger.LogWarning("Create_partys: No data found");
@@ -82,7 +83,7 @@ namespace Faahi.Service.PartyService
 
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<st_Parties>
                 {
                     Success = true,
@@ -94,6 +95,7 @@ namespace Faahi.Service.PartyService
             }
             catch(Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_partys: An error occurred while creating party");
                 return new ServiceResult<st_Parties>
                 {

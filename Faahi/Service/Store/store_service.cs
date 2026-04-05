@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Migrations;
+using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
@@ -12,6 +14,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Utilities.Collections;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -38,6 +42,8 @@ namespace Faahi.Service.Store
 
         public async Task<ServiceResult<Store_users>> Create_sellers(Store_users Store_users)
         {
+
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (Store_users == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_sellers: st_sellers is null");
@@ -96,6 +102,7 @@ namespace Faahi.Service.Store
 
                 if (st_userAccesstore != null)
                 {
+                    await transaction.RollbackAsync();
                     return new ServiceResult<Store_users>
                     {
                         Success = false,
@@ -156,14 +163,107 @@ namespace Faahi.Service.Store
                     var email_exist = await _context.st_Users.FirstOrDefaultAsync(a => a.email == st_Users.email);
                     if (email_exist == null)
                     {
-                        var email_auth = await _authService.email_verification(st_Users.email, "st-seller");
+                        //var email_auth = await _authService.email_verification(st_Users.email, "st-seller");
 
                     }
                 }
+                var st_UserRoles = await _context.st_UserRoles.FirstOrDefaultAsync(a => a.role_id == Store_users.role_id);
+                var am_user = await _context.am_users.Include(u => u.am_roles).FirstOrDefaultAsync(a => a.email == Store_users.email);
+                if (am_user == null)
+                {
+                    am_users am_Users = new am_users
+                    {
+                        userId = Guid.CreateVersion7(),
+                        userName = Store_users.email,
+                        password = PasswordHelper.HashPassword(Store_users.password),
+                        email = Store_users.email,
+                        fullName = Store_users.Full_name,
+                        emailVerified = "T",
+                        created_at = DateTime.Now,
+                        edit_date_time = DateTime.Now,
+                        status = "T",
+                        phoneNumber = Store_users.phone,
+
+                        am_roles = new List<am_roles>()
+                    }; var role = new am_roles
+                    {
+                        role_id = Guid.CreateVersion7(),
+                        role_code = "ST",
+                        user_ids = am_Users.userId,
+                        role_group = st_UserRoles.role_name,
+                        role_name = st_UserRoles.role_name,
+                        description = st_UserRoles.description,
+                        is_system_role = "T",
+                        am_user_roles = new List<am_user_roles>()
+                    };
+
+                    var userRole = new am_user_roles
+                    {
+                        user_role_id = Guid.CreateVersion7(),
+                        role_id = role.role_id,
+                        user_id = am_Users.userId,
+                        store_id = Store_users.store_id,
+                        business_id = co_business.company_id,
+                        created_at = DateTime.Now,
+                        am_user_business_access = new List<am_user_business_access>()
+                    };
+
+                    var businessAccess = new am_user_business_access
+                    {
+                        access_id = Guid.CreateVersion7(),
+                        user_role_id = userRole.user_role_id,
+                        user_id = am_Users.userId,
+                        store_id = Store_users.store_id,
+                        business_id = co_business.company_id,
+                        access_level = st_UserRoles.role_name,
+                        status = "T",
+                        created_at = DateTime.Now
+                    };
+
+                    userRole.am_user_business_access.Add(businessAccess);
+                    role.am_user_roles.Add(userRole);
+                    am_Users.am_roles.Add(role);
+                    _context.am_users.Add(am_Users);
+                }
+                else
+                {
+                    var role = new am_roles
+                    {
+                        role_id = Guid.CreateVersion7(),
+                        role_code = "ST",
+                        user_ids = am_user.userId,
+                        role_group = st_UserRoles.role_name,
+                        role_name = st_UserRoles.role_name,
+                        description = st_UserRoles.description,
+                        is_system_role = "T",
+                        am_user_roles = new List<am_user_roles>()
+                    };
+
+                    var userRole = new am_user_roles
+                    {
+                        user_role_id = Guid.CreateVersion7(),
+                        role_id = role.role_id,
+                        user_id = am_user.userId,
+                        business_id = co_business.company_id,
+                        store_id = Store_users.store_id,
+                        created_at = DateTime.Now,
+                        am_user_business_access = new List<am_user_business_access>()
+                    };
+
+
+
+                    _context.am_user_roles.Add(userRole);
+                    _context.am_roles.Add(role);
+                    role.am_user_roles.Add(userRole);
+                    am_user.am_roles.Add(role);
+                    _context.am_users.Update(am_user);
+                }
+
+
 
 
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<Store_users>
                 {
                     Success = true,
@@ -174,6 +274,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_sellers: Exception occurred while creating seller");
                 return new ServiceResult<Store_users>
                 {
@@ -188,6 +289,7 @@ namespace Faahi.Service.Store
 
         public async Task<ServiceResult<st_stores>> Create_stores(st_stores store_Add)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (store_Add == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_stores: st_stores is null");
@@ -200,7 +302,7 @@ namespace Faahi.Service.Store
             }
             try
             {
-                var existingStore = await _context.st_stores.Where(s => s.company_id == store_Add.company_id && s.status=="T").ToListAsync();
+                var existingStore = await _context.st_stores.Where(s => s.company_id == store_Add.company_id && s.status == "T").ToListAsync();
                 var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == store_Add.company_id);
                 if (existingStore.Count >= co_business.sites_allowed)
                 {
@@ -211,6 +313,10 @@ namespace Faahi.Service.Store
                         Message = "Store limit reached for this company",
                     };
                 }
+                var table = "st_stores";
+                var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == co_business.company_id);
+                var key = Convert.ToInt16(am_table.next_key);
+
                 st_stores st_Stores = new st_stores();
                 st_Stores.store_id = Guid.CreateVersion7();
                 st_Stores.company_id = store_Add.company_id;
@@ -219,28 +325,29 @@ namespace Faahi.Service.Store
                 st_Stores.store_type = store_Add.store_type;
                 st_Stores.created_at = DateTime.Now;
                 st_Stores.status = store_Add.status;
-                st_Stores.default_close_time= store_Add.default_close_time;
-                st_Stores.phone1= store_Add.phone1;
-                st_Stores.phone2= store_Add.phone2;
-                st_Stores.email= store_Add.email;
+                st_Stores.default_close_time = store_Add.default_close_time;
+                st_Stores.phone1 = store_Add.phone1;
+                st_Stores.phone2 = store_Add.phone2;
+                st_Stores.email = store_Add.email;
                 st_Stores.tax_identification_number = store_Add.tax_identification_number;
-                st_Stores.default_invoice_init= store_Add.default_invoice_init;
-                st_Stores.default_quote_init= store_Add.default_quote_init;
-                st_Stores.default_invoice_template=store_Add.default_invoice_template;
-                st_Stores.default_receipt_template=store_Add.default_receipt_template;
+                st_Stores.default_invoice_init = store_Add.default_invoice_init;
+                st_Stores.default_quote_init = store_Add.default_quote_init;
+                st_Stores.default_invoice_template = store_Add.default_invoice_template;
+                st_Stores.default_receipt_template = store_Add.default_receipt_template;
                 st_Stores.last_transaction_date = DateOnly.FromDateTime(DateTime.Now);
-                st_Stores.default_currency=store_Add.default_currency;
-                st_Stores.service_charge= store_Add.service_charge;
-                st_Stores.tax_inclusive_price= store_Add.tax_inclusive_price;
-                st_Stores.tax_activity_no= store_Add.tax_activity_no;
+                st_Stores.default_currency = store_Add.default_currency;
+                st_Stores.service_charge = store_Add.service_charge;
+                st_Stores.tax_inclusive_price = store_Add.tax_inclusive_price;
+                st_Stores.tax_activity_no = store_Add.tax_activity_no;
                 st_Stores.tax_payer_name = store_Add.tax_payer_name;
                 st_Stores.low_stock_alert_email = store_Add.low_stock_alert_email;
                 st_Stores.plastic_bag_tax_amount = store_Add.plastic_bag_tax_amount;
                 st_Stores.message_on_receipt = store_Add.message_on_receipt;
                 st_Stores.message_on_invoice = store_Add.message_on_invoice;
+                st_Stores.store_code = Convert.ToString(key + 1);
 
 
-               store_Add.store_id = st_Stores.store_id;
+                store_Add.store_id = st_Stores.store_id;
                 store_Add.created_at = st_Stores.created_at;
 
                 st_Stores.st_StoresAddres = new List<st_StoresAddres>();
@@ -262,11 +369,13 @@ namespace Faahi.Service.Store
                     _StoresAddres.is_current = "T";
                     st_Stores.st_StoresAddres.Add(_StoresAddres);
 
-                    
+
                 }
 
                 await _context.st_stores.AddAsync(st_Stores);
-                await _context.SaveChangesAsync();
+
+                am_table.next_key = key + 1;
+                _context.am_table_next_key.Update(am_table);
 
                 if (co_business != null)
                 {
@@ -275,6 +384,8 @@ namespace Faahi.Service.Store
                     _context.SaveChanges();
                 }
 
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<st_stores>
                 {
                     Success = true,
@@ -285,6 +396,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_stores: Exception occurred while creating store");
                 return new ServiceResult<st_stores>
                 {
@@ -591,6 +703,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<st_UserRoles>> Create_roles(st_UserRoles st_UserRoles)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_UserRoles == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_roles: st_UserRoles is null");
@@ -620,6 +733,7 @@ namespace Faahi.Service.Store
                 st_UserRoles.description = st_UserRoles.description;
                 await _context.st_UserRoles.AddAsync(st_UserRoles);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<st_UserRoles>
                 {
                     Success = true,
@@ -630,6 +744,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_roles: Exception occurred while creating role");
                 return new ServiceResult<st_UserRoles>
                 {
@@ -639,11 +754,15 @@ namespace Faahi.Service.Store
                 };
             }
         }
-        public async Task<ServiceResult<List<st_UserRoles>>> Get_roles_by_company_id()
+        public async Task<ServiceResult<List<st_UserRoles>>> Get_roles_by_company_id(Guid company_id)
         {
             try
             {
-                var roles = await _context.st_UserRoles.ToListAsync();
+                IQueryable<st_UserRoles> query = _context.st_UserRoles.Where(a => a.company_id == company_id);
+
+                var roles = await query.ToListAsync();
+
+                //var roles = await _context.st_UserRoles.Where(a=>a.company_id== company_id).ToListAsync();
                 if (roles == null || roles.Count == 0)
                 {
                     return new ServiceResult<List<st_UserRoles>>
@@ -674,6 +793,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<st_UserStoreAccess>> Create_store_access(st_UserStoreAccess st_UserStoreAccess)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_UserStoreAccess == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Create_store_access: st_UserStoreAccess is null");
@@ -694,6 +814,7 @@ namespace Faahi.Service.Store
                 st_UserStoreAccess.created_at = DateTime.Now;
                 await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<st_UserStoreAccess>
                 {
                     Success = true,
@@ -704,6 +825,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Create_store_access: Exception occurred while creating store access");
                 return new ServiceResult<st_UserStoreAccess>
                 {
@@ -725,7 +847,7 @@ namespace Faahi.Service.Store
                     var storeIds = st_store.Select(s => s.store_id).ToList();
 
                     storeList = _context.st_stores.AsEnumerable()
-                          .Where(a => storeIds.Contains(a.store_id) && a.status=="T")
+                          .Where(a => storeIds.Contains(a.store_id) && a.status == "T")
                           .ToList();
 
                 }
@@ -788,7 +910,7 @@ namespace Faahi.Service.Store
         {
             try
             {
-                var store = await _context.st_stores.Include(a => a.st_StoresAddres.Where(a=>a.is_current=="T")).ThenInclude(a=>a.st_store_currencies).FirstOrDefaultAsync(s => s.store_id == store_id);
+                var store = await _context.st_stores.Include(a => a.st_StoresAddres.Where(a => a.is_current == "T")).ThenInclude(a => a.st_store_currencies).FirstOrDefaultAsync(s => s.store_id == store_id);
 
                 if (store == null)
                 {
@@ -842,6 +964,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<st_stores>> Update_store(Guid store_id, st_stores st_Stores)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_Stores == null || store_id == null)
             {
                 _logger.LogWarning(_logger.ToString(), "Update_store: st_Stores is null,store_id is null");
@@ -892,7 +1015,7 @@ namespace Faahi.Service.Store
                 existingStore.message_on_invoice = st_Stores.message_on_invoice;
                 //existingStore.st_StoresAddres = new List<st_StoresAddres>();
 
-                
+
                 foreach (var st_address in st_Stores.st_StoresAddres)
                 {
                     var existingAddress = existingStore.st_StoresAddres.FirstOrDefault(a => a.store_address_id == st_address.store_address_id);
@@ -921,7 +1044,7 @@ namespace Faahi.Service.Store
                         }
                         foreach (var currency in st_address.st_store_currencies)
                         {
-                            var exisitg_currencies = await _context.st_store_currencies.FirstOrDefaultAsync(a=>a.store_currency_id==currency.store_currency_id);
+                            var exisitg_currencies = await _context.st_store_currencies.FirstOrDefaultAsync(a => a.store_currency_id == currency.store_currency_id);
                             if (exisitg_currencies == null)
                             {
                                 st_store_currencies st_Store_Currencies = new st_store_currencies();
@@ -932,7 +1055,7 @@ namespace Faahi.Service.Store
                                 _context.st_store_currencies.Add(st_Store_Currencies);
                                 existingAddress.st_store_currencies.Add(st_Store_Currencies);
                             }
-                            
+
                         }
                     }
                     else
@@ -964,13 +1087,14 @@ namespace Faahi.Service.Store
                             st_StoresAddres.st_store_currencies.Add(st_Store_Currencies);
                         }
                     }
-                    
+
 
                 }
                 existingStore.st_StoresAddres = st_Stores1.st_StoresAddres;
 
                 _context.st_stores.Update(existingStore);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<st_stores>
                 {
                     Success = true,
@@ -981,6 +1105,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Update_store: Exception occurred while updating store");
                 return new ServiceResult<st_stores>
                 {
@@ -992,6 +1117,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<List<st_StoreCategories>>> update_category(List<st_StoreCategories> st_StoreCategories)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (st_StoreCategories == null)
             {
                 _logger.LogWarning("update_category called with null st_StoreCategories");
@@ -1042,6 +1168,7 @@ namespace Faahi.Service.Store
                         await _context.SaveChangesAsync();
                     }
                 }
+                await transaction.CommitAsync();
                 return new ServiceResult<List<st_StoreCategories>>
                 {
                     Success = true,
@@ -1052,6 +1179,7 @@ namespace Faahi.Service.Store
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating store category");
                 return new ServiceResult<List<st_StoreCategories>>
                 {
@@ -1063,6 +1191,7 @@ namespace Faahi.Service.Store
         }
         public async Task<ServiceResult<st_StoresAddres>> add_sub_address(Guid store_id, st_StoresAddres st_StoresAddres)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (store_id == null)
             {
                 return new ServiceResult<st_StoresAddres>
@@ -1097,7 +1226,7 @@ namespace Faahi.Service.Store
                             _context.st_StoresAddres.Update(exising_address);
                             await _context.SaveChangesAsync();
                         }
-                       
+
 
                     }
 
@@ -1126,7 +1255,7 @@ namespace Faahi.Service.Store
 
                 _context.st_stores.Update(exising_data);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return new ServiceResult<st_StoresAddres>
                 {
                     Status = 1,
@@ -1136,8 +1265,9 @@ namespace Faahi.Service.Store
                 };
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error occurred while updating store ");
                 return new ServiceResult<st_StoresAddres>
                 {
@@ -1146,7 +1276,7 @@ namespace Faahi.Service.Store
                     Status = -1,
                 };
             }
-            
+
 
 
         }
@@ -1239,7 +1369,8 @@ namespace Faahi.Service.Store
 
         public async Task<ServiceResult<st_invoice_template>> Add_templates(st_invoice_template st_Invoice_Template)
         {
-            if(st_Invoice_Template == null)
+            var transaction = await _context.Database.BeginTransactionAsync();
+            if (st_Invoice_Template == null)
             {
                 _logger.LogInformation("Add_templates not found");
                 return new ServiceResult<st_invoice_template>
@@ -1250,16 +1381,18 @@ namespace Faahi.Service.Store
                 };
             }
             st_Invoice_Template.invoices_temp_id = Guid.CreateVersion7();
-            st_Invoice_Template.invoices_temp_name= st_Invoice_Template.invoices_temp_name;
+            st_Invoice_Template.invoices_temp_name = st_Invoice_Template.invoices_temp_name;
             st_Invoice_Template.invoices_temp_description = st_Invoice_Template.invoices_temp_description;
             _context.st_Invoice_Templates.Add(st_Invoice_Template);
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
             return new ServiceResult<st_invoice_template>
             {
                 Status = 200,
                 Message = "Updated",
                 Success = true,
-                Data= st_Invoice_Template
+                Data = st_Invoice_Template
             };
         }
 
@@ -1267,7 +1400,7 @@ namespace Faahi.Service.Store
         {
             try
             {
-                var templates = await _context.st_Invoice_Templates.OrderBy(a=>a.invoices_temp_name).ToListAsync();
+                var templates = await _context.st_Invoice_Templates.OrderBy(a => a.invoices_temp_name).ToListAsync();
                 if (templates.Count == 0)
                 {
                     return new ServiceResult<List<st_invoice_template>>
@@ -1286,7 +1419,7 @@ namespace Faahi.Service.Store
                 };
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return new ServiceResult<List<st_invoice_template>>
                 {
@@ -1296,7 +1429,7 @@ namespace Faahi.Service.Store
 
                 };
             }
-            
+
         }
     }
 

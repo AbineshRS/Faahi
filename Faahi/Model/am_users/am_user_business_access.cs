@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Faahi.Model.am_users
 {
@@ -14,10 +15,17 @@ namespace Faahi.Model.am_users
         [Column(TypeName = "uniqueidentifier ")]
         public Guid access_id { get; set; }
 
+        [JsonIgnore]
         [ForeignKey(nameof(user_id))]
         public am_users am_Users { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid user_id { get; set; }
+
+        [JsonIgnore]
+        [ForeignKey(nameof(user_role_id))]
+        public am_user_roles am_user_roles { get; set; }
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? user_role_id { get; set; }
 
 
         [ForeignKey(nameof(business_id))]

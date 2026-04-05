@@ -9,6 +9,10 @@ namespace Faahi.Service.Auth
     {
         Task<AuthResponse> LoginAsyn(string username,string password);
 
+        Task<ServiceResult<am_users>> am_user_login(string username,string password);
+
+        Task<AuthResponse> am_user_login_ids(Guid user_id, Guid business_id);
+
         Task<ServiceResult<am_users>> Create_account(am_users user);
 
         AuthResponse RefreshToken(string request);

@@ -17,6 +17,7 @@ namespace Faahi.Service.temp_serv
 
         public async Task<ServiceResult<List<temp_im_variant>>> Add_temp_varient(List<temp_im_variant> varient)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 Decimal quantity = 0;
@@ -99,6 +100,7 @@ namespace Faahi.Service.temp_serv
 
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<List<temp_im_variant>>
                 {
                     Status = 201,
@@ -109,6 +111,7 @@ namespace Faahi.Service.temp_serv
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogInformation("Error while inserting Temp data");
                 return new ServiceResult<List<temp_im_variant>>
                 {

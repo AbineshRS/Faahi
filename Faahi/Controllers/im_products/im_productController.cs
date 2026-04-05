@@ -60,7 +60,7 @@ namespace Faahi.Controllers.im_products
             var thumbnail = await _im_products.UploadProductAsync(formFile, product_id);
             return Ok(thumbnail);
         }
-        //[Authorize]
+        [Authorize]
         [HttpPost]
         [Route("UploadProductMultipleFiles/{product_id}/{variant_id}")]
         public async Task<ActionResult<string>> UploadMutiple_image(IFormFile[] formFiles, string product_id, string variant_id)
@@ -112,7 +112,7 @@ namespace Faahi.Controllers.im_products
             var result = await _im_products.Add_product_excel(im_Products, listing_id);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_company_product/{company_id}")]
         public async Task<IActionResult> get_company_product(Guid company_id, [FromQuery] string? searchText, [FromQuery] Guid? categoryId)
@@ -124,7 +124,7 @@ namespace Faahi.Controllers.im_products
             var all_product_details = await _im_products.get_company_product(company_id, searchText, categoryId);
             return Ok(all_product_details);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_all_product_details/{company_id}")]
         public async Task<IActionResult> all_product_details(Guid company_id)
@@ -136,7 +136,7 @@ namespace Faahi.Controllers.im_products
             var all_product_details = await _im_products.all_product_details(company_id);
             return Ok(all_product_details);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_Product_details/{product_id}")]
         public async Task<IActionResult> Get_product_details(Guid product_id)
@@ -184,7 +184,7 @@ namespace Faahi.Controllers.im_products
             var sub_category =await _im_products.Add_subCategory(product_id, im_ProductVariants);
             return Ok(sub_category);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_product_list")]
         public async Task<IActionResult> Get_product_list()
@@ -192,7 +192,7 @@ namespace Faahi.Controllers.im_products
             var product_list = await _im_products.Get_product_list();
             return Ok(product_list);
         }
-        //[Authorize]
+        [Authorize]
         [HttpPost]
         [Route("product_search/{search}/{store_id}")]
         public async Task<IActionResult> Product_search(string search,Guid store_id)
@@ -278,58 +278,6 @@ namespace Faahi.Controllers.im_products
 
 
 
-        [HttpPost("encript/{id}")]
-        public IActionResult EncryptId(string id)
-        {
-            var encrypted = EncryptionHelper.EncryptString(id); 
-            var urlSafeEncrypted = Uri.EscapeDataString(encrypted); 
-            return Ok(urlSafeEncrypted);
-        }
-
-
-        [HttpGet("get-by-id/{encryptedId}")]
-        public IActionResult GetProductByEncryptedId(string encryptedId)
-        {
-            try
-            {
-                var base64 = Uri.UnescapeDataString(encryptedId);
-
-                var decryptedId = EncryptionHelper.DecryptString(base64);
-
-                return Ok(decryptedId);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Invalid encrypted ID: {ex.Message}");
-            }
-        }
-        //[HttpGet("update-by-id/{encryptedId}")]
-        //public async Task<IActionResult> UpdateProductByEncryptedId(string encryptedId)
-        //{
-        //    try
-        //    {
-        //        // 1. Decode & decrypt the ID
-        //        var base64 = Uri.UnescapeDataString(encryptedId);
-        //        var productId = EncryptionHelper.DecryptString(base64);
-
-        //        // 2. Find the product in DB
-        //        var product = await _context.im_Products.FirstOrDefaultAsync(p => p.product_id == productId);
-        //        if (product == null)
-        //            return NotFound("Product not found");
-
-        //        // 3. Update fields from payload
-
-        //        var jsonData = JsonConvert.SerializeObject(product);
-        //        var encryptedData = EncryptionHelper.EncryptString(jsonData);
-        //        //await _context.SaveChangesAsync();
-
-        //        return Ok(product);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest($"Error: {ex.Message}");
-        //    }
-        //}
 
 
     }

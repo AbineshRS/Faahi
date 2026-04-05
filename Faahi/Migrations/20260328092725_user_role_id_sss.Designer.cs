@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260328092725_user_role_id_sss")]
+    partial class user_role_id_sss
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1851,9 +1854,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("store_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("store_user_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("user_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -1862,8 +1862,6 @@ namespace Faahi.Migrations
                     b.HasIndex("role_id");
 
                     b.HasIndex("store_id");
-
-                    b.HasIndex("store_user_id");
 
                     b.HasIndex(new[] { "business_id", "store_id" }, "IX_am_user_roles_business_store");
 
@@ -6387,10 +6385,6 @@ namespace Faahi.Migrations
                         .WithMany()
                         .HasForeignKey("store_id");
 
-                    b.HasOne("Faahi.Model.st_sellers.st_Users", "st_Users")
-                        .WithMany()
-                        .HasForeignKey("store_user_id");
-
                     b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
                         .WithMany()
                         .HasForeignKey("user_id")
@@ -6404,8 +6398,6 @@ namespace Faahi.Migrations
                     b.Navigation("c_business");
 
                     b.Navigation("st_Stores");
-
-                    b.Navigation("st_Users");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_addresses", b =>
