@@ -1,5 +1,6 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Dto.Auth;
 using Faahi.Model;
 using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
@@ -60,10 +61,14 @@ namespace Faahi.Controllers.Authentication
             var result = await _authService.am_user_login_ids(user_id,business_id);
             return Ok(result);
         }
-        [HttpPost("refresh-token/{refreshToken}")]
-        public ActionResult<AuthResponse> RefreshToken( string refreshToken)
+        //[AllowAnonymous]
+        [HttpPost("refresh-token")]
+        public ActionResult<AuthResponse> RefreshToken( RefreshTokenRequest request)
         {
-            var response = _authService.RefreshToken(refreshToken);
+            if (request == null || string.IsNullOrWhiteSpace(request.RefreshToken))
+                return BadRequest("Refresh token is required");
+
+            var response = _authService.RefreshToken(request.RefreshToken);
             if (response == null)
                 return Unauthorized("Invalid refresh token");
 

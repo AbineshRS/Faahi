@@ -1,6 +1,7 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Faahi.Dto;
+using Faahi.Dto.Auth;
 using Faahi.Model.co_business;
 using Faahi.Model.Email_verify;
 using Faahi.Model.im_products;
@@ -92,16 +93,15 @@ namespace Faahi.Controllers.Cobusiness
             var reset = await _co_businessService.send_reset_password(email);
             return Ok(reset);
         }
-        [HttpPost]
-        [Route("verify/{email}/{token}/{userType}")]
-        public async Task<ActionResult<am_emailVerifications>> Verify(string email, string token,string userType)
+        [AllowAnonymous]
+        [HttpPost("verify")]
+        public async Task<ActionResult<am_emailVerifications>> Verify(VerifyRequest req)
         {
-            if (email == null)
-            {
-                return Ok("No email found");
-            }
-            var verify_satus = await _co_businessService.verify(email, token, userType);
-            return Ok(verify_satus);
+            if (string.IsNullOrWhiteSpace(req.Email))
+                return BadRequest("No email found");
+
+            var verifyStatus = await _co_businessService.verify(req.Email, req.Token, req.UserType);
+            return Ok(verifyStatus);
         }
         [HttpPost]
         [Route("password_verify/{email}/{token}")]

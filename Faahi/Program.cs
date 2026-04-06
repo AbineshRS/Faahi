@@ -165,6 +165,7 @@ app.Use(async (context, next) =>
 
     await next();
 });
+app.UseRouting();
 app.UseHttpsRedirection();
 
 // ? CORS must be before authentication/authorization
