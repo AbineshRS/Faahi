@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260406135934_sa_table")]
+    partial class sa_table
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1662,18 +1665,11 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("company_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("created_at")
-                        .HasColumnType("datetime");
-
                     b.Property<string>("description")
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("role_name")
                         .HasColumnType("varchar(50)");
-
-                    b.Property<string>("status")
-                        .HasMaxLength(1)
-                        .HasColumnType("char(1)");
 
                     b.HasKey("role_id");
 

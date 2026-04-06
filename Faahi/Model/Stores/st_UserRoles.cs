@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -23,5 +24,13 @@ namespace Faahi.Model.Stores
         [Display(Name = "co_business")]
         [Column(TypeName = "uniqueidentifier")]
         public Guid? company_id { get; set; }
+
+        [Column(TypeName ="datetime")]
+        public DateTime? created_at { get; set; }
+
+        [Column(TypeName ="char(1)")]
+        [StringLength(1)]
+        [DefaultValue("T")]
+        public string? status { get; set; }
     }
 }
