@@ -182,6 +182,8 @@ namespace Faahi.Controllers.Application
 
         public DbSet<im_purchase_return_details_line> im_purchase_return_details_line { get; set; }
 
+        public DbSet<sa_roles> sa_roles { get; set; }
+
 
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }

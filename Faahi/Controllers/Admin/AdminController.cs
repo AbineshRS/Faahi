@@ -57,5 +57,20 @@ namespace Faahi.Controllers.Admin
             var data = await _admin.GetRegionsList();
             return Ok(data);
         }
+        [HttpPost]
+        [Route("add_roles")]
+        public async Task<ActionResult> AddRoles(sa_roles roles)
+        {
+            var data = await _admin.AddRoles(roles);
+            return Ok(data);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_roles")]
+        public async Task<IActionResult> GetRoles()
+        {
+            var data = await _admin.GetRolesList();
+            return Ok(data);
+        }
     }
 }

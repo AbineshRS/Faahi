@@ -18,6 +18,7 @@ using Org.BouncyCastle.Utilities.Collections;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace Faahi.Service.Store
@@ -39,7 +40,25 @@ namespace Faahi.Service.Store
             _authService = authService;
             _mapper = mapper;
         }
+        public string GeneratePassword(string input)
+        {
 
+            string prefix = new string(input.Where(char.IsLetter).Take(3).ToArray()).ToLower();
+
+            if (prefix.Length < 3)
+                prefix = prefix.PadRight(3, 'x');
+
+            // Random generators
+            var random = new Random();
+
+            string numbers = random.Next(100, 999).ToString(); // 3-digit number
+
+            string specialChars = "!@#$%^&*";
+            char special = specialChars[random.Next(specialChars.Length)];
+            string final = prefix + numbers + special;
+
+            return final;
+        }
         public async Task<ServiceResult<Store_users>> Create_sellers(Store_users Store_users)
         {
 
@@ -56,13 +75,13 @@ namespace Faahi.Service.Store
             }
             try
             {
-
+                bool isNewUser = false;
                 var st_sotore_access = await _context.st_UserStoreAccess.Where(a => a.store_id == Store_users.store_id).ToListAsync();
                 var user_ids = st_sotore_access.Select(s => s.user_id).ToList();
 
                 var st_store_users = await _context.st_UserStoreAccess.Where(a => a.user_id == Store_users.user_id).ToListAsync();
 
-
+                var Gen_password = "";
                 List<st_UserStoreAccess> existing_users = new List<st_UserStoreAccess>();
                 var existingSeller = await _context.st_Users.FirstOrDefaultAsync(s => s.email == Store_users.email);
                 if (existingSeller != null)
@@ -128,6 +147,8 @@ namespace Faahi.Service.Store
                     st_Users.user_id = Guid.CreateVersion7();
                     st_Users.company_id = Store_users.company_id;
                     st_Users.Full_name = Store_users.Full_name;
+
+                     Gen_password = GeneratePassword(st_Users.Full_name);
                     st_Users.email = Store_users.email;
                     st_Users.phone = Store_users.phone;
                     if (co_business != null)
@@ -141,7 +162,7 @@ namespace Faahi.Service.Store
                     }
                     else
                     {
-                        st_Users.password = PasswordHelper.HashPassword(st_Users.password);
+                        st_Users.password = PasswordHelper.HashPassword(Gen_password);
 
                     }
                     st_Users.account_type = Store_users.account_type;
@@ -171,11 +192,12 @@ namespace Faahi.Service.Store
                 var am_user = await _context.am_users.Include(u => u.am_roles).FirstOrDefaultAsync(a => a.email == Store_users.email);
                 if (am_user == null)
                 {
+                     isNewUser = true;
                     am_users am_Users = new am_users
                     {
                         userId = Guid.CreateVersion7(),
                         userName = Store_users.email,
-                        password = PasswordHelper.HashPassword(Store_users.password),
+                        password = PasswordHelper.HashPassword(Gen_password),
                         email = Store_users.email,
                         fullName = Store_users.Full_name,
                         emailVerified = "T",
@@ -258,8 +280,107 @@ namespace Faahi.Service.Store
                     am_user.am_roles.Add(role);
                     _context.am_users.Update(am_user);
                 }
+                var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == Store_users.store_id);
+                if (isNewUser)
+                {
+                    string baseUrl = _configuration["MailSettings:BaseUrl"];
+                    string subject = $"Welcome to {st_store?.store_name} 🎉";
 
+                    string body = $@"
+                                        <!DOCTYPE html>
+                                        <html>
+                                        <head>
+                                          <meta charset='UTF-8'>
+                                        </head>
+                                        <body style='margin:0; padding:0; font-family: Arial, sans-serif; background-color:#f4f6f8;'>
 
+                                          <table width='100%' cellspacing='0' cellpadding='0' style='background-color:#f4f6f8; padding:20px;'>
+                                            <tr>
+                                              <td align='center'>
+
+                                                <!-- Main Card -->
+                                                <table width='500' cellspacing='0' cellpadding='0' 
+                                                       style='background:#ffffff; border-radius:10px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);'>
+
+                                                  <!-- Header -->
+                                                  <tr>
+                                                    <td style='background:linear-gradient(90deg,#4f46e5,#3b82f6); color:#ffffff; padding:20px; text-align:center;'>
+                                                      <h2 style='margin:0;'>Welcome to {st_store?.store_name}</h2>
+                                                      <p style='margin:5px 0 0;'>Your account is ready 🚀</p>
+                                                    </td>
+                                                  </tr>
+
+                                                  <!-- Body -->
+                                                  <tr>
+                                                    <td style='padding:25px; color:#333;'>
+
+                                                      <p style='font-size:16px;'>Hello <b>{Store_users?.Full_name}</b>,</p>
+
+                                                      <p style='font-size:14px; line-height:1.6;'>
+                                                        Your account has been successfully created. You now have access to the store with the role assigned below.
+                                                      </p>
+
+                                                      <!-- Info Box -->
+                                                      <table width='100%' style='margin:20px 0; border-collapse:collapse;'>
+                                                        <tr>
+                                                          <td style='padding:10px; background:#f9fafb; border:1px solid #eee;'>
+                                                            <b>Store:</b> {st_store?.store_name}
+                                                          </td>
+                                                        </tr>
+                                                        <tr>
+                                                          <td style='padding:10px; background:#f9fafb; border:1px solid #eee;'>
+                                                            <b>Role:</b> {st_UserRoles.role_name}
+                                                          </td>
+                                                        </tr>
+                                                      </table>
+
+                                                      <!-- Login Details -->
+                                                      <p style='font-size:15px; margin-top:20px;'><b>Login Details:</b></p>
+
+                                                      <table width='100%' style='border-collapse:collapse;'>
+                                                        <tr>
+                                                          <td style='padding:10px; border:1px solid #eee;'><b>Email</b></td>
+                                                          <td style='padding:10px; border:1px solid #eee;'>{Store_users?.email}</td>
+                                                        </tr>
+                                                        <tr>
+                                                          <td style='padding:10px; border:1px solid #eee;'><b>Password</b></td>
+                                                          <td style='padding:10px; border:1px solid #eee;'>{Gen_password}</td>
+                                                        </tr>
+                                                      </table>
+
+                                                      <!-- CTA Button -->
+                                                      <div style='text-align:center; margin:30px 0;'>
+                                                        <a href='{baseUrl}' style='background:#4f46e5; color:#fff; padding:12px 25px; text-decoration:none; border-radius:6px; font-size:14px;'>
+                                                          Login Now
+                                                        </a>
+                                                      </div>
+
+                                                      <p style='font-size:13px; color:#777;'>
+                                                        For security reasons, please change your password after your first login.
+                                                      </p>
+
+                                                    </td>
+                                                  </tr>
+
+                                                  <!-- Footer -->
+                                                  <tr>
+                                                    <td style='background:#f9fafb; padding:15px; text-align:center; font-size:12px; color:#999;'>
+                                                      © {DateTime.Now.Year} {st_store?.store_name}. All rights reserved.
+                                                    </td>
+                                                  </tr>
+
+                                                </table>
+
+                                              </td>
+                                            </tr>
+                                          </table>
+
+                                        </body>
+                                        </html>
+                                        ";
+                    var emailService = new EmailService(_configuration);
+                    await emailService.SendEmailAsync(Store_users?.email, subject, body);
+                }
 
 
                 await _context.SaveChangesAsync();
@@ -730,7 +851,9 @@ namespace Faahi.Service.Store
                 st_UserRoles.role_id = Guid.CreateVersion7();
                 st_UserRoles.company_id = st_UserRoles.company_id;
                 st_UserRoles.role_name = st_UserRoles.role_name;
-                st_UserRoles.description = st_UserRoles.description;
+                st_UserRoles.description = st_UserRoles.role_name;
+                st_UserRoles.created_at = DateTime.Now;
+                st_UserRoles.status = "T";
                 await _context.st_UserRoles.AddAsync(st_UserRoles);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
