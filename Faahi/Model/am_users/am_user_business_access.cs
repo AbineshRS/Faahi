@@ -1,4 +1,5 @@
 ﻿using Faahi.Model.st_sellers;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -15,26 +16,36 @@ namespace Faahi.Model.am_users
         [Column(TypeName = "uniqueidentifier ")]
         public Guid access_id { get; set; }
 
-        [JsonIgnore]
         [ForeignKey(nameof(user_id))]
+        [JsonIgnore]
+        [ValidateNever]
+
         public am_users am_Users { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid user_id { get; set; }
 
-        [JsonIgnore]
         [ForeignKey(nameof(user_role_id))]
+        [JsonIgnore]
+        [ValidateNever]
+
         public am_user_roles am_user_roles { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid? user_role_id { get; set; }
 
 
         [ForeignKey(nameof(business_id))]
+        [JsonIgnore]
+        [ValidateNever]
+
         public Faahi.Model.co_business.co_business c_business { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid? business_id { get; set; } = null;
 
 
         [ForeignKey(nameof(store_id))]
+        [JsonIgnore]
+        [ValidateNever]
+
         public st_stores st_Stores { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid? store_id { get; set; } = null;

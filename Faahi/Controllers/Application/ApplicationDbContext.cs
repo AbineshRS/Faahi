@@ -8,6 +8,7 @@ using Faahi.Model.countries;
 using Faahi.Model.Email_verify;
 using Faahi.Model.Finance;
 using Faahi.Model.im_products;
+using Faahi.Model.Order;
 using Faahi.Model.pos_tables;
 using Faahi.Model.sales;
 using Faahi.Model.Shared_tables;
@@ -183,6 +184,8 @@ namespace Faahi.Controllers.Application
         public DbSet<im_purchase_return_details_line> im_purchase_return_details_line { get; set; }
 
         public DbSet<sa_roles> sa_roles { get; set; }
+
+        public DbSet<om_OrderSources> om_OrderSources { get; set; }
 
 
         //TEMPTABLES
@@ -446,6 +449,14 @@ namespace Faahi.Controllers.Application
                 entity.Property(a => a.net_unit_cost).HasColumnType("decimal(18,6)").HasDefaultValue("0");
                 entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
                 entity.Property(a => a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+            });
+
+            modelBuilder.Entity<om_OrderSources>(entity =>
+            {
+                entity.Property(a => a.source_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a=>a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a=>a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.status).HasColumnType("char(1)").HasDefaultValue("T");
             });
         }
 

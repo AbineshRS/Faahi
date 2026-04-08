@@ -182,25 +182,25 @@ namespace Faahi.Controllers.Authentication
             return Ok(reset);
         }
         [HttpPost]
-        [Route("User_verify/{email}/{token}")]
-        public async Task<ActionResult<am_emailVerifications>> User_Verify(string email, string token)
+        [Route("User_verify")]
+        public async Task<ActionResult<am_emailVerifications>> User_Verify(verify_token verify_Token)
         {
-            if (email == null)
+            if (verify_Token.Email == null)
             {
                 return Ok("No email found");
             }
-            var verify_satus = await _authService.User_verify(email, token);
+            var verify_satus = await _authService.User_verify(verify_Token);
             return Ok(verify_satus);
         }
         [HttpPost]
-        [Route("reset_password/{token}/{email}/{password}")]
-        public async Task<ActionResult<string>> reset_password(string token, string email, string password)
+        [Route("reset_password")]
+        public async Task<ActionResult<string>> reset_password(Reset_password reset_Password)
         {
-            if (email == null)
+            if (reset_Password.Email == null)
             {
                 return Ok("No email found");
             }
-            var reset = await _authService.reset_password(token, email, password);
+            var reset = await _authService.reset_password(reset_Password);
             return Ok(reset);
         }
 

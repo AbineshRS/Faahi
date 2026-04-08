@@ -1,4 +1,5 @@
 ﻿using Faahi.Dto;
+using Faahi.Dto.Auth;
 using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
 using Microsoft.AspNetCore.Mvc;
@@ -33,8 +34,8 @@ namespace Faahi.Service.Auth
 
         Task<ServiceResult<string>> send_reset_password(string email);
 
-        Task<ServiceResult<am_emailVerifications>> User_verify(string email, string token);
+        Task<ServiceResult<am_emailVerifications>> User_verify(verify_token verify_Token);
 
-        Task<ServiceResult<string>> reset_password(string token, string email, string password);
+        Task<ServiceResult<Reset_password>> reset_password(Reset_password reset_Password);
     }
 }

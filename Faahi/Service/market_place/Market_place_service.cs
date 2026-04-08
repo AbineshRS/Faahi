@@ -1,0 +1,474 @@
+﻿using Faahi.Controllers.Application;
+using Faahi.Dto;
+using Faahi.Migrations;
+using Faahi.Model.am_users;
+using Faahi.Model.co_business;
+using Faahi.Model.Order;
+using Faahi.Model.st_sellers;
+using Faahi.Model.Stores;
+using Faahi.Service.Email;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+
+namespace Faahi.Service.market_place
+{
+    public class Market_place_service : IMarket_place_service
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly ILogger<Market_place_service> _logger;
+        private readonly IConfiguration _configuration;
+        public Market_place_service(ApplicationDbContext context, ILogger<Market_place_service> logger, IConfiguration configuration)
+        {
+            _context = context;
+            _logger = logger;
+            _configuration = configuration;
+        }
+
+        public async Task<ServiceResult<am_users>> Add_users(am_users users)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                bool isNewUser = false;
+                var genrate_password = "";
+                var existingUser = await _context.am_users.Include(u => u.am_roles).ThenInclude(r => r.am_user_roles).ThenInclude(ur => ur.mk_customer_profiles).ThenInclude(p => p.mk_customer_addresses)
+                                   .FirstOrDefaultAsync(u => u.email == users.email);
+                if (existingUser == null)
+                {
+                    isNewUser = true;
+                    users.userId = Guid.CreateVersion7();
+                    users.userName = users.email;
+                    users.firstName = users.firstName;
+                    users.lastName = users.lastName;
+                    users.fullName = users.firstName + " " + users.lastName;
+                    genrate_password = GeneratePassword(users.fullName);
+                    users.password = BCrypt.Net.BCrypt.HashPassword(genrate_password);
+                    users.email = users.email;
+                    users.created_at = DateTime.Now;
+                    users.edit_date_time = DateTime.Now;
+                    users.phoneNumber = users.phoneNumber;
+                    users.status = "T";
+                    foreach (var role in users.am_roles)
+                    {
+                        role.role_id = Guid.CreateVersion7();
+                        role.user_ids = users.userId;
+                        role.role_code = "MK";
+                        role.role_group = "MK";
+                        role.role_name = "Marketplace User";
+                        role.description = "Marketplace user with access to marketplace features";
+                        role.is_system_role = "F";
+                        role.status = "T";
+
+                        foreach (var userRole in role.am_user_roles)
+                        {
+                            var co_business = await _context.co_business.FirstOrDefaultAsync(b => b.company_id == userRole.business_id);
+                            st_stores? st_store = null;
+                            if (co_business == null)
+                            {
+                                st_store = await _context.st_stores.FirstOrDefaultAsync(s => s.store_id == userRole.store_id);
+                            }
+                            userRole.user_role_id = Guid.CreateVersion7();
+                            userRole.user_id = users.userId;
+                            userRole.role_id = role.role_id;
+                            userRole.store_user_id = null;
+                            userRole.created_at = DateTime.Now;
+                            userRole.business_id = co_business?.company_id ?? st_store?.company_id;
+                            userRole.store_id = st_store?.store_id;
+                            foreach (var mk_profile in userRole.mk_customer_profiles)
+                            {
+                                mk_profile.customer_profile_id = Guid.CreateVersion7();
+                                mk_profile.user_role_id = userRole.user_role_id;
+                                mk_profile.user_id = users.userId;
+                                mk_profile.customer_code = "";
+                                mk_profile.gender = mk_profile.gender;
+                                mk_profile.date_of_birth = mk_profile.date_of_birth;
+                                mk_profile.created_at = DateTime.Now;
+                                mk_profile.updated_at = DateTime.Now;
+                                mk_profile.status = "T";
+
+                                foreach (var address in mk_profile.mk_customer_addresses)
+                                {
+                                    address.address_id = Guid.CreateVersion7();
+                                    address.customer_profile_id = mk_profile.customer_profile_id;
+                                    address.user_id = users.userId;
+                                    address.address_type = address.address_type;
+                                    address.contact_name = address.contact_name;
+                                    address.contact_phone = address.contact_phone;
+                                    address.address_line1 = address.address_line1;
+                                    address.address_line2 = address.address_line2;
+                                    address.city = address.city;
+                                    address.state_region = address.state_region;
+                                    address.postal_code = address.postal_code;
+                                    address.country_code = address.country_code;
+                                    address.created_at = DateTime.Now;
+                                    address.updated_at = DateTime.Now;
+                                    address.is_default = "T";
+                                    address.status = "T";
+                                }
+                            }
+                        }
+                    }
+                    _context.am_users.Add(users);
+                }
+                else
+                {
+
+                    foreach (var role in users.am_roles)
+                    {
+                        role.role_id = Guid.CreateVersion7();
+                        role.user_ids = existingUser.userId;
+                        role.role_code = "MK";
+                        role.role_group = "MK";
+                        role.role_name = "Marketplace User";
+                        role.description = "Marketplace user with access to marketplace features";
+                        role.is_system_role = "F";
+                        role.status = "T";
+
+                        foreach (var userRole in role.am_user_roles)
+                        {
+                            var co_business = await _context.co_business.FirstOrDefaultAsync(b => b.company_id == userRole.business_id);
+                            st_stores? st_store = null;
+                            if (co_business == null)
+                            {
+                                st_store = await _context.st_stores.FirstOrDefaultAsync(s => s.store_id == userRole.store_id);
+                            }
+                            userRole.user_role_id = Guid.CreateVersion7();
+                            userRole.user_id = existingUser.userId;
+                            userRole.role_id = role.role_id;
+                            userRole.store_user_id = null;
+                            userRole.created_at = DateTime.Now;
+                            userRole.business_id = co_business?.company_id ?? st_store?.company_id;
+                            userRole.store_id = st_store?.store_id;
+
+                            foreach (var mk_profile in userRole.mk_customer_profiles)
+                            {
+                                var table = "mk_customer_profiles";
+                                var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == userRole.business_id);
+                                var key = Convert.ToInt16(am_table.next_key);
+
+                                mk_profile.customer_profile_id = Guid.CreateVersion7();
+                                mk_profile.user_role_id = userRole.user_role_id;
+                                mk_profile.user_id = existingUser.userId;
+                                mk_profile.customer_code = "MK" + "-" + Convert.ToString(key + 1);
+                                mk_profile.gender = mk_profile.gender;
+                                mk_profile.date_of_birth = mk_profile.date_of_birth;
+                                mk_profile.created_at = DateTime.Now;
+                                mk_profile.updated_at = DateTime.Now;
+                                mk_profile.status = "T";
+
+                                foreach (var address in mk_profile.mk_customer_addresses)
+                                {
+                                    address.address_id = Guid.CreateVersion7();
+                                    address.customer_profile_id = mk_profile.customer_profile_id;
+                                    address.user_id = existingUser.userId;
+                                    address.address_type = address.address_type;
+                                    address.contact_name = address.contact_name;
+                                    address.contact_phone = address.contact_phone;
+                                    address.address_line1 = address.address_line1;
+                                    address.address_line2 = address.address_line2;
+                                    address.city = address.city;
+                                    address.state_region = address.state_region;
+                                    address.postal_code = address.postal_code;
+                                    address.country_code = address.country_code;
+                                    address.created_at = DateTime.Now;
+                                    address.updated_at = DateTime.Now;
+                                    address.is_default = "T";
+                                    address.status = "T";
+
+
+                                }
+                                if (am_table != null)
+                                {
+                                    am_table.next_key = key + 1;
+                                    _context.am_table_next_key.Update(am_table);
+                                }
+                            }
+                        }
+                        _context.am_roles.Add(role);
+                        existingUser.am_roles.Add(role);
+                    }
+                    _context.am_users.Update(existingUser);
+                }
+                if (isNewUser)
+                {
+                    string baseUrl = _configuration["MailSettings:BaseUrl"];
+                    string subject = $"Welcome to the Marketplace ✨";
+
+                    string body = $@"
+                                    <!DOCTYPE html>
+                                    <html>
+                                    <head>
+                                        <meta charset='UTF-8'>
+                                        <style>
+                                            body {{
+                                                margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5;
+                                            }}
+                                            .card {{
+                                                background: #ffffff; 
+                                                border-radius: 12px; 
+                                                max-width: 600px; 
+                                                margin: 40px auto; 
+                                                overflow: hidden; 
+                                                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+                                            }}
+                                            .header {{
+                                                background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+                                                color: #fff; 
+                                                padding: 30px; 
+                                                text-align: center;
+                                            }}
+                                            .header h1 {{
+                                                margin: 0;
+                                                font-size: 28px;
+                                            }}
+                                            .header p {{
+                                                margin: 5px 0 0;
+                                                font-size: 16px;
+                                            }}
+                                            .content {{
+                                                padding: 30px; 
+                                                color: #333;
+                                            }}
+                                            .content p {{
+                                                font-size: 16px; 
+                                                line-height: 1.6;
+                                                margin: 15px 0;
+                                            }}
+                                            .info-box {{
+                                                background: #f9fafb; 
+                                                border: 1px solid #eee; 
+                                                padding: 15px; 
+                                                border-radius: 6px; 
+                                                margin: 20px 0;
+                                            }}
+                                            .info-box p {{
+                                                margin: 5px 0;
+                                                font-size: 14px;
+                                            }}
+                                            .btn {{
+                                                display: inline-block; 
+                                                padding: 14px 28px; 
+                                                margin: 20px 0; 
+                                                background: #7b3fe4; 
+                                                color: #fff; 
+                                                text-decoration: none; 
+                                                border-radius: 8px; 
+                                                font-size: 16px;
+                                                transition: all 0.3s ease;
+                                            }}
+                                            .btn:hover {{
+                                                background: #5a2db8;
+                                            }}
+                                            .footer {{
+                                                text-align: center; 
+                                                padding: 20px; 
+                                                font-size: 12px; 
+                                                color: #999;
+                                                background: #f0f2f5;
+                                            }}
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <div class='card'>
+                                            <div class='header'>
+                                                <h1>Welcome to the Marketplace</h1>
+                                                <p>Your premium account is ready ✨</p>
+                                            </div>
+                                            <div class='content'>
+                                                <p>Hello <strong>{users.fullName}</strong>,</p>
+                                                <p>Your marketplace account has been successfully created. You can now start exploring and enjoying all the features we offer.</p>
+
+                                                <!-- Login Info -->
+                                                <div class='info-box'>
+                                                    <p><strong>Email:</strong> {users.email}</p>
+                                                    <p><strong>Password:</strong> {genrate_password}</p>
+                                                </div>
+
+                                                <!-- Login Button -->
+                                                <p style='text-align:center;'>
+                                                    <a href='{baseUrl}' class='btn'>Login Now</a>
+                                                </p>
+
+                                                <p>We recommend changing your password after your first login for security purposes.</p>
+                                            </div>
+                                            <div class='footer'>
+                                                © {DateTime.UtcNow.Year} Marketplace. All rights reserved.
+                                            </div>
+                                        </div>
+                                    </body>
+                                    </html>
+                                    ";
+
+                    var emailService = new EmailService(_configuration);
+                    await emailService.SendEmailAsync(users.email, subject, body);
+                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<am_users>
+                {
+                    Data = users,
+                    Message = "User added successfully",
+                    Status = 200
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error adding user: {Message}", ex.Message);
+                await transaction.RollbackAsync();
+                return new ServiceResult<am_users>
+                {
+                    Data = null,
+                    Message = $"Error adding user: {ex.Message}",
+                    Status = 500
+                };
+            }
+        }
+        public string GeneratePassword(string input)
+        {
+
+            string prefix = new string(input.Where(char.IsLetter).Take(3).ToArray()).ToLower();
+
+            if (prefix.Length < 3)
+                prefix = prefix.PadRight(3, 'x');
+
+            // Random generators
+            var random = new Random();
+
+            string numbers = random.Next(100, 999).ToString(); // 3-digit number
+
+            string specialChars = "!@#$%^&*";
+            char special = specialChars[random.Next(specialChars.Length)];
+            string final = prefix + numbers + special;
+
+            return final;
+        }
+
+        public async Task<ServiceResult<om_OrderSources>> Add_source(om_OrderSources om_OrderSources)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (om_OrderSources == null)
+                {
+                    return new ServiceResult<om_OrderSources>
+                    {
+                        Data = null,
+                        Message = "No data found",
+                        Status = 400
+                    };
+                }
+                var table = "om_OrderSources";
+                var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == om_OrderSources.business_id);
+                var key = Convert.ToInt16(am_table.next_key);
+                var existingSource = await _context.om_OrderSources.FirstOrDefaultAsync(s => s.source_name == om_OrderSources.source_name && s.business_id == om_OrderSources.business_id);
+                if (existingSource != null)
+                {
+                    return new ServiceResult<om_OrderSources>
+                    {
+                        Data = null,
+                        Message = "Order source with the same name already exists for this business",
+                        Status = 409
+                    };
+                }
+                om_OrderSources.source_id = Guid.CreateVersion7();
+                om_OrderSources.business_id = om_OrderSources.business_id;
+                om_OrderSources.store_id = om_OrderSources.store_id;
+                om_OrderSources.source_code = "S" + "-" + Convert.ToString(key + 1);
+                om_OrderSources.source_name = om_OrderSources.source_name;
+                om_OrderSources.description = om_OrderSources.description;
+                om_OrderSources.created_at = DateTime.Now;
+                om_OrderSources.updated_at = DateTime.Now;
+                om_OrderSources.status = "T";
+                _context.om_OrderSources.Add(om_OrderSources);
+                am_table.next_key = key + 1;
+                _context.am_table_next_key.Update(am_table);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<om_OrderSources>
+                {
+                    Data = om_OrderSources,
+                    Message = "Order source added successfully",
+                    Status = 200
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogInformation("Error adding order source: {Message}", ex.Message);
+                return new ServiceResult<om_OrderSources>
+                {
+                    Data = null,
+                    Message = $"Error adding order source: {ex.Message}",
+                    Status = 500
+                };
+            }
+
+        }
+
+        public async Task<ServiceResult<List<am_users>>> Get_market_place_users()
+        {
+            try
+            {
+                var users = await _context.am_users.Where(a=>a.status == "T").ToListAsync();
+                if (users == null || users.Count == 0)
+                {
+                    return new ServiceResult<List<am_users>>
+                    {
+                        Data = null,
+                        Message = "No marketplace users found",
+                        Status = 404
+                    };
+                }
+                return new ServiceResult<List<am_users>>
+                {
+                    Data = users,
+                    Message = "Marketplace users retrieved successfully",
+                    Status = 200
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error retrieving marketplace users: {Message}", ex.Message);
+                return new ServiceResult<List<am_users>>
+                {
+                    Data = null,
+                    Message = $"Error retrieving marketplace users: {ex.Message}",
+                    Status = 500
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<om_OrderSources>>> Get_sources(Guid business_id)
+        {
+            try
+            {
+                var sources = await _context.om_OrderSources.Where(s => s.business_id == business_id  && s.status == "T").ToListAsync();
+                if (sources == null || sources.Count == 0)
+                {
+                    return new ServiceResult<List<om_OrderSources>>
+                    {
+                        Data = null,
+                        Message = "No order sources found for the given business and store",
+                        Status = 404
+                    };
+                }
+                return new ServiceResult<List<om_OrderSources>>
+                {
+                    Data = sources,
+                    Message = "Order sources retrieved successfully",
+                    Status = 200
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error retrieving order sources: {Message}", ex.Message);
+                return new ServiceResult<List<om_OrderSources>>
+                {
+                    Data = null,
+                    Message = $"Error retrieving order sources: {ex.Message}",
+                    Status = 500
+                };
+            }
+        }
+    }
+}
