@@ -151,7 +151,7 @@ namespace Faahi.Service.Admin
             }
             try
             {
-                var existingCountry = await _context.sa_country_regions.Include(a=>a.sa_regions)
+                var existingCountry = await _context.sa_country_regions.Include(a => a.sa_regions)
                     .FirstOrDefaultAsync(c => c.avl_countries_id == regions.avl_countries_id);
                 if (existingCountry == null)
                 {
@@ -179,7 +179,7 @@ namespace Faahi.Service.Admin
                         region.parent_id = existingCountry.avl_countries_id;
                         _context.sa_regions.Add(region);
                         existingCountry.sa_regions.Add(region);
-                         //_context.sa_country_regions.Update(existingCountry);
+                        //_context.sa_country_regions.Update(existingCountry);
                     }
                 }
 
@@ -272,6 +272,87 @@ namespace Faahi.Service.Admin
             {
                 _logger.LogError(ex, "Exception occurred in GetRegionsList method");
                 return new ServiceResult<List<sa_country_regions>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = "Internal server error",
+                    Data = null
+                };
+            }
+        }
+        public async Task<ServiceResult<sa_roles>> AddRoles(sa_roles sa_Roles)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            if (sa_Roles == null)
+            {
+                _logger.LogError("Roles data is null in AddRolesAsync method");
+                return new ServiceResult<sa_roles>
+                {
+                    Status = 400,
+                    Success = false,
+                    Message = "Roles data is null",
+                    Data = null
+                };
+            }
+            try
+            {
+                sa_Roles.sa_role_id = Guid.CreateVersion7();
+                sa_Roles.sa_role_name = sa_Roles.sa_role_name;
+                sa_Roles.sa_description = sa_Roles.sa_description;
+                sa_Roles.sa_status = sa_Roles.sa_status;
+                await _context.sa_roles.AddAsync(sa_Roles);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<sa_roles>
+                {
+                    Status = 201,
+                    Success = true,
+                    Message = "Role added successfully",
+                    Data = sa_Roles
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Exception occurred in AddRolesAsync method");
+                return new ServiceResult<sa_roles>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = "Internal server error",
+                    Data = null
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<sa_roles>>> GetRolesList()
+        {
+            try
+            {
+                var rolesList = await _context.sa_roles.ToListAsync();
+                if (rolesList == null || rolesList.Count == 0)
+                {
+                    _logger.LogInformation("No roles found in GetRolesList method");
+                    return new ServiceResult<List<sa_roles>>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "No roles found",
+                        Data = null
+                    };
+                }
+                return new ServiceResult<List<sa_roles>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Roles list retrieved successfully",
+                    Data = rolesList
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception occurred in GetRolesList method");
+                return new ServiceResult<List<sa_roles>>
                 {
                     Status = 500,
                     Success = false,

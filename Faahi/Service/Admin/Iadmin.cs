@@ -15,5 +15,9 @@ namespace Faahi.Service.Admin
         Task<ServiceResult<sa_regions>> Addregion(sa_regions countries);
 
         Task<ServiceResult<List<sa_country_regions>>> GetRegionsList();
-    }
+
+        Task<ServiceResult<sa_roles>> AddRoles(sa_roles sa_Roles);
+
+        Task<ServiceResult<List<sa_roles>>> GetRolesList();
+    }   
 }

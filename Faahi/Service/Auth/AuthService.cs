@@ -1,6 +1,7 @@
 ﻿using Azure.Core;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Dto.Auth;
 using Faahi.Migrations;
 using Faahi.Model.am_users;
 using Faahi.Model.Email_verify;
@@ -1138,7 +1139,7 @@ namespace Faahi.Service.Auth
                 {
                     baseUrl = _configuration["MailSettings:BaseUrl"];
                 }
-                var resetUrl = $"{baseUrl}/reset-password?token={token}&email={email}";
+                var resetUrl = $"{baseUrl}/password-verify-success?token={token}&email={email}";
 
                 string subject = "Reset Your Password";
                 string body = $@"
@@ -1185,10 +1186,10 @@ namespace Faahi.Service.Auth
         /// <param name="email"></param>
         /// <param name="token"></param>
         /// <returns></returns>
-        public async Task<ServiceResult<am_emailVerifications>> User_verify(string email, string token)
+        public async Task<ServiceResult<am_emailVerifications>> User_verify(verify_token verify)
         {
             var transaction = await _context.Database.BeginTransactionAsync();
-            if (email is null)
+            if (verify.Email is null)
             {
                 _logger.LogWarning("Attempt to verify user email with null email address.");
                 return new ServiceResult<am_emailVerifications>
@@ -1199,9 +1200,9 @@ namespace Faahi.Service.Auth
             }
             try
             {
-                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType == "User");
+                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == verify.Email && a.verificationType == "ResetPassword" && a.userType == "User");
 
-                if (am_email.token != token)
+                if (am_email.token != verify.Token)
                 {
                     return new ServiceResult<am_emailVerifications>
                     {
@@ -1221,7 +1222,7 @@ namespace Faahi.Service.Auth
                 }
                 var handler = new JwtSecurityTokenHandler();
                 JwtSecurityToken jwtToken;
-                jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+                jwtToken = handler.ReadToken(verify.Token) as JwtSecurityToken;
 
 
                 DateTime tokenExpiryFromJwt = jwtToken.ValidTo;
@@ -1256,7 +1257,7 @@ namespace Faahi.Service.Auth
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error occurred during user email verification for {Email}", email);
+                _logger.LogError(ex, "Error occurred during user email verification for {Email}", verify.Token);
                 return new ServiceResult<am_emailVerifications>
                 {
                     Success = false,
@@ -1267,13 +1268,13 @@ namespace Faahi.Service.Auth
 
         }
 
-        public async Task<ServiceResult<string>> reset_password(string token, string email, string password)
+        public async Task<ServiceResult<Reset_password>> reset_password(Reset_password reset_Password)
         {
             var transaction = await _context.Database.BeginTransactionAsync();
-            if (email == null)
+            if (reset_Password.Email == null)
             {
                 _logger.LogWarning("Attempt to reset password with null email address.");
-                return new ServiceResult<string>
+                return new ServiceResult<Reset_password>
                 {
                     Success = false,
                     Message = "No email found",
@@ -1283,19 +1284,19 @@ namespace Faahi.Service.Auth
             }
             try
             {
-                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == email && a.verificationType == "ResetPassword" && a.userType == "User");
+                var am_email = await _context.am_emailVerifications.FirstOrDefaultAsync(a => a.email == reset_Password.Email && a.verificationType == "ResetPassword" && a.userType == "User");
                 if (am_email.verified == "F")
                 {
-                    return new ServiceResult<string>
+                    return new ServiceResult<Reset_password>
                     {
                         Success = false,
                         Message = "Not verified ",
                         Status = -2
                     };
                 }
-                if (am_email.token != token)
+                if (am_email.token != reset_Password.Token)
                 {
-                    return new ServiceResult<string>
+                    return new ServiceResult<Reset_password>
                     {
                         Success = false,
                         Message = "Invalid token",
@@ -1304,7 +1305,7 @@ namespace Faahi.Service.Auth
                 }
                 if (am_email.isExpired == "T")
                 {
-                    return new ServiceResult<string>
+                    return new ServiceResult<Reset_password>
                     {
                         Success = false,
                         Message = "Token Expired",
@@ -1313,7 +1314,7 @@ namespace Faahi.Service.Auth
                 }
                 var handler = new JwtSecurityTokenHandler();
                 JwtSecurityToken jwtToken;
-                jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+                jwtToken = handler.ReadToken(reset_Password.Token) as JwtSecurityToken;
 
 
                 DateTime tokenExpiryFromJwt = jwtToken.ValidTo;
@@ -1324,17 +1325,17 @@ namespace Faahi.Service.Auth
                     _context.am_emailVerifications.Update(am_email);
                     await _context.SaveChangesAsync();
 
-                    return new ServiceResult<string>
+                    return new ServiceResult<Reset_password>
                     {
                         Success = false,
                         Message = "Token Expired ",
                         Status = -5
                     };
                 }
-                var am_User = await _context.am_users.FirstOrDefaultAsync(a => a.email == email);
+                var am_User = await _context.am_users.FirstOrDefaultAsync(a => a.email == reset_Password.Email);
                 if (am_User != null)
                 {
-                    am_User.password = PasswordHelper.HashPassword(password);
+                    am_User.password = PasswordHelper.HashPassword(reset_Password.password);
                     am_email.verified = "T";
                     am_email.isExpired = "F";
                     _context.am_emailVerifications.Update(am_email);
@@ -1342,7 +1343,7 @@ namespace Faahi.Service.Auth
                 _context.am_users.Update(am_User);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return new ServiceResult<string>
+                return new ServiceResult<Reset_password>
                 {
                     Success = true,
                     Message = "Password Updated",
@@ -1353,8 +1354,8 @@ namespace Faahi.Service.Auth
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error occurred while attempting to reset password for {Email}", email);
-                return new ServiceResult<string>
+                _logger.LogError(ex, "Error occurred while attempting to reset password for {Email}", reset_Password.Email);
+                return new ServiceResult<Reset_password>
                 {
                     Success = false,
                     Message = "An error occurred while resetting the password.",
