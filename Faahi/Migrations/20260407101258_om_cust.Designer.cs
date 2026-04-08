@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260407101258_om_cust")]
+    partial class om_cust
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2053,13 +2056,13 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
-                    b.Property<Guid>("customer_profile_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("is_default")
                         .IsRequired()
                         .HasMaxLength(1)
                         .HasColumnType("char(1)");
+
+                    b.Property<Guid?>("mk_customer_profilescustomer_profile_id")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("postal_code")
                         .HasColumnType("nvarchar(20)");
@@ -2080,7 +2083,7 @@ namespace Faahi.Migrations
 
                     b.HasKey("address_id");
 
-                    b.HasIndex("customer_profile_id");
+                    b.HasIndex("mk_customer_profilescustomer_profile_id");
 
                     b.HasIndex("user_id");
 
@@ -2094,6 +2097,9 @@ namespace Faahi.Migrations
                 {
                     b.Property<Guid>("customer_profile_id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("am_user_rolesuser_role_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("created_at")
@@ -2125,14 +2131,11 @@ namespace Faahi.Migrations
                     b.Property<Guid>("user_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("user_role_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("customer_profile_id");
 
-                    b.HasIndex("user_id");
+                    b.HasIndex("am_user_rolesuser_role_id");
 
-                    b.HasIndex("user_role_id");
+                    b.HasIndex("user_id");
 
                     b.HasIndex(new[] { "customer_profile_id" }, "IX_customer_profile_id")
                         .IsUnique();
@@ -6511,11 +6514,9 @@ namespace Faahi.Migrations
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_addresses", b =>
                 {
-                    b.HasOne("Faahi.Model.am_users.mk_customer_profiles", "mk_customer_profiles")
+                    b.HasOne("Faahi.Model.am_users.mk_customer_profiles", null)
                         .WithMany("mk_customer_addresses")
-                        .HasForeignKey("customer_profile_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("mk_customer_profilescustomer_profile_id");
 
                     b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
                         .WithMany()
@@ -6524,25 +6525,21 @@ namespace Faahi.Migrations
                         .IsRequired();
 
                     b.Navigation("am_Users");
-
-                    b.Navigation("mk_customer_profiles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_users.mk_customer_profiles", b =>
                 {
+                    b.HasOne("Faahi.Model.am_users.am_user_roles", null)
+                        .WithMany("mk_customer_profiles")
+                        .HasForeignKey("am_user_rolesuser_role_id");
+
                     b.HasOne("Faahi.Model.am_users.am_users", "am_Users")
                         .WithMany()
                         .HasForeignKey("user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Faahi.Model.am_users.am_user_roles", "am_user_roles")
-                        .WithMany("mk_customer_profiles")
-                        .HasForeignKey("user_role_id");
-
                     b.Navigation("am_Users");
-
-                    b.Navigation("am_user_roles");
                 });
 
             modelBuilder.Entity("Faahi.Model.am_vcos.ap_Vendors", b =>

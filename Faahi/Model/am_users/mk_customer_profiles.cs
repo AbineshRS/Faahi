@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Faahi.Model.am_users
 {
@@ -13,9 +15,20 @@ namespace Faahi.Model.am_users
         public Guid customer_profile_id { get; set; }
 
         [ForeignKey(nameof(user_id))]
+        [JsonIgnore]
+        [ValidateNever]
+
         public am_users am_Users { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid user_id { get; set; }
+
+        [ForeignKey(nameof(user_role_id))]
+        [JsonIgnore]
+        [ValidateNever]
+
+        public am_user_roles am_user_roles { get; set; }
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? user_role_id { get; set; }
 
         [Column(TypeName = "varchar(32)")]
         public string? customer_code { get; set; }

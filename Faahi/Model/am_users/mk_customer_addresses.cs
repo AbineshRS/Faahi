@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Faahi.Model.am_users
 {
@@ -13,9 +15,19 @@ namespace Faahi.Model.am_users
         public Guid address_id { get; set; }
 
         [ForeignKey(nameof(user_id))]
+        [JsonIgnore]
+        [ValidateNever]
+
         public am_users am_Users { get; set; }
         [Column(TypeName = "uniqueidentifier")]
         public Guid user_id { get; set; }
+
+        [ForeignKey(nameof(customer_profile_id))]
+        [JsonIgnore]
+        [ValidateNever]
+        public mk_customer_profiles mk_customer_profiles { get; set; }
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid customer_profile_id { get; set; }
 
         [Column(TypeName = "varchar(20)")]
         public string? address_type { get; set; }
@@ -43,6 +55,12 @@ namespace Faahi.Model.am_users
 
         [Column(TypeName = "nvarchar(20)")]
         public string? country_code { get; set; } = null;
+
+        [Column(TypeName = "datetime")]
+        public DateTime? created_at { get; set; }
+
+        [Column(TypeName = "datetime")]
+        public DateTime? updated_at { get; set; }
 
         [StringLength(1)]
         [DefaultValue("T")]
