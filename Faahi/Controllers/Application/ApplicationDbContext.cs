@@ -187,6 +187,14 @@ namespace Faahi.Controllers.Application
 
         public DbSet<om_OrderSources> om_OrderSources { get; set; }
 
+        public DbSet<om_CustomerOrders> om_CustomerOrders { get; set; }
+
+        public DbSet<om_CustomerOrderLines> om_CustomerOrderLines { get; set; }
+
+        public DbSet<om_OrderStatusHistory> om_OrderStatusHistories { get; set; }
+
+        public DbSet<im_InventoryReservations> im_InventoryReservations { get; set; }
+
 
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }
@@ -457,6 +465,65 @@ namespace Faahi.Controllers.Application
                 entity.Property(a=>a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
                 entity.Property(a=>a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
                 entity.Property(a => a.status).HasColumnType("char(1)").HasDefaultValue("T");
+            });
+
+            modelBuilder.Entity<om_CustomerOrders>(entity =>
+            {
+                entity.Property(a => a.order_date).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.expected_payment_method).HasColumnType("nvarchar(30)").HasDefaultValue("COD");
+                entity.Property(a => a.payment_status).HasColumnType("nvarchar(30)").HasDefaultValue("UNPAID");
+                entity.Property(a => a.order_status).HasColumnType("nvarchar(30)").HasDefaultValue("NEW");
+                entity.Property(a => a.fulfillment_status).HasColumnType("nvarchar(30)").HasDefaultValue("PENDING");
+                entity.Property(a => a.delivery_status).HasColumnType("nvarchar(30)").HasDefaultValue("PENDING");
+                entity.Property(a => a.currency_code).HasColumnType("nvarchar(15)");
+                entity.Property(a => a.exchange_rate).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.sub_total).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.discount_amount).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.tax_amount).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.delivery_charge).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.other_charges).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.grand_total).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+
+                entity.HasIndex(e=> new { e.business_id, e.store_id, e.order_date}).HasDatabaseName("IX_om_CustomerOrders_BusinessId_StoreId_OrderDate").IsDescending(false,false,true);
+                entity.HasIndex(e => new { e.business_id, e.store_id, e.order_status,e.delivery_status,e.fulfillment_status }).HasDatabaseName("IX_om_CustomerOrders_order_status");
+            });
+
+            modelBuilder.Entity<om_CustomerOrderLines>(entity =>
+            {
+                entity.Property(a => a.ordered_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.reserved_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.picked_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.dispatched_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.delivered_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.returned_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.cancelled_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.unit_price).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.discount_amount).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.tax_amount).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.line_total).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.line_status).HasColumnType("nvarchar(30)").HasDefaultValue("OPEN");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+
+                entity.HasIndex(e => new { e.customer_order_id, e.line_no }).HasDatabaseName("UX_om_CustomerOrderLines_order_line_no");
+                entity.HasIndex(e => new { e.variant_id, e.line_status,e.customer_order_id,e.ordered_qty,e.reserved_qty,e.delivered_qty }).HasDatabaseName("IX_om_CustomerOrderLines_variant");
+
+            });
+
+            modelBuilder.Entity<om_OrderStatusHistory>(entity =>
+            {
+                entity.HasIndex(e=> new { e.customer_order_id, e.changed_at }).HasDatabaseName("IX_om_OrderStatusHistory_order_changed_at").IsDescending(false, true);
+            });
+
+            modelBuilder.Entity<im_InventoryReservations>(entity =>
+            {
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.reserved_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.released_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.consumed_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.reservation_status).HasColumnType("nvarchar(20)").HasDefaultValue("ACTIVE");
+
+                entity.HasIndex(a => new { a.customer_order_id, a.reservation_status }).HasDatabaseName("IX_im_InventoryReservations_order");
+                entity.HasIndex(a => new { a.store_id, a.variant_id, a.reservation_status }).HasDatabaseName("IX_im_InventoryReservations_store_variant_status");
             });
         }
 

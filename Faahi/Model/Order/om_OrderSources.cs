@@ -23,22 +23,25 @@ namespace Faahi.Model.Order
 
 
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? store_id { get; set; }
+        public Guid? store_id { get; set; } = null;
         [ForeignKey(nameof(store_id))]
         [JsonIgnore]
         public st_stores? st_Stores { get; set; }
 
         [Column(TypeName = "nvarchar(30)")]
-        public string source_code { get; set; }
+        public string? source_code { get; set; }
 
         [Column(TypeName = "nvarchar(150)")]
         public string source_name { get; set; }
+
+        [Column(TypeName = "nvarchar(150)")]
+        public string platform_name { get; set; }   
 
         [Column(TypeName = "varchar(255)")]
         public string? description { get; set; }
 
         [Column(TypeName = "datetime")]
-        public DateTime created_at { get; set; }
+        public DateTime? created_at { get; set; }
 
         [Column(TypeName = "datetime")]
         public DateTime? updated_at { get; set; }

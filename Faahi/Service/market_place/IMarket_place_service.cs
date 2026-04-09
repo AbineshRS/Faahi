@@ -1,4 +1,5 @@
 ﻿using Faahi.Dto;
+using Faahi.Dto.am_users;
 using Faahi.Model.am_users;
 using Faahi.Model.Order;
 
@@ -10,7 +11,7 @@ namespace Faahi.Service.market_place
 
         Task<ServiceResult<om_OrderSources>> Add_source(om_OrderSources om_OrderSources);
 
-        Task<ServiceResult<List<am_users>>> Get_market_place_users();
+        Task<ServiceResult<List<am_users_dto>>> Get_market_place_users(string search_text);
 
         Task<ServiceResult<List<om_OrderSources>>> Get_sources(Guid business_id);
     }
