@@ -42,12 +42,12 @@ namespace Faahi.Controllers.Market_place
             var result = await _market_Place_Service.Add_source(om_OrderSources);
             return Ok(result);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
-        [Route("get_market_place_users")]
-        public async Task<IActionResult> Get_market_place_users()
+        [Route("get_market_place_users/{search_text}")]
+        public async Task<IActionResult> Get_market_place_users(string search_text)
         {
-            var result = await _market_Place_Service.Get_market_place_users();
+            var result = await _market_Place_Service.Get_market_place_users(search_text);
             return Ok(result);
         }
 

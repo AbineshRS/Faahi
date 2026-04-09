@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260408112338_om_orders_1")]
+    partial class om_orders_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3416,13 +3419,13 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("batch_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("business_id")
+                    b.Property<Guid?>("business_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("consumed_at")
                         .HasColumnType("datetime");
 
-                    b.Property<decimal>("consumed_qty")
+                    b.Property<decimal?>("consumed_qty")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0m);
@@ -3435,22 +3438,22 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("created_by")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("customer_order_id")
+                    b.Property<Guid?>("customer_order_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("customer_order_line_id")
+                    b.Property<Guid?>("customer_order_line_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("expires_at")
                         .HasColumnType("datetime");
 
-                    b.Property<Guid>("product_id")
+                    b.Property<Guid?>("product_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("released_at")
                         .HasColumnType("datetime");
 
-                    b.Property<decimal>("released_qty")
+                    b.Property<decimal?>("released_qty")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0m);
@@ -3466,12 +3469,12 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("reserved_at")
                         .HasColumnType("datetime");
 
-                    b.Property<decimal>("reserved_qty")
+                    b.Property<decimal?>("reserved_qty")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,4)")
                         .HasDefaultValue(0m);
 
-                    b.Property<Guid>("store_id")
+                    b.Property<Guid?>("store_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("updated_at")
@@ -3480,7 +3483,7 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("updated_by")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("variant_id")
+                    b.Property<Guid?>("variant_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("reservation_id");
@@ -7216,39 +7219,27 @@ namespace Faahi.Migrations
 
                     b.HasOne("Faahi.Model.co_business.co_business", "co_business")
                         .WithMany()
-                        .HasForeignKey("business_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("business_id");
 
                     b.HasOne("Faahi.Model.Order.om_CustomerOrders", "om_CustomerOrders")
                         .WithMany()
-                        .HasForeignKey("customer_order_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("customer_order_id");
 
                     b.HasOne("Faahi.Model.Order.om_CustomerOrderLines", "om_CustomerOrderLines")
                         .WithMany()
-                        .HasForeignKey("customer_order_line_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("customer_order_line_id");
 
                     b.HasOne("Faahi.Model.im_products.im_Products", "im_Products")
                         .WithMany()
-                        .HasForeignKey("product_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("product_id");
 
                     b.HasOne("Faahi.Model.st_sellers.st_stores", "st_Stores")
                         .WithMany()
-                        .HasForeignKey("store_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("store_id");
 
                     b.HasOne("Faahi.Model.im_products.im_ProductVariants", "im_ProductVariants")
                         .WithMany()
-                        .HasForeignKey("variant_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("variant_id");
 
                     b.Navigation("co_business");
 

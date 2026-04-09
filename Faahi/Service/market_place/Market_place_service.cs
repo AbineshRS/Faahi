@@ -1,14 +1,18 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Dto.am_users;
 using Faahi.Migrations;
 using Faahi.Model.am_users;
+using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
 using Faahi.Model.Order;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
 using Faahi.Service.Email;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace Faahi.Service.market_place
 {
@@ -112,6 +116,18 @@ namespace Faahi.Service.market_place
                 }
                 else
                 {
+                    var existingRoles = existingUser.am_roles.Where(r => r.role_code == "MK" && r.user_ids == existingUser.userId).FirstOrDefault();
+                    if (existingRoles != null)
+                    {
+                        return new ServiceResult<am_users>
+                        {
+                            Data = null,
+                            Message = "User with the same email already exists with marketplace role",
+                            Status = 409
+                        };
+                    }
+                
+
 
                     foreach (var role in users.am_roles)
                     {
@@ -323,6 +339,7 @@ namespace Faahi.Service.market_place
                 };
             }
         }
+
         public string GeneratePassword(string input)
         {
 
@@ -375,6 +392,7 @@ namespace Faahi.Service.market_place
                 om_OrderSources.store_id = om_OrderSources.store_id;
                 om_OrderSources.source_code = "S" + "-" + Convert.ToString(key + 1);
                 om_OrderSources.source_name = om_OrderSources.source_name;
+                om_OrderSources.platform_name = om_OrderSources.platform_name;
                 om_OrderSources.description = om_OrderSources.description;
                 om_OrderSources.created_at = DateTime.Now;
                 om_OrderSources.updated_at = DateTime.Now;
@@ -405,23 +423,33 @@ namespace Faahi.Service.market_place
 
         }
 
-        public async Task<ServiceResult<List<am_users>>> Get_market_place_users()
+        public async Task<ServiceResult<List<am_users_dto>>> Get_market_place_users(string search_text)
         {
             try
             {
-                var users = await _context.am_users.Where(a=>a.status == "T").ToListAsync();
-                if (users == null || users.Count == 0)
+                //var users = await _context.am_users.Where(a => a.status == "T").ToListAsync();
+                var rows = await _context.Database
+                             .SqlQueryRaw<string>(
+                                 "EXEC dbo.sp_get_am_users @opr=@opr, @search_text=@search_text",
+                                 new SqlParameter("@opr", 1),
+                                 new SqlParameter("@search_text", search_text)
+                             )
+                             .ToListAsync();
+
+                var jsonresult = rows.FirstOrDefault();
+                if (jsonresult == null)
                 {
-                    return new ServiceResult<List<am_users>>
+                    return new ServiceResult<List<am_users_dto>>
                     {
-                        Data = null,
-                        Message = "No marketplace users found",
-                        Status = 404
+                        Success = false,
+                        Status = 300,
+                        Message = "No users found",
                     };
                 }
-                return new ServiceResult<List<am_users>>
+                var customer = JsonConvert.DeserializeObject<List<am_users_dto>>(jsonresult);
+                return new ServiceResult<List<am_users_dto>>
                 {
-                    Data = users,
+                    Data = customer,
                     Message = "Marketplace users retrieved successfully",
                     Status = 200
                 };
@@ -429,7 +457,7 @@ namespace Faahi.Service.market_place
             catch (Exception ex)
             {
                 _logger.LogInformation("Error retrieving marketplace users: {Message}", ex.Message);
-                return new ServiceResult<List<am_users>>
+                return new ServiceResult<List<am_users_dto>>
                 {
                     Data = null,
                     Message = $"Error retrieving marketplace users: {ex.Message}",
@@ -442,7 +470,7 @@ namespace Faahi.Service.market_place
         {
             try
             {
-                var sources = await _context.om_OrderSources.Where(s => s.business_id == business_id  && s.status == "T").ToListAsync();
+                var sources = await _context.om_OrderSources.Where(s => s.business_id == business_id && s.status == "T").ToListAsync();
                 if (sources == null || sources.Count == 0)
                 {
                     return new ServiceResult<List<om_OrderSources>>

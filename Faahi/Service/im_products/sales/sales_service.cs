@@ -345,7 +345,7 @@ namespace Faahi.Service.im_products.sales
                 so_SalesHeaders.sales_no = Convert.ToInt64(key + 1);
                 so_SalesHeaders.invoice_no = st_store.default_invoice_init+"-"+ so_SalesHeaders.invoice_no + "-" + Convert.ToString(key2 + 1);
 
-                if (so_SalesHeaders.doc_type == "SALE - QUOTATION")
+                if (so_SalesHeaders.doc_type == "QUOTATION")
                 {
                     so_SalesHeaders.quot_no = st_store.default_quote_init + "-" + Convert.ToString(key2 + 1);
                 }
@@ -355,7 +355,7 @@ namespace Faahi.Service.im_products.sales
                 }
                 so_SalesHeaders.purchase_order_no = so_SalesHeaders.purchase_order_no;
                 so_SalesHeaders.sales_date = so_SalesHeaders.sales_date;
-                so_SalesHeaders.doc_type = parts[0]?.Trim();
+                so_SalesHeaders.doc_type = so_SalesHeaders.doc_type;
                 so_SalesHeaders.due_date = so_SalesHeaders.due_date;
                 so_SalesHeaders.tax_percent = so_SalesHeaders.tax_percent;
                 so_SalesHeaders.service_charge_percent = so_SalesHeaders.service_charge_percent;
