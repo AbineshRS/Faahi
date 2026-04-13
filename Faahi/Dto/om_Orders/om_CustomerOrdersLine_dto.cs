@@ -13,6 +13,7 @@
         public Decimal? line_total { get; set; }
 
         public string? image_url { get; set; }
+        public string? title { get; set; }
 
 
     }

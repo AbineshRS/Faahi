@@ -752,6 +752,7 @@ namespace Faahi.Service.market_place
                     {
                         customer_order_line_id = l.Key,
                         product_id = l.First().product_id,
+                        title = l.First().title,
                         variant_id = l.First().variant_id,
                         image_url = a.First().image_url,
                         batch_id = l.First().batch_id,
