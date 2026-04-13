@@ -26,6 +26,11 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "uniqueidentifier")]
         public Guid? company_id { get; set; }
 
+        [ForeignKey("party_id")]
+        [Display(Name = "party_id")]
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? party_id { get; set; }
+
         [Column(TypeName ="varchar(30)")]
         public string? customer_code { get; set; }
 

@@ -1,4 +1,5 @@
-﻿using Faahi.Model;
+﻿using Faahi.Dto.om_Orders;
+using Faahi.Model;
 using Faahi.Model.Accounts;
 using Faahi.Model.Admin;
 using Faahi.Model.am_users;
@@ -195,12 +196,16 @@ namespace Faahi.Controllers.Application
 
         public DbSet<im_InventoryReservations> im_InventoryReservations { get; set; }
 
+        public DbSet<mk_business_zones> mk_business_zones { get; set; }
+
 
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }
 
         public DbSet<temp_im_purchase_listing_details> temp_Im_Purchase_Listing_Details { get; set; }
 
+        // view tables
+        public DbSet<om_CustomerOrders_dto> CustomerOrdersDto { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -296,7 +301,7 @@ namespace Faahi.Controllers.Application
                 entity.Property(e => e.balance_base).HasColumnType("decimal(18,4)").HasDefaultValue("0");
                 entity.Property(e => e.status).HasColumnType("varchar(20)").HasDefaultValue("OPEN");
                 entity.Property(e => e.sales_mode).HasColumnType("varchar(25)").HasDefaultValue("GENERAL");
-                entity.Property(e => e.doc_type).HasColumnType("varchar(10)").HasDefaultValue("SALE");
+                entity.Property(e => e.doc_type).HasColumnType("varchar(30)").HasDefaultValue("SALE");
                 entity.Property(e => e.sales_on_hold).HasColumnType("char(1)").HasDefaultValue("F");
                 entity.Property(e => e.is_mutiple_payment).HasColumnType("char(1)").HasDefaultValue("F");
 
@@ -524,6 +529,12 @@ namespace Faahi.Controllers.Application
 
                 entity.HasIndex(a => new { a.customer_order_id, a.reservation_status }).HasDatabaseName("IX_im_InventoryReservations_order");
                 entity.HasIndex(a => new { a.store_id, a.variant_id, a.reservation_status }).HasDatabaseName("IX_im_InventoryReservations_store_variant_status");
+            });
+
+            modelBuilder.Entity<om_CustomerOrders_dto>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToView(null); 
             });
         }
 

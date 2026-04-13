@@ -62,6 +62,6 @@ namespace Faahi.Model.am_users
 
         public ICollection<am_user_business_access>? am_user_business_access { get; set; } = null;
 
-        public ICollection<mk_customer_profiles>? mk_customer_profiles { get; set; } = null;
+        //public ICollection<mk_customer_profiles>? mk_customer_profiles { get; set; } = null;
     }
 }

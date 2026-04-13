@@ -1,10 +1,12 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Dto.am_users;
+using Faahi.Dto.om_Orders;
 using Faahi.Migrations;
 using Faahi.Model.am_users;
 using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
+using Faahi.Model.im_products;
 using Faahi.Model.Order;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
@@ -35,7 +37,7 @@ namespace Faahi.Service.market_place
             {
                 bool isNewUser = false;
                 var genrate_password = "";
-                var existingUser = await _context.am_users.Include(u => u.am_roles).ThenInclude(r => r.am_user_roles).ThenInclude(ur => ur.mk_customer_profiles).ThenInclude(p => p.mk_customer_addresses)
+                var existingUser = await _context.am_users.Include(u => u.am_roles).ThenInclude(r => r.am_user_roles)
                                    .FirstOrDefaultAsync(u => u.email == users.email);
                 if (existingUser == null)
                 {
@@ -78,38 +80,38 @@ namespace Faahi.Service.market_place
                             userRole.created_at = DateTime.Now;
                             userRole.business_id = co_business?.company_id ?? st_store?.company_id;
                             userRole.store_id = st_store?.store_id;
-                            foreach (var mk_profile in userRole.mk_customer_profiles)
-                            {
-                                mk_profile.customer_profile_id = Guid.CreateVersion7();
-                                mk_profile.user_role_id = userRole.user_role_id;
-                                mk_profile.user_id = users.userId;
-                                mk_profile.customer_code = "";
-                                mk_profile.gender = mk_profile.gender;
-                                mk_profile.date_of_birth = mk_profile.date_of_birth;
-                                mk_profile.created_at = DateTime.Now;
-                                mk_profile.updated_at = DateTime.Now;
-                                mk_profile.status = "T";
+                            //foreach (var mk_profile in userRole.mk_customer_profiles)
+                            //{
+                            //    mk_profile.customer_profile_id = Guid.CreateVersion7();
+                            //    mk_profile.user_role_id = userRole.user_role_id;
+                            //    mk_profile.user_id = users.userId;
+                            //    mk_profile.customer_code = "";
+                            //    mk_profile.gender = mk_profile.gender;
+                            //    mk_profile.date_of_birth = mk_profile.date_of_birth;
+                            //    mk_profile.created_at = DateTime.Now;
+                            //    mk_profile.updated_at = DateTime.Now;
+                            //    mk_profile.status = "T";
 
-                                foreach (var address in mk_profile.mk_customer_addresses)
-                                {
-                                    address.address_id = Guid.CreateVersion7();
-                                    address.customer_profile_id = mk_profile.customer_profile_id;
-                                    address.user_id = users.userId;
-                                    address.address_type = address.address_type;
-                                    address.contact_name = address.contact_name;
-                                    address.contact_phone = address.contact_phone;
-                                    address.address_line1 = address.address_line1;
-                                    address.address_line2 = address.address_line2;
-                                    address.city = address.city;
-                                    address.state_region = address.state_region;
-                                    address.postal_code = address.postal_code;
-                                    address.country_code = address.country_code;
-                                    address.created_at = DateTime.Now;
-                                    address.updated_at = DateTime.Now;
-                                    address.is_default = "T";
-                                    address.status = "T";
-                                }
-                            }
+                            //    foreach (var address in mk_profile.mk_customer_addresses)
+                            //    {
+                            //        address.address_id = Guid.CreateVersion7();
+                            //        address.customer_profile_id = mk_profile.customer_profile_id;
+                            //        address.user_id = users.userId;
+                            //        address.address_type = address.address_type;
+                            //        address.contact_name = address.contact_name;
+                            //        address.contact_phone = address.contact_phone;
+                            //        address.address_line1 = address.address_line1;
+                            //        address.address_line2 = address.address_line2;
+                            //        address.city = address.city;
+                            //        address.state_region = address.state_region;
+                            //        address.postal_code = address.postal_code;
+                            //        address.country_code = address.country_code;
+                            //        address.created_at = DateTime.Now;
+                            //        address.updated_at = DateTime.Now;
+                            //        address.is_default = "T";
+                            //        address.status = "T";
+                            //    }
+                            //}
                         }
                     }
                     _context.am_users.Add(users);
@@ -156,49 +158,49 @@ namespace Faahi.Service.market_place
                             userRole.business_id = co_business?.company_id ?? st_store?.company_id;
                             userRole.store_id = st_store?.store_id;
 
-                            foreach (var mk_profile in userRole.mk_customer_profiles)
-                            {
-                                var table = "mk_customer_profiles";
-                                var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == userRole.business_id);
-                                var key = Convert.ToInt16(am_table.next_key);
+                            //foreach (var mk_profile in userRole.mk_customer_profiles)
+                            //{
+                            //    var table = "mk_customer_profiles";
+                            //    var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == userRole.business_id);
+                            //    var key = Convert.ToInt16(am_table.next_key);
 
-                                mk_profile.customer_profile_id = Guid.CreateVersion7();
-                                mk_profile.user_role_id = userRole.user_role_id;
-                                mk_profile.user_id = existingUser.userId;
-                                mk_profile.customer_code = "MK" + "-" + Convert.ToString(key + 1);
-                                mk_profile.gender = mk_profile.gender;
-                                mk_profile.date_of_birth = mk_profile.date_of_birth;
-                                mk_profile.created_at = DateTime.Now;
-                                mk_profile.updated_at = DateTime.Now;
-                                mk_profile.status = "T";
+                            //    mk_profile.customer_profile_id = Guid.CreateVersion7();
+                            //    mk_profile.user_role_id = userRole.user_role_id;
+                            //    mk_profile.user_id = existingUser.userId;
+                            //    mk_profile.customer_code = "MK" + "-" + Convert.ToString(key + 1);
+                            //    mk_profile.gender = mk_profile.gender;
+                            //    mk_profile.date_of_birth = mk_profile.date_of_birth;
+                            //    mk_profile.created_at = DateTime.Now;
+                            //    mk_profile.updated_at = DateTime.Now;
+                            //    mk_profile.status = "T";
 
-                                foreach (var address in mk_profile.mk_customer_addresses)
-                                {
-                                    address.address_id = Guid.CreateVersion7();
-                                    address.customer_profile_id = mk_profile.customer_profile_id;
-                                    address.user_id = existingUser.userId;
-                                    address.address_type = address.address_type;
-                                    address.contact_name = address.contact_name;
-                                    address.contact_phone = address.contact_phone;
-                                    address.address_line1 = address.address_line1;
-                                    address.address_line2 = address.address_line2;
-                                    address.city = address.city;
-                                    address.state_region = address.state_region;
-                                    address.postal_code = address.postal_code;
-                                    address.country_code = address.country_code;
-                                    address.created_at = DateTime.Now;
-                                    address.updated_at = DateTime.Now;
-                                    address.is_default = "T";
-                                    address.status = "T";
+                            //    foreach (var address in mk_profile.mk_customer_addresses)
+                            //    {
+                            //        address.address_id = Guid.CreateVersion7();
+                            //        address.customer_profile_id = mk_profile.customer_profile_id;
+                            //        address.user_id = existingUser.userId;
+                            //        address.address_type = address.address_type;
+                            //        address.contact_name = address.contact_name;
+                            //        address.contact_phone = address.contact_phone;
+                            //        address.address_line1 = address.address_line1;
+                            //        address.address_line2 = address.address_line2;
+                            //        address.city = address.city;
+                            //        address.state_region = address.state_region;
+                            //        address.postal_code = address.postal_code;
+                            //        address.country_code = address.country_code;
+                            //        address.created_at = DateTime.Now;
+                            //        address.updated_at = DateTime.Now;
+                            //        address.is_default = "T";
+                            //        address.status = "T";
 
 
-                                }
-                                if (am_table != null)
-                                {
-                                    am_table.next_key = key + 1;
-                                    _context.am_table_next_key.Update(am_table);
-                                }
-                            }
+                            //    }
+                            //    if (am_table != null)
+                            //    {
+                            //        am_table.next_key = key + 1;
+                            //        _context.am_table_next_key.Update(am_table);
+                            //    }
+                            //}
                         }
                         _context.am_roles.Add(role);
                         existingUser.am_roles.Add(role);
@@ -495,6 +497,279 @@ namespace Faahi.Service.market_place
                     Data = null,
                     Message = $"Error retrieving order sources: {ex.Message}",
                     Status = 500
+                };
+            }
+        }
+
+        public async Task<ServiceResult<mk_customer_addresses>> Add_shipping_address(mk_customer_addresses mk_Customer_Addresses)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if(mk_Customer_Addresses == null)
+                {
+                    return new ServiceResult<mk_customer_addresses>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message="No data found"
+                    };
+                }
+                var exising_address = await _context.mk_customer_addresses.FirstOrDefaultAsync(a => a.contact_phone == mk_Customer_Addresses.contact_phone);
+                if (exising_address != null)
+                {
+                    return new ServiceResult<mk_customer_addresses>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "Already exist"
+                    };
+                }
+                mk_Customer_Addresses.address_id = Guid.CreateVersion7();
+                mk_Customer_Addresses.address_type = mk_Customer_Addresses.address_type;
+                mk_Customer_Addresses.contact_name= mk_Customer_Addresses.contact_name;
+                mk_Customer_Addresses.contact_phone= mk_Customer_Addresses.contact_phone;
+                mk_Customer_Addresses.address_line1 = mk_Customer_Addresses.address_line1;
+                mk_Customer_Addresses.Land_mark = mk_Customer_Addresses.Land_mark;
+                mk_Customer_Addresses.city= mk_Customer_Addresses.city;
+                mk_Customer_Addresses.state_region= mk_Customer_Addresses.state_region;
+                mk_Customer_Addresses.postal_code = mk_Customer_Addresses.postal_code;
+                mk_Customer_Addresses.country_code= mk_Customer_Addresses.country_code;
+                mk_Customer_Addresses.delevery_start_time= mk_Customer_Addresses.delevery_start_time;
+                mk_Customer_Addresses.delevery_end_time = mk_Customer_Addresses.delevery_end_time;
+                mk_Customer_Addresses.latitude = mk_Customer_Addresses.latitude;
+                mk_Customer_Addresses.longitude = mk_Customer_Addresses.longitude;
+                mk_Customer_Addresses.created_at= mk_Customer_Addresses.created_at;
+                mk_Customer_Addresses.updated_at = mk_Customer_Addresses.updated_at;
+                mk_Customer_Addresses.is_default = "T";
+                mk_Customer_Addresses.status = "T";
+                _context.mk_customer_addresses.Add(mk_Customer_Addresses);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<mk_customer_addresses>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Inserted",
+                    Data= mk_Customer_Addresses
+                };
+
+
+            }
+            catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ServiceResult<mk_customer_addresses>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<mk_customer_addresses>>> Get_shipping(string search_text)
+        {
+            try
+            {
+                var jsonresult = _context.Database.SqlQueryRaw<string>(
+                   "EXEC dbo.sp_get_am_users @search_text=@search_text,@opr=@opr",
+                   new SqlParameter("@search_text", search_text),
+                   new SqlParameter("@opr", 1)).AsEnumerable().FirstOrDefault();
+                if (jsonresult == null)
+                {
+                    return new ServiceResult<List<mk_customer_addresses>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var mk_customer = JsonConvert.DeserializeObject<List<mk_customer_addresses>>(jsonresult);
+
+                if (mk_customer == null)
+                {
+                    return new ServiceResult<List<mk_customer_addresses>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                return new ServiceResult<List<mk_customer_addresses>>
+                {
+                    Success = true,
+                    Status = 200,
+                    Message = "Shipping addresses retrieved successfully",
+                    Data = mk_customer
+                };
+
+                
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving shipping addresses");
+                return new ServiceResult<List<mk_customer_addresses>>
+                {
+                    Success = false,
+                    Status = 500,
+                    Message = $"Error retrieving shipping addresses: {ex.Message}",
+                    Data = null
+                };
+            }
+        }
+
+        public async Task<ServiceResult<mk_business_zones>> Add_Zones(mk_business_zones mk_Business_Zones)
+        {
+            var transaction =await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if(mk_Business_Zones == null)
+                {
+                    return new ServiceResult<mk_business_zones>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                mk_Business_Zones.zone_id = Guid.CreateVersion7();
+                mk_Business_Zones.zone_name=mk_Business_Zones.zone_name;
+                mk_Business_Zones.description=mk_Business_Zones.description;
+                mk_Business_Zones.created_at=DateTime.Now;
+                mk_Business_Zones.updated_at=DateTime.Now;
+                mk_Business_Zones.is_active = "T";
+                _context.mk_business_zones.Add(mk_Business_Zones);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<mk_business_zones>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Inserted",
+                    Data = mk_Business_Zones
+                };
+
+            }
+            catch(Exception ex)
+            {
+                return new ServiceResult<mk_business_zones>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<mk_business_zones>>> get_zones(Guid company_id)
+        {
+            try
+            {
+                if(company_id == Guid.Empty)
+                {
+                    return new ServiceResult<List<mk_business_zones>>
+                    {
+                        Success = false,
+                        Status = 300,
+                        Message = "No data found"
+                    };
+                }
+                var zone_list = await _context.mk_business_zones.Where(a => a.business_id == company_id).ToListAsync();
+                if(zone_list.Count == 0)
+                {
+                    return new ServiceResult<List<mk_business_zones>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "no data found"
+                    };
+                }
+                return new ServiceResult<List<mk_business_zones>>
+                {
+                    Success = true,
+                    Status = 200,
+                    Message = "Success",
+                    Data = zone_list
+                };
+
+            }catch(Exception ex)
+            {
+                return new ServiceResult<List<mk_business_zones>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<om_CustomerOrders_dto>>> Get_order_list(Guid company_id)
+        {
+            try
+            {
+                var items = await _context.Set<om_CustomerOrders_dto>()
+                    .FromSqlRaw(
+                        "EXEC dbo.om_orders  @opr=@opr, @business_id=@business_id", 
+                        new SqlParameter("@business_id",company_id),
+                        new SqlParameter("@opr", 1)
+                    )
+                .ToListAsync();
+                if (items.Count == 0)
+                {
+                    return new ServiceResult<List<om_CustomerOrders_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var result = items.GroupBy(a => a.customer_order_id).Select(a => new om_CustomerOrders_dto
+                {
+                    customer_order_id = a.Key,
+                    business_id = a.First().business_id,
+                    source_id = a.First().source_id,
+                    order_date = a.First().order_date,
+                    payment_status = a.First().payment_status,
+                    sub_total = a.First().sub_total,
+                    delivery_contact_name = a.First().delivery_contact_name,
+                    delivery_contact_no = a.First().delivery_contact_no,
+                    delivery_address1 = a.First().delivery_address1,
+                    delivery_city = a.First().delivery_city,
+                    delivery_postal_code = a.First().delivery_postal_code,
+                    delivery_latitude = a.First().delivery_latitude,
+                    delivery_longitude = a.First().delivery_longitude,
+                    image_url = a.First().image_url,
+
+                    om_CustomerOrdersLine_Dtos = a.Where(a => a.customer_order_line_id != null)
+                    .GroupBy(a => a.customer_order_line_id).Select(l => new om_CustomerOrdersLine_dto
+                    {
+                        customer_order_line_id = l.Key,
+                        product_id = l.First().product_id,
+                        variant_id = l.First().variant_id,
+                        batch_id = l.First().batch_id,
+                        ordered_qty = l.First().ordered_qty,
+                        unit_price = l.First().unit_price,
+                        line_total = l.First().line_total,
+
+                    }).ToList()
+                }).ToList();
+                
+                return new ServiceResult<List<om_CustomerOrders_dto>>
+                {
+                    Status = 200,
+                    Message = "",
+                    Success = true,
+                    Data = result
+                };
+            }
+            catch(Exception ex)
+            {
+                return new ServiceResult<List<om_CustomerOrders_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
                 };
             }
         }

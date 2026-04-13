@@ -1,6 +1,7 @@
 ﻿using Faahi.Dto;
 using Faahi.Dto.sales_dto;
 using Faahi.Model.im_products;
+using Faahi.Model.Order;
 using Faahi.Model.sales;
 using Microsoft.AspNetCore.Mvc;
 
@@ -38,6 +39,8 @@ namespace Faahi.Service.im_products.sales
         Task<ServiceResult<List<HourlySalesReportDTO>>> Get_sales_hourly_base(Guid store_id, DateOnly? start_date, DateOnly? end_date);
 
         Task<ServiceResult<so_SalesHeaders>> Add_sales_return(Guid salesId, so_SalesHeaders so_SalesHeaders);
+
+        Task<ServiceResult<om_CustomerOrders>> Add_order(Guid? salesId, Guid? address_id,Guid? source_id);
 
     }
 }

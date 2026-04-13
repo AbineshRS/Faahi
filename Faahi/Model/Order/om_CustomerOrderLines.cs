@@ -36,6 +36,13 @@ namespace Faahi.Model.Order
         [JsonIgnore]
         public im_ProductVariants? im_ProductVariants { get; set; }
 
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? store_variant_inventory_id { get; set; }
+
+        [ForeignKey(nameof(store_variant_inventory_id))]
+        [JsonIgnore]
+        public im_StoreVariantInventory? im_StoreVariantInventory { get; set; }
+
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid? batch_id { get; set; } = null;
@@ -43,11 +50,11 @@ namespace Faahi.Model.Order
         [JsonIgnore]
         public im_ItemBatches? im_ItemBatches { get; set; } = null;
 
-        [Column(TypeName = "uniqueidentifier")]
-        public Guid? uom_id { get; set; } = null;
-        [ForeignKey(nameof(uom_id))]
-        [JsonIgnore]
-        public im_UnitsOfMeasure? im_UnitsOfMeasure { get; set; } = null;
+        //[Column(TypeName = "uniqueidentifier")]
+        //public Guid? uom_id { get; set; } = null;
+        //[ForeignKey(nameof(uom_id))]
+        //[JsonIgnore]
+        //public im_UnitsOfMeasure? im_UnitsOfMeasure { get; set; } = null;
 
         [Column(TypeName = "decimal(18,4)")]
         [DefaultValue(0)]

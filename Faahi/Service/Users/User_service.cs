@@ -149,6 +149,7 @@ namespace Faahi.Service.Users
                     ar_Customers.customer_id = Guid.CreateVersion7();
                     ar_Customers.customer_code = "C-" + customerCode;
                     ar_Customers.price_tier_id = ar_Customers.price_tier_id;
+                    ar_Customers.party_id = st_Parties.party_id;
                     ar_Customers.payment_term_id = ar_Customers.payment_term_id;
                     ar_Customers.credit_limit = ar_Customers.credit_limit;
                     ar_Customers.default_shipping_address_id = ar_Customers.default_shipping_address_id;
@@ -550,13 +551,13 @@ namespace Faahi.Service.Users
             }
             try
             {
-                var jsonresult = await _context.Database
+                var jsonresult =  _context.Database
                             .SqlQueryRaw<string>(
-                                "EXEC dbo.sp_Getusers @customer_id=@customer_id,@opr_parm=@opr_parm",
+                                "EXEC dbo.sp_Getusers @customer_id=@customer_id,@opr=@opr",
                                 new SqlParameter("@customer_id", customer_id),
-                                new SqlParameter("@opr_parm", 4)
+                                new SqlParameter("@opr", 4)
                             )
-                            .FirstOrDefaultAsync(); 
+                            .AsEnumerable().FirstOrDefault(); 
                 var customer = JsonConvert.DeserializeObject<ar_Customers>(jsonresult);
                 //var customer = await _context.ar_Customers.Include(a=>a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.customer_id == customer_id);
                 if (customer == null)

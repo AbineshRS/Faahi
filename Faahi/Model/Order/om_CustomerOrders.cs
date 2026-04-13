@@ -1,4 +1,5 @@
 ﻿using Faahi.Model.am_users;
+using Faahi.Model.am_vcos;
 using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
 using Microsoft.EntityFrameworkCore;
@@ -38,10 +39,10 @@ namespace Faahi.Model.Order
 
 
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? customer_profile_id { get; set; } = null;
-        [ForeignKey(nameof(customer_profile_id))]
+        public Guid? customer_id { get; set; } = null;
+        [ForeignKey(nameof(customer_id))]
         [JsonIgnore]
-        public mk_customer_profiles? mk_customer_profiles { get; set; }=null;
+        public ar_Customers? ar_Customers { get; set; }=null;
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid? party_id { get; set; } = null;
