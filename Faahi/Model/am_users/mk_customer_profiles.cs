@@ -56,6 +56,6 @@ namespace Faahi.Model.am_users
         [Column(TypeName = "char(1)")]
         public string status { get; set; } = string.Empty;
 
-        public ICollection<mk_customer_addresses>? mk_customer_addresses { get; set; } = null;
+        //public ICollection<mk_customer_addresses>? mk_customer_addresses { get; set; } = null;
     }
 }
