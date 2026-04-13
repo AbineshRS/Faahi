@@ -46,6 +46,9 @@ namespace Faahi.Dto.om_Orders
 
         public string? image_url { get; set; }
 
+        public string? title { get; set; }
+
+
         public Guid? customer_order_line_id { get; set; }
         public Guid? product_id { get; set; }
         public Guid? variant_id { get; set; }
