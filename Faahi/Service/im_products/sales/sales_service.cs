@@ -1738,6 +1738,9 @@ namespace Faahi.Service.im_products.sales
                         Success = false,
                     };
                 }
+                var table = "om_CustomerOrders";
+                var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == existing_sales.business_id);
+                var key = Convert.ToInt16(table_key.next_key);
                 var ar_customer = await _context.ar_Customers.FirstOrDefaultAsync(a => a.customer_id == existing_sales.customer_id);
                 om_OrderStatusHistory history = new om_OrderStatusHistory();
                 om_CustomerOrders om_Customer = new om_CustomerOrders();
@@ -1746,6 +1749,7 @@ namespace Faahi.Service.im_products.sales
                 om_Customer.business_id = existing_sales.business_id ?? Guid.Empty;
                 om_Customer.store_id = existing_sales.store_id;
                 om_Customer.source_id = source_id;
+                om_Customer.order_no = key + 1;
                 om_Customer.customer_id = existing_sales.customer_id;
                 om_Customer.party_id = ar_customer?.party_id;
                 om_Customer.order_reference_no = existing_sales.reference_no;
@@ -1763,6 +1767,7 @@ namespace Faahi.Service.im_products.sales
                 om_Customer.delivery_city = "";
                 om_Customer.other_charges = 0;
                 var mk_address = await _context.mk_customer_addresses.FirstOrDefaultAsync(a => a.address_id == address_id);
+                var zones = await _context.mk_business_zones.FirstOrDefaultAsync(a => a.zone_id == mk_address.zone_id);
                 om_Customer.delivery_contact_name = mk_address.contact_name;
                 om_Customer.delivery_contact_no = mk_address.contact_phone;
                 om_Customer.delivery_address1 = mk_address.address_line1;
@@ -1770,6 +1775,7 @@ namespace Faahi.Service.im_products.sales
                 om_Customer.delivery_postal_code = mk_address.postal_code;
                 om_Customer.delivery_latitude = mk_address.latitude;
                 om_Customer.delivery_longitude = mk_address.longitude;
+                om_Customer.zone_name = zones?.zone_name;
                 om_Customer.confirmed_at = DateTime.Now;
                 om_Customer.created_at = DateTime.Now;
                 foreach (var item in existing_sales.so_SalesLines)
@@ -1821,6 +1827,11 @@ namespace Faahi.Service.im_products.sales
 
                 om_Customer.om_CustomerOrderLines = om_CustomerOrderLines;
                 _context.om_CustomerOrders.Add(om_Customer);
+                if (table_key != null)
+                {
+                    table_key.next_key = key + 1;
+                    _context.am_table_next_key.Update(table_key);
+                }
                 await _context.SaveChangesAsync();
 
                 return new ServiceResult<om_CustomerOrders>

@@ -169,6 +169,9 @@ namespace Faahi.Model.Order
         [Column(TypeName = "uniqueidentifier")]
         public Guid? updated_by { get; set; } = null;
 
+        [Column(TypeName = "nvarchar(50)")]
+        public string? zone_name { get; set; }
+
         public ICollection<om_CustomerOrderLines>? om_CustomerOrderLines { get; set; } = null;
 
     }
