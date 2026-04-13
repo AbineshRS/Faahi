@@ -527,6 +527,7 @@ namespace Faahi.Service.market_place
                 }
                 mk_Customer_Addresses.address_id = Guid.CreateVersion7();
                 mk_Customer_Addresses.address_type = mk_Customer_Addresses.address_type;
+                mk_Customer_Addresses.zone_id = mk_Customer_Addresses.zone_id;
                 mk_Customer_Addresses.contact_name= mk_Customer_Addresses.contact_name;
                 mk_Customer_Addresses.contact_phone= mk_Customer_Addresses.contact_phone;
                 mk_Customer_Addresses.address_line1 = mk_Customer_Addresses.address_line1;
@@ -739,7 +740,12 @@ namespace Faahi.Service.market_place
                     delivery_postal_code = a.First().delivery_postal_code,
                     delivery_latitude = a.First().delivery_latitude,
                     delivery_longitude = a.First().delivery_longitude,
-                    image_url = a.First().image_url,
+                    delivery_status = a.First().delivery_status,
+                    currency_code = a.First().currency_code,
+                    platform_name = a.First().platform_name,
+                    source_name = a.First().source_name,
+                    order_no = a.First().order_no,
+                    zone_name = a.First().zone_name,
 
                     om_CustomerOrdersLine_Dtos = a.Where(a => a.customer_order_line_id != null)
                     .GroupBy(a => a.customer_order_line_id).Select(l => new om_CustomerOrdersLine_dto
@@ -747,6 +753,7 @@ namespace Faahi.Service.market_place
                         customer_order_line_id = l.Key,
                         product_id = l.First().product_id,
                         variant_id = l.First().variant_id,
+                        image_url = a.First().image_url,
                         batch_id = l.First().batch_id,
                         ordered_qty = l.First().ordered_qty,
                         unit_price = l.First().unit_price,
@@ -758,7 +765,7 @@ namespace Faahi.Service.market_place
                 return new ServiceResult<List<om_CustomerOrders_dto>>
                 {
                     Status = 200,
-                    Message = "",
+                    Message = "success",
                     Success = true,
                     Data = result
                 };

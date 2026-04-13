@@ -42,7 +42,7 @@ namespace Faahi.Controllers.Market_place
             var result = await _market_Place_Service.Add_source(om_OrderSources);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_market_place_users/{search_text}")]
         public async Task<IActionResult> Get_market_place_users(string search_text)
@@ -109,7 +109,7 @@ namespace Faahi.Controllers.Market_place
             var result = await _market_Place_Service.get_zones(company_id);
             return Ok(result);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_order_list/{company_id}")]
         public async Task<IActionResult> Get_order_list(Guid company_id)
