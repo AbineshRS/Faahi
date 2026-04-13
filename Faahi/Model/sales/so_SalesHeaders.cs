@@ -81,7 +81,7 @@ namespace Faahi.Model.sales
         [Column(TypeName = "date")]
         public DateOnly? sales_date { get; set; } = null;
 
-        [Column(TypeName ="varchar(10)")]
+        [Column(TypeName ="varchar(30)")]
         [DefaultValue("SALE")] // -- SALE / RETURN / QUOTE
         public string? doc_type { get;set; }
 
@@ -265,5 +265,11 @@ namespace Faahi.Model.sales
 
         [NotMapped]
         public string? contact_name { get; set; } = null;
+
+        [NotMapped]
+        public Guid? address_id { get; set; } = null;
+
+        [NotMapped]
+        public Guid? source_id { get; set; } = null;
     }
 }

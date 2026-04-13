@@ -88,7 +88,6 @@ namespace Faahi.Service.Auth
                 var am_users = await _context.am_users.Include(a => a.am_roles).ThenInclude(a => a.am_user_roles).ThenInclude(a => a.am_user_business_access)
                                  .Include(a => a.am_roles)
                                  .ThenInclude(r => r.am_user_roles)
-                                 .ThenInclude(ur => ur.mk_customer_profiles) 
                                  .FirstOrDefaultAsync(a => a.userName == username || a.email == username);
                 if (am_users != null)
                 {

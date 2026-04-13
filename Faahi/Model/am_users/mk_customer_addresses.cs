@@ -14,20 +14,7 @@ namespace Faahi.Model.am_users
         [Column(TypeName = "uniqueidentifier")]
         public Guid address_id { get; set; }
 
-        [ForeignKey(nameof(user_id))]
-        [JsonIgnore]
-        [ValidateNever]
-
-        public am_users am_Users { get; set; }
-        [Column(TypeName = "uniqueidentifier")]
-        public Guid user_id { get; set; }
-
-        [ForeignKey(nameof(customer_profile_id))]
-        [JsonIgnore]
-        [ValidateNever]
-        public mk_customer_profiles mk_customer_profiles { get; set; }
-        [Column(TypeName = "uniqueidentifier")]
-        public Guid customer_profile_id { get; set; }
+        
 
         [Column(TypeName = "varchar(20)")]
         public string? address_type { get; set; }
@@ -42,7 +29,7 @@ namespace Faahi.Model.am_users
         public string? address_line1 { get; set; }
 
         [Column(TypeName = "nvarchar(200)")]
-        public string? address_line2 { get; set; }
+        public string? Land_mark { get; set; }
 
         [Column(TypeName = "nvarchar(100)")]
         public string? city { get; set; } = null;
@@ -55,6 +42,15 @@ namespace Faahi.Model.am_users
 
         [Column(TypeName = "nvarchar(20)")]
         public string? country_code { get; set; } = null;
+
+        [Column(TypeName ="datetime")]
+        public DateTime? delevery_date { get; set; }
+
+        [Column(TypeName = "time")]
+        public TimeOnly? delevery_start_time { get; set; }
+
+        [Column(TypeName = "time")]
+        public TimeOnly? delevery_end_time  {get;set; }
 
         [Column(TypeName = "datetime")]
         public DateTime? created_at { get; set; }
@@ -71,5 +67,11 @@ namespace Faahi.Model.am_users
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]
         public string status { get; set; } = string.Empty;
+
+        [Column(TypeName = "decimal(18,6)")]
+        public decimal? latitude { get; set; }
+
+        [Column(TypeName = "decimal(18,6)")]
+        public decimal? longitude { get; set; }
     }
 }

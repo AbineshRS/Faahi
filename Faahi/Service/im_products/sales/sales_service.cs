@@ -2,7 +2,9 @@
 using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Dto.sales_dto;
+using Faahi.Migrations;
 using Faahi.Model.im_products;
+using Faahi.Model.Order;
 using Faahi.Model.sales;
 using Faahi.Model.st_sellers;
 using Microsoft.AspNetCore.Mvc;
@@ -321,7 +323,7 @@ namespace Faahi.Service.im_products.sales
                     };
                 }
                 var table = "so_SalesHeaders_sales_no";
-                var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id== so_SalesHeaders.business_id);
+                var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == so_SalesHeaders.business_id);
                 var key = Convert.ToInt16(table_key.next_key);
 
                 var table2 = "so_SalesHeaders_invoice_no";
@@ -343,9 +345,9 @@ namespace Faahi.Service.im_products.sales
                 so_SalesHeaders.payment_term_id = so_SalesHeaders.payment_term_id;
                 so_SalesHeaders.membership_id = so_SalesHeaders.membership_id;
                 so_SalesHeaders.sales_no = Convert.ToInt64(key + 1);
-                so_SalesHeaders.invoice_no = st_store.default_invoice_init+"-"+ so_SalesHeaders.invoice_no + "-" + Convert.ToString(key2 + 1);
+                so_SalesHeaders.invoice_no = st_store.default_invoice_init + "-" + so_SalesHeaders.invoice_no + "-" + Convert.ToString(key2 + 1);
 
-                if (so_SalesHeaders.doc_type == "SALE - QUOTATION")
+                if (so_SalesHeaders.doc_type == "QUOTATION")
                 {
                     so_SalesHeaders.quot_no = st_store.default_quote_init + "-" + Convert.ToString(key2 + 1);
                 }
@@ -355,7 +357,7 @@ namespace Faahi.Service.im_products.sales
                 }
                 so_SalesHeaders.purchase_order_no = so_SalesHeaders.purchase_order_no;
                 so_SalesHeaders.sales_date = so_SalesHeaders.sales_date;
-                so_SalesHeaders.doc_type = parts[0]?.Trim();
+                so_SalesHeaders.doc_type = so_SalesHeaders.doc_type;
                 so_SalesHeaders.due_date = so_SalesHeaders.due_date;
                 so_SalesHeaders.tax_percent = so_SalesHeaders.tax_percent;
                 so_SalesHeaders.service_charge_percent = so_SalesHeaders.service_charge_percent;
@@ -529,7 +531,7 @@ namespace Faahi.Service.im_products.sales
 
                     }
                 }
-                if (so_SalesHeaders.status == "POSTED" && so_SalesHeaders.doc_type == "SALE")
+                if (so_SalesHeaders.status == "POSTED" && so_SalesHeaders.doc_type == "SALE" || so_SalesHeaders.doc_type== "MARKETPLACE")
                 {
                     var so_lines = await _context.so_SalesLines.Where(a => a.sales_id == so_SalesHeaders.sales_id).ToListAsync();
                     List<im_InventoryTransactions> im_InventoryTransactions1 = new List<im_InventoryTransactions>();
@@ -540,7 +542,7 @@ namespace Faahi.Service.im_products.sales
                             sales_line_id = item.sales_line_id,
                             store_id = so_SalesHeaders.store_id,
                             variant_id = item.variant_id,
-                            trans_type = "SALE",
+                            trans_type = so_SalesHeaders.doc_type,
                             quantity_change = item.quantity,
                             unit_cost = item.unit_price,
                             total_cost = item.line_total,
@@ -551,12 +553,30 @@ namespace Faahi.Service.im_products.sales
 
                     }
                     _context.im_InventoryTransactions.AddRange(im_InventoryTransactions1);
+                    var order = await Add_order(so_SalesHeaders?.sales_id, so_SalesHeaders.address_id, so_SalesHeaders.source_id);
+                    {
+                        if (!order.Success)
+                        {
+                            await transaction.RollbackAsync();
+
+                            return new ServiceResult<so_SalesHeaders>
+                            {
+                                Status = 500,
+                                Success = false,
+                                Message = order.Message
+                            };
+                        }
+                    }
                     await _context.SaveChangesAsync();
-                    var spResults = _context.Database.SqlQueryRaw<string>(
-                                     "EXEC dbo.sp_PostSales @sales_id=@sales_id ,@store_id=@store_id",
-                                      new SqlParameter("@sales_id", so_SalesHeaders.sales_id),
-                                      new SqlParameter("@store_id ", st_store.store_id)).AsEnumerable().ToList();
-                    var spResponse = spResults.FirstOrDefault();
+                    if (so_SalesHeaders.status == "POSTED" && so_SalesHeaders.doc_type == "SALE")
+                    {
+                        var spResults = _context.Database.SqlQueryRaw<string>(
+                                                             "EXEC dbo.sp_PostSales @sales_id=@sales_id ,@store_id=@store_id",
+                                                              new SqlParameter("@sales_id", so_SalesHeaders.sales_id),
+                                                              new SqlParameter("@store_id ", st_store.store_id)).AsEnumerable().ToList();
+                        var spResponse = spResults.FirstOrDefault();
+                    }
+
                 }
 
 
@@ -1697,6 +1717,125 @@ namespace Faahi.Service.im_products.sales
                 await transactio.RollbackAsync();
                 _logger.LogInformation("Error while Add_sales_return");
                 return new ServiceResult<so_SalesHeaders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<om_CustomerOrders>> Add_order(Guid? salesId, Guid? address_id, Guid? source_id)
+        {
+            try
+            {
+                var existing_sales = await _context.so_SalesHeaders.Include(a => a.so_SalesLines).FirstOrDefaultAsync(a => a.sales_id == salesId);
+                if (existing_sales == null)
+                {
+                    return new ServiceResult<om_CustomerOrders>
+                    {
+                        Status = 300,
+                        Success = false,
+                    };
+                }
+                var ar_customer = await _context.ar_Customers.FirstOrDefaultAsync(a => a.customer_id == existing_sales.customer_id);
+                om_OrderStatusHistory history = new om_OrderStatusHistory();
+                om_CustomerOrders om_Customer = new om_CustomerOrders();
+                List<om_CustomerOrderLines> om_CustomerOrderLines = new List<om_CustomerOrderLines>();
+                om_Customer.customer_order_id = Guid.CreateVersion7();
+                om_Customer.business_id = existing_sales.business_id ?? Guid.Empty;
+                om_Customer.store_id = existing_sales.store_id;
+                om_Customer.source_id = source_id;
+                om_Customer.customer_id = existing_sales.customer_id;
+                om_Customer.party_id = ar_customer?.party_id;
+                om_Customer.order_reference_no = existing_sales.reference_no;
+                om_Customer.order_date = DateTime.Now;
+                om_Customer.expected_payment_method = om_Customer.expected_payment_method;
+                om_Customer.payment_status = "UNPAID";
+                om_Customer.order_status = "NEW";
+                om_Customer.fulfillment_status = "PENDING";
+                om_Customer.delivery_status = "PENDING";
+                om_Customer.currency_code = existing_sales.doc_currency_code;
+                om_Customer.exchange_rate = existing_sales.change_given_doc;
+                om_Customer.sub_total = existing_sales.sub_total;
+                om_Customer.discount_amount = existing_sales.discount_total;
+                om_Customer.tax_amount = existing_sales.tax_total;
+                om_Customer.delivery_city = "";
+                om_Customer.other_charges = 0;
+                var mk_address = await _context.mk_customer_addresses.FirstOrDefaultAsync(a => a.address_id == address_id);
+                om_Customer.delivery_contact_name = mk_address.contact_name;
+                om_Customer.delivery_contact_no = mk_address.contact_phone;
+                om_Customer.delivery_address1 = mk_address.address_line1;
+                om_Customer.delivery_area = mk_address.Land_mark;
+                om_Customer.delivery_postal_code = mk_address.postal_code;
+                om_Customer.delivery_latitude = mk_address.latitude;
+                om_Customer.delivery_longitude = mk_address.longitude;
+                om_Customer.confirmed_at = DateTime.Now;
+                om_Customer.created_at = DateTime.Now;
+                foreach (var item in existing_sales.so_SalesLines)
+                {
+                    int i = 0;
+                    om_CustomerOrderLines lines = new om_CustomerOrderLines();
+                    var store_varient = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id);
+                    if (store_varient != null)
+                    {
+                        store_varient.committed_quantity += item.quantity;
+                        _context.im_StoreVariantInventory.Update(store_varient);
+                    }
+                    lines.customer_order_line_id = Guid.CreateVersion7();
+                    lines.customer_order_id = om_Customer.customer_order_id;
+                    lines.line_no += i;
+                    lines.product_id = item.product_id ?? Guid.Empty;
+                    lines.variant_id = item.variant_id ?? Guid.Empty;
+                    lines.store_variant_inventory_id = item.store_variant_inventory_id;
+                    lines.batch_id = item.batch_id;
+                    //lines.uom_id = Guid.Empty;
+                    lines.ordered_qty = item.quantity;
+                    lines.reserved_qty = item.quantity;
+                    lines.picked_qty = item.quantity;
+                    lines.packed_qty = item.quantity;
+                    lines.dispatched_qty = item.quantity;
+                    lines.delivered_qty = item.quantity;
+                    lines.reserved_qty = 0;
+                    lines.cancelled_qty = 0;
+                    lines.unit_price = item.unit_price;
+                    lines.discount_amount = item.discount_amount;
+                    lines.tax_amount = item.tax_amount;
+                    lines.line_total = item.line_total;
+                    lines.created_at = DateTime.Now;
+                    lines.updated_at = DateTime.Now;
+                    lines.line_status = "OPEN";
+                    i++;
+                    _context.om_CustomerOrderLines.Add(lines);
+                    om_CustomerOrderLines.Add(lines);
+                }
+
+                history.order_status_history_id = Guid.CreateVersion7();
+                history.customer_order_id = om_Customer.customer_order_id;
+                history.old_status = "PENDING";
+                history.new_status = "";
+                history.status_type = "PENDING";
+                history.changed_by = Guid.Empty;
+                history.changed_at = DateTime.Now;
+                _context.om_OrderStatusHistories.Add(history);
+
+                om_Customer.om_CustomerOrderLines = om_CustomerOrderLines;
+                _context.om_CustomerOrders.Add(om_Customer);
+                await _context.SaveChangesAsync();
+
+                return new ServiceResult<om_CustomerOrders>
+                {
+                    Status = 200,
+                    Success = true
+                };
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<om_CustomerOrders>
                 {
                     Status = 500,
                     Success = false,

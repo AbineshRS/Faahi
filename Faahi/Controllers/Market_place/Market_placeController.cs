@@ -42,12 +42,12 @@ namespace Faahi.Controllers.Market_place
             var result = await _market_Place_Service.Add_source(om_OrderSources);
             return Ok(result);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
-        [Route("get_market_place_users")]
-        public async Task<IActionResult> Get_market_place_users()
+        [Route("get_market_place_users/{search_text}")]
+        public async Task<IActionResult> Get_market_place_users(string search_text)
         {
-            var result = await _market_Place_Service.Get_market_place_users();
+            var result = await _market_Place_Service.Get_market_place_users(search_text);
             return Ok(result);
         }
 
@@ -57,6 +57,64 @@ namespace Faahi.Controllers.Market_place
         public async Task<IActionResult> Get_sources(Guid business_id)
         {
             var result = await _market_Place_Service.Get_sources(business_id);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("Add_shipping_address")]
+        public async Task<ActionResult<mk_customer_addresses>> Add_shipping_address(mk_customer_addresses mk_customer_)
+        {
+            if (mk_customer_ == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _market_Place_Service.Add_shipping_address(mk_customer_);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_shipping/{search_text}")]
+        public async Task<IActionResult> Get_shipping(string search_text)
+        {
+            if ( search_text==null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _market_Place_Service.Get_shipping(search_text);  
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("Add_zones")]
+        public async Task<ActionResult<mk_business_zones>> Add_Zones(mk_business_zones mk_Business_Zones)
+        {
+            if(mk_Business_Zones == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _market_Place_Service.Add_Zones(mk_Business_Zones);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_zones/{company_id}")]
+        public async Task<IActionResult> get_zones(Guid company_id)
+        {
+            if (company_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _market_Place_Service.get_zones(company_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("get_order_list/{company_id}")]
+        public async Task<IActionResult> Get_order_list(Guid company_id)
+        {
+            var result = await _market_Place_Service.Get_order_list(company_id);
             return Ok(result);
         }
     }
