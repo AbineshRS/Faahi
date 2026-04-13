@@ -14,7 +14,12 @@ namespace Faahi.Model.am_users
         [Column(TypeName = "uniqueidentifier")]
         public Guid address_id { get; set; }
 
-        
+        [JsonIgnore]
+        [ValidateNever]
+        [ForeignKey(nameof(zone_id))]
+        public mk_business_zones mk_business_zones { get; set; } = null;
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? zone_id { get; set; }
 
         [Column(TypeName = "varchar(20)")]
         public string? address_type { get; set; }
@@ -73,5 +78,7 @@ namespace Faahi.Model.am_users
 
         [Column(TypeName = "decimal(18,6)")]
         public decimal? longitude { get; set; }
+
+       
     }
 }

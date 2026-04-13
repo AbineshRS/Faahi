@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Numerics;
 
 namespace Faahi.Dto.om_Orders
 {
@@ -17,7 +18,13 @@ namespace Faahi.Dto.om_Orders
 
         public Decimal? sub_total { get; set; }
 
+        public long? order_no { get; set; }
+
         public string? delivery_contact_name { get; set; }
+
+        public string? delivery_status { get; set; }
+
+        public string? currency_code { get; set; }
 
         public string? delivery_contact_no { get; set; }
 
@@ -26,6 +33,12 @@ namespace Faahi.Dto.om_Orders
         public string? delivery_city { get; set; }
 
         public string? delivery_postal_code { get; set; }
+
+        public string? platform_name { get; set; }
+
+        public string? source_name { get; set; }
+
+        public string? zone_name { get; set; }
 
         public Decimal? delivery_latitude { get; set; }
 
