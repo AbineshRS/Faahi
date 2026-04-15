@@ -44,6 +44,10 @@ namespace Faahi.Dto.om_Orders
 
         public Decimal? delivery_longitude { get; set; }
 
+        public TimeOnly? delevery_start_time { get; set; }
+
+        public TimeOnly? delevery_end_time { get; set; }
+
         public string? image_url { get; set; }
 
         public string? title { get; set; }

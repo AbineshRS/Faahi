@@ -155,6 +155,7 @@ namespace Faahi.Service.Users
                     ar_Customers.default_shipping_address_id = ar_Customers.default_shipping_address_id;
                     ar_Customers.default_billing_address_id = ar_Customers.default_billing_address_id;
                     ar_Customers.loyalty_level = ar_Customers.loyalty_level;
+                    ar_Customers.curren_balance = ar_Customers.curren_balance;
                     ar_Customers.loyalty_points = ar_Customers.loyalty_points;
                     ar_Customers.note = ar_Customers.note;
                     ar_Customers.created_at = DateTime.Now;
