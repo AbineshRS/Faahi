@@ -110,7 +110,7 @@ namespace Faahi.Controllers.Market_place
             var result = await _market_Place_Service.get_zones(company_id);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_order_list/{company_id}")]
         public async Task<IActionResult> Get_order_list(Guid company_id)

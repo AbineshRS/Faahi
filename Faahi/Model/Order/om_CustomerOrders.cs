@@ -178,6 +178,11 @@ namespace Faahi.Model.Order
         [Column(TypeName = "nvarchar(50)")]
         public string? zone_name { get; set; }
 
+        [Column(TypeName = "char(1)")]
+        [StringLength(1)]
+        [DefaultValue("F")]
+        public string? urget_delivery { get; set; }
+
         public ICollection<om_CustomerOrderLines>? om_CustomerOrderLines { get; set; } = null;
 
     }
