@@ -1,4 +1,6 @@
-﻿using Faahi.Model.tax_class_table;
+﻿using Faahi.Dto.mk_blacklisted;
+using Faahi.Model.site_settings;
+using Faahi.Model.tax_class_table;
 using Faahi.Service.site_settings_service;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -61,6 +63,42 @@ namespace Faahi.Controllers.site_settings
                 return Ok("NO company_id found");
             }
             var result = await _site_settings.get_tax_class(tax_class_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("Add_blacklist_number")]
+        public async Task<ActionResult<mk_blacklisted_numbers>> Add_blacklist(mk_blacklisted_numbers mk_Blacklisted_Numbers)
+        {
+            if(mk_Blacklisted_Numbers == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _site_settings.Add_blacklist(mk_Blacklisted_Numbers);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("blacklist/{business_id}")]
+        public async Task<IActionResult> blacklist(Guid business_id)
+        {
+            if (business_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _site_settings.blacklist(business_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("change_status/{blacklist_id}")]
+        public async Task<IActionResult> Change_status(Guid blacklist_id, mk_blacklisted_numbers_dto mk_Blacklisted_Numbers)
+        {
+            if (blacklist_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result =await _site_settings.Change_status(blacklist_id,mk_Blacklisted_Numbers);
             return Ok(result);
         }
     }

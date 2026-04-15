@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260413112532_zon_related_2")]
+    partial class zon_related_2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1531,12 +1534,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("customer_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<TimeOnly?>("delevery_end_time")
-                        .HasColumnType("time");
-
-                    b.Property<TimeOnly?>("delevery_start_time")
-                        .HasColumnType("time");
-
                     b.Property<string>("delivery_address1")
                         .HasColumnType("nvarchar(255)");
 
@@ -2738,9 +2735,6 @@ namespace Faahi.Migrations
                         .HasColumnType("char(1)");
 
                     b.Property<decimal?>("credit_limit")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("curren_balance")
                         .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("customer_code")

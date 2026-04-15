@@ -1,4 +1,5 @@
-﻿using Faahi.Model.am_users;
+﻿using AutoMapper.Configuration.Annotations;
+using Faahi.Model.am_users;
 using Faahi.Model.Order;
 using Faahi.Service.market_place;
 using Microsoft.AspNetCore.Authorization;
@@ -109,12 +110,24 @@ namespace Faahi.Controllers.Market_place
             var result = await _market_Place_Service.get_zones(company_id);
             return Ok(result);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_order_list/{company_id}")]
         public async Task<IActionResult> Get_order_list(Guid company_id)
         {
             var result = await _market_Place_Service.Get_order_list(company_id);
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpPost]
+        [Route("check_black_list/{company_id}/{phone_number}")]
+        public async Task<IActionResult> check_black_list(Guid company_id,string phone_number)
+        {
+            if (phone_number==null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _market_Place_Service.check_black_list(company_id, phone_number);
             return Ok(result);
         }
     }

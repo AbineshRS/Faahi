@@ -1,5 +1,6 @@
 ﻿using Faahi.Dto;
 using Faahi.Dto.sales_dto;
+using Faahi.Model.Accounts;
 using Faahi.Model.im_products;
 using Faahi.Model.Order;
 using Faahi.Model.sales;
@@ -41,6 +42,10 @@ namespace Faahi.Service.im_products.sales
         Task<ServiceResult<so_SalesHeaders>> Add_sales_return(Guid salesId, so_SalesHeaders so_SalesHeaders);
 
         Task<ServiceResult<om_CustomerOrders>> Add_order(Guid? salesId, Guid? address_id,Guid? source_id);
+
+        Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header(Guid? sales_id);
+
+        Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header_credit(Guid? sales_id);
 
     }
 }

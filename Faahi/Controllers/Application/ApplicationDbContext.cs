@@ -1,4 +1,5 @@
-﻿using Faahi.Dto.om_Orders;
+﻿using Faahi.Controllers.site_settings;
+using Faahi.Dto.om_Orders;
 using Faahi.Model;
 using Faahi.Model.Accounts;
 using Faahi.Model.Admin;
@@ -13,6 +14,7 @@ using Faahi.Model.Order;
 using Faahi.Model.pos_tables;
 using Faahi.Model.sales;
 using Faahi.Model.Shared_tables;
+using Faahi.Model.site_settings;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
 using Faahi.Model.table_key;
@@ -197,6 +199,8 @@ namespace Faahi.Controllers.Application
         public DbSet<im_InventoryReservations> im_InventoryReservations { get; set; }
 
         public DbSet<mk_business_zones> mk_business_zones { get; set; }
+
+        public DbSet<mk_blacklisted_numbers> mk_blacklisted_numbers { get; set; }
 
 
         //TEMPTABLES
@@ -530,6 +534,13 @@ namespace Faahi.Controllers.Application
                 entity.HasIndex(a => new { a.customer_order_id, a.reservation_status }).HasDatabaseName("IX_im_InventoryReservations_order");
                 entity.HasIndex(a => new { a.store_id, a.variant_id, a.reservation_status }).HasDatabaseName("IX_im_InventoryReservations_store_variant_status");
             });
+
+            modelBuilder.Entity<mk_blacklisted_numbers>(entity =>
+            {
+                entity.Property(a => a.is_active).HasColumnType("nchar(1)").HasDefaultValue("T");
+            });
+
+            // view tables
 
             modelBuilder.Entity<om_CustomerOrders_dto>(entity =>
             {
