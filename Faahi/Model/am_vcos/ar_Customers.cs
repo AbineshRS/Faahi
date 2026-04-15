@@ -49,6 +49,9 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "decimal(18,4)")]
         public Decimal? loyalty_points { get; set; } = null;
 
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal? curren_balance { get; set; } = 0m;
+
         [Column(TypeName = "varchar(40)")]
         public string? loyalty_level { get; set; } = null;
 

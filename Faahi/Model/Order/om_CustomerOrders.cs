@@ -136,6 +136,12 @@ namespace Faahi.Model.Order
         [Column(TypeName = "decimal(18,4)")]
         public Decimal? delivery_longitude { get; set; }=null;
 
+        [Column(TypeName = "time")]
+        public TimeOnly? delevery_start_time { get; set; }=null ;
+
+        [Column(TypeName = "time")]
+        public TimeOnly? delevery_end_time { get; set; } = null;
+
         [Column(TypeName ="nvarchar(500)")]
         public string? notes { get; set; }=null;
 

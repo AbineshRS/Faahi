@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260413104545_zon_related_1")]
+    partial class zon_related_1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,6 +24,37 @@ namespace Faahi.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Faahi.Controllers.site_settings.mk_blacklisted_numbers", b =>
+                {
+                    b.Property<Guid>("blacklist_id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("created_at")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("is_active")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(1)
+                        .HasColumnType("nchar(1)")
+                        .HasDefaultValue("T");
+
+                    b.Property<string>("phone_number")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("reason")
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("updated_at")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("blacklist_id");
+
+                    b.ToTable("mk_blacklisted_numbers");
+                });
 
             modelBuilder.Entity("Faahi.Dto.om_Orders.om_CustomerOrders_dto", b =>
                 {
@@ -1531,12 +1565,6 @@ namespace Faahi.Migrations
                     b.Property<Guid?>("customer_id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<TimeOnly?>("delevery_end_time")
-                        .HasColumnType("time");
-
-                    b.Property<TimeOnly?>("delevery_start_time")
-                        .HasColumnType("time");
-
                     b.Property<string>("delivery_address1")
                         .HasColumnType("nvarchar(255)");
 
@@ -2738,9 +2766,6 @@ namespace Faahi.Migrations
                         .HasColumnType("char(1)");
 
                     b.Property<decimal?>("credit_limit")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<decimal?>("curren_balance")
                         .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("customer_code")
@@ -6310,42 +6335,6 @@ namespace Faahi.Migrations
                     b.ToTable("so_Payment_Types");
                 });
 
-            modelBuilder.Entity("Faahi.Model.site_settings.mk_blacklisted_numbers", b =>
-                {
-                    b.Property<Guid>("blacklist_id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("business_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("created_at")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("is_active")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(1)
-                        .HasColumnType("nchar(1)")
-                        .HasDefaultValue("T");
-
-                    b.Property<string>("phone_number")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("reason")
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("updated_at")
-                        .HasColumnType("datetime");
-
-                    b.HasKey("blacklist_id");
-
-                    b.HasIndex("business_id");
-
-                    b.ToTable("mk_blacklisted_numbers");
-                });
-
             modelBuilder.Entity("Faahi.Model.st_sellers.st_Users", b =>
                 {
                     b.Property<Guid>("user_id")
@@ -7857,17 +7846,6 @@ namespace Faahi.Migrations
                     b.HasOne("Faahi.Model.co_business.co_business", "co_business")
                         .WithMany()
                         .HasForeignKey("business_id");
-
-                    b.Navigation("co_business");
-                });
-
-            modelBuilder.Entity("Faahi.Model.site_settings.mk_blacklisted_numbers", b =>
-                {
-                    b.HasOne("Faahi.Model.co_business.co_business", "co_business")
-                        .WithMany()
-                        .HasForeignKey("business_id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("co_business");
                 });

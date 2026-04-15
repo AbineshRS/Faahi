@@ -1,6 +1,7 @@
 ﻿using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Dto.am_users;
+using Faahi.Dto.mk_blacklisted;
 using Faahi.Dto.om_Orders;
 using Faahi.Migrations;
 using Faahi.Model.am_users;
@@ -8,6 +9,7 @@ using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
 using Faahi.Model.im_products;
 using Faahi.Model.Order;
+using Faahi.Model.site_settings;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
 using Faahi.Service.Email;
@@ -128,7 +130,7 @@ namespace Faahi.Service.market_place
                             Status = 409
                         };
                     }
-                
+
 
 
                     foreach (var role in users.am_roles)
@@ -506,13 +508,13 @@ namespace Faahi.Service.market_place
             var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if(mk_Customer_Addresses == null)
+                if (mk_Customer_Addresses == null)
                 {
                     return new ServiceResult<mk_customer_addresses>
                     {
                         Status = 300,
                         Success = false,
-                        Message="No data found"
+                        Message = "No data found"
                     };
                 }
                 var exising_address = await _context.mk_customer_addresses.FirstOrDefaultAsync(a => a.contact_phone == mk_Customer_Addresses.contact_phone);
@@ -528,19 +530,19 @@ namespace Faahi.Service.market_place
                 mk_Customer_Addresses.address_id = Guid.CreateVersion7();
                 mk_Customer_Addresses.address_type = mk_Customer_Addresses.address_type;
                 mk_Customer_Addresses.zone_id = mk_Customer_Addresses.zone_id;
-                mk_Customer_Addresses.contact_name= mk_Customer_Addresses.contact_name;
-                mk_Customer_Addresses.contact_phone= mk_Customer_Addresses.contact_phone;
+                mk_Customer_Addresses.contact_name = mk_Customer_Addresses.contact_name;
+                mk_Customer_Addresses.contact_phone = mk_Customer_Addresses.contact_phone;
                 mk_Customer_Addresses.address_line1 = mk_Customer_Addresses.address_line1;
                 mk_Customer_Addresses.Land_mark = mk_Customer_Addresses.Land_mark;
-                mk_Customer_Addresses.city= mk_Customer_Addresses.city;
-                mk_Customer_Addresses.state_region= mk_Customer_Addresses.state_region;
+                mk_Customer_Addresses.city = mk_Customer_Addresses.city;
+                mk_Customer_Addresses.state_region = mk_Customer_Addresses.state_region;
                 mk_Customer_Addresses.postal_code = mk_Customer_Addresses.postal_code;
-                mk_Customer_Addresses.country_code= mk_Customer_Addresses.country_code;
-                mk_Customer_Addresses.delevery_start_time= mk_Customer_Addresses.delevery_start_time;
+                mk_Customer_Addresses.country_code = mk_Customer_Addresses.country_code;
+                mk_Customer_Addresses.delevery_start_time = mk_Customer_Addresses.delevery_start_time;
                 mk_Customer_Addresses.delevery_end_time = mk_Customer_Addresses.delevery_end_time;
                 mk_Customer_Addresses.latitude = mk_Customer_Addresses.latitude;
                 mk_Customer_Addresses.longitude = mk_Customer_Addresses.longitude;
-                mk_Customer_Addresses.created_at= mk_Customer_Addresses.created_at;
+                mk_Customer_Addresses.created_at = mk_Customer_Addresses.created_at;
                 mk_Customer_Addresses.updated_at = mk_Customer_Addresses.updated_at;
                 mk_Customer_Addresses.is_default = "T";
                 mk_Customer_Addresses.status = "T";
@@ -552,12 +554,12 @@ namespace Faahi.Service.market_place
                     Status = 200,
                     Success = true,
                     Message = "Inserted",
-                    Data= mk_Customer_Addresses
+                    Data = mk_Customer_Addresses
                 };
 
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 return new ServiceResult<mk_customer_addresses>
@@ -597,6 +599,7 @@ namespace Faahi.Service.market_place
                         Message = "No data found"
                     };
                 }
+
                 return new ServiceResult<List<mk_customer_addresses>>
                 {
                     Success = true,
@@ -605,7 +608,7 @@ namespace Faahi.Service.market_place
                     Data = mk_customer
                 };
 
-                
+
             }
             catch (Exception ex)
             {
@@ -622,10 +625,10 @@ namespace Faahi.Service.market_place
 
         public async Task<ServiceResult<mk_business_zones>> Add_Zones(mk_business_zones mk_Business_Zones)
         {
-            var transaction =await _context.Database.BeginTransactionAsync();
+            var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if(mk_Business_Zones == null)
+                if (mk_Business_Zones == null)
                 {
                     return new ServiceResult<mk_business_zones>
                     {
@@ -635,10 +638,10 @@ namespace Faahi.Service.market_place
                     };
                 }
                 mk_Business_Zones.zone_id = Guid.CreateVersion7();
-                mk_Business_Zones.zone_name=mk_Business_Zones.zone_name;
-                mk_Business_Zones.description=mk_Business_Zones.description;
-                mk_Business_Zones.created_at=DateTime.Now;
-                mk_Business_Zones.updated_at=DateTime.Now;
+                mk_Business_Zones.zone_name = mk_Business_Zones.zone_name;
+                mk_Business_Zones.description = mk_Business_Zones.description;
+                mk_Business_Zones.created_at = DateTime.Now;
+                mk_Business_Zones.updated_at = DateTime.Now;
                 mk_Business_Zones.is_active = "T";
                 _context.mk_business_zones.Add(mk_Business_Zones);
                 await _context.SaveChangesAsync();
@@ -652,7 +655,7 @@ namespace Faahi.Service.market_place
                 };
 
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return new ServiceResult<mk_business_zones>
                 {
@@ -667,7 +670,7 @@ namespace Faahi.Service.market_place
         {
             try
             {
-                if(company_id == Guid.Empty)
+                if (company_id == Guid.Empty)
                 {
                     return new ServiceResult<List<mk_business_zones>>
                     {
@@ -677,7 +680,7 @@ namespace Faahi.Service.market_place
                     };
                 }
                 var zone_list = await _context.mk_business_zones.Where(a => a.business_id == company_id).ToListAsync();
-                if(zone_list.Count == 0)
+                if (zone_list.Count == 0)
                 {
                     return new ServiceResult<List<mk_business_zones>>
                     {
@@ -694,7 +697,7 @@ namespace Faahi.Service.market_place
                     Data = zone_list
                 };
 
-            }catch(Exception ex)
+            } catch (Exception ex)
             {
                 return new ServiceResult<List<mk_business_zones>>
                 {
@@ -711,8 +714,8 @@ namespace Faahi.Service.market_place
             {
                 var items = await _context.Set<om_CustomerOrders_dto>()
                     .FromSqlRaw(
-                        "EXEC dbo.om_orders  @opr=@opr, @business_id=@business_id", 
-                        new SqlParameter("@business_id",company_id),
+                        "EXEC dbo.om_orders  @opr=@opr, @business_id=@business_id",
+                        new SqlParameter("@business_id", company_id),
                         new SqlParameter("@opr", 1)
                     )
                 .ToListAsync();
@@ -740,6 +743,8 @@ namespace Faahi.Service.market_place
                     delivery_postal_code = a.First().delivery_postal_code,
                     delivery_latitude = a.First().delivery_latitude,
                     delivery_longitude = a.First().delivery_longitude,
+                    delevery_end_time = a.First().delevery_end_time,
+                    delevery_start_time = a.First().delevery_start_time,
                     delivery_status = a.First().delivery_status,
                     currency_code = a.First().currency_code,
                     platform_name = a.First().platform_name,
@@ -761,8 +766,8 @@ namespace Faahi.Service.market_place
                         line_total = l.First().line_total,
 
                     }).ToList()
-                }).ToList();
-                
+                }).OrderBy(a => a.order_no).ToList();
+
                 return new ServiceResult<List<om_CustomerOrders_dto>>
                 {
                     Status = 200,
@@ -771,9 +776,47 @@ namespace Faahi.Service.market_place
                     Data = result
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return new ServiceResult<List<om_CustomerOrders_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<mk_blacklisted_numbers_dto>> check_black_list(Guid business_id, string phone_number)
+        {
+            try
+            {
+                if (business_id == null)
+                {
+                    return new ServiceResult<mk_blacklisted_numbers_dto>
+                    {
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var existing = await _context.mk_blacklisted_numbers.Where(a=>a.business_id==business_id&& a.phone_number==phone_number && a.is_active=="T").ToListAsync();
+                if (existing.Any())
+                {
+                    return new ServiceResult<mk_blacklisted_numbers_dto>
+                    {
+                        Status = 200,
+                        Success = true,
+                        Message = "Number in Black list"
+                    };
+                }
+                return new ServiceResult<mk_blacklisted_numbers_dto>
+                {
+                    
+                };
+            }
+            catch(Exception ex)
+            {
+                return new ServiceResult<mk_blacklisted_numbers_dto>
                 {
                     Status = 500,
                     Success = false,

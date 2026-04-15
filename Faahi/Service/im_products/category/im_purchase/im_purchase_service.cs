@@ -870,7 +870,7 @@ namespace Faahi.Service.im_products.im_purchase
                             };
                         }
                         var accountResult = await Add_Journal_header(listing_id);
-                        if(!accountResult.Success)
+                        if (!accountResult.Success)
                         {
                             await transaction.RollbackAsync();
                             return new ServiceResult<im_purchase_listing>
@@ -2554,39 +2554,40 @@ namespace Faahi.Service.im_products.im_purchase
 
                 var table_key_ = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_store.company_id);
                 var key = Convert.ToInt16(table_key_.next_key);
-                Guid guid = Guid.Parse("019D4E16-BCC5-7C0B-A7F7-890E83B8BD23");
-                var gl_account = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.PurposeCode == "Inventory Assets" && a.CompanyId == guid);
-                var current_balance = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a=>a.AccountId== gl_account.GlAccountId);
+
 
                 gl_Journal_Header.JournalId = Guid.CreateVersion7();
                 gl_Journal_Header.BusinessId = im_store?.company_id ?? Guid.Empty;
-                gl_Journal_Header.JournalDate=DateTime.Now;
-                gl_Journal_Header.PostingDate=DateTime.Now;
+                gl_Journal_Header.JournalDate = DateTime.Now;
+                gl_Journal_Header.PostingDate = DateTime.Now;
                 gl_Journal_Header.JournalNo = "JE" + year + "-" + Convert.ToString(key + 1); ;
                 gl_Journal_Header.SourceId = existing_list.listing_id;
                 gl_Journal_Header.SourceType = "Inventory Assets";
-                gl_Journal_Header.JournalMemo= $"Journal entry for purchase order {existing_list.listing_id}";
+                gl_Journal_Header.JournalMemo = $"Journal entry for purchase order {existing_list.listing_code}";
                 gl_Journal_Header.Status = "POSTED";
-                gl_Journal_Header.CreatedAt= DateTime.Now;
+                gl_Journal_Header.CreatedAt = DateTime.Now;
                 gl_Journal_Header.CreatedBy = "";
                 gl_Journal_Header.BaseCurrencyCode = existing_list.currency_code;
-                gl_Journal_Header.ExchangeRate= existing_list.exchange_rate;
+                gl_Journal_Header.ExchangeRate = existing_list.exchange_rate;
                 gl_Journal_Header.IsSystemGenerated = true;
-                gl_Journal_Header.PostedAt=DateTime.Now;
-                gl_Journal_Header.PostedBy="";
-                gl_Journal_Header.ReferenceNo= existing_list.supplier_invoice_no;
-                gl_Journal_Header.Remarks= $"Journal entry for purchase order {existing_list.listing_id} with invoice number {existing_list.supplier_invoice_no}";
+                gl_Journal_Header.PostedAt = DateTime.Now;
+                gl_Journal_Header.PostedBy = "";
+                gl_Journal_Header.ReferenceNo = existing_list.supplier_invoice_no;
+                gl_Journal_Header.Remarks = $"Journal entry for purchase order {existing_list.listing_code} with invoice number {existing_list.supplier_invoice_no}";
                 gl_Journal_Header.StoreId = im_store.store_id;
                 gl_Journal_Header.TotalCreditBC = existing_list.doc_total;
                 gl_Journal_Header.TotalCreditFC = existing_list.doc_total;
                 gl_Journal_Header.TotalDebitBC = existing_list.doc_total;
                 gl_Journal_Header.TotalDebitFC = existing_list.doc_total;
-                foreach(var item in existing_list.im_purchase_listing_details)
+                foreach (var item in existing_list.im_purchase_listing_details)
                 {
                     gl_JournalLines gl_Journal_Lines = new gl_JournalLines();
 
-                    if (existing_list.tax_amount > 0 && !isTaxInserted)
+                    if (existing_list.tax_amount > 0)
                     {
+                        var gl_account = await _context.gl_AccountMapping.FirstOrDefaultAsync(a =>a.Module== "PURCHASE" && a.PurposeCode == "Tax Payable" && a.CompanyId == im_store.company_id);
+                        var current_balance = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account.GlAccountId);
+
                         gl_Journal_Lines.JournalLineId = Guid.CreateVersion7();
                         gl_Journal_Lines.JournalId = gl_Journal_Header.JournalId;
                         gl_Journal_Lines.BusinessId = im_store?.company_id ?? Guid.Empty;
@@ -2613,7 +2614,7 @@ namespace Faahi.Service.im_products.im_purchase
                         gl_Ledger.StoreId = im_store.store_id;
                         gl_Ledger.JournalId = gl_Journal_Header.JournalId;
                         gl_Ledger.JournalLineId = gl_Journal_Lines.JournalLineId;
-                        gl_Ledger.GlAccountId= gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
                         gl_Ledger.PostingDate = DateTime.Now;
                         gl_Ledger.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
                         gl_Ledger.ReferenceNo = existing_list.supplier_invoice_no;
@@ -2637,21 +2638,30 @@ namespace Faahi.Service.im_products.im_purchase
 
                         _context.gl_JournalLines.Add(gl_Journal_Lines);
                         gl_Journal_Lines_List.Add(gl_Journal_Lines);
-                        isTaxInserted = true;
+                        ToalCedit = Convert.ToDecimal(existing_list.tax_amount);
+
+                        if (current_balance != null)
+                        {
+                            current_balance.CurrentBalance +=  ToalCedit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance);
+                        }
 
                     }
-                    if (existing_list.tax_amount !=0)
+                    if (existing_list.tax_amount == 0)
                     {
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a =>a.Module== "INVENTORY" && a.PurposeCode == "Inventory Assets" && a.CompanyId == im_store.company_id);
+                        var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
+
                         gl_JournalLines gl_Journal_Lines2 = new gl_JournalLines();
 
                         gl_Journal_Lines2.JournalLineId = Guid.CreateVersion7();
                         gl_Journal_Lines2.JournalId = gl_Journal_Header.JournalId;
                         gl_Journal_Lines2.BusinessId = im_store?.company_id ?? Guid.Empty;
                         gl_Journal_Lines2.StoreId = im_store.store_id;
-                        gl_Journal_Lines2.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Journal_Lines2.GlAccountId = gl_account_2?.GlAccountId ?? Guid.Empty;
                         gl_Journal_Lines2.DebitAmountBC = Convert.ToDecimal(item.line_total);
                         gl_Journal_Lines2.DebitAmountFC = Convert.ToDecimal(item.line_total);
-                        ToalDebit+= Convert.ToDecimal(item.line_total);
+                        ToalDebit += Convert.ToDecimal(item.line_total);
                         gl_Journal_Lines2.Description = item.Product_title;
                         gl_Journal_Lines2.CreatedAt = DateTime.Now;
                         //gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(item.line_total);
@@ -2670,7 +2680,7 @@ namespace Faahi.Service.im_products.im_purchase
                         gl_Ledger2.StoreId = im_store.store_id;
                         gl_Ledger2.JournalId = gl_Journal_Header.JournalId;
                         gl_Ledger2.JournalLineId = gl_Journal_Lines2.JournalLineId;
-                        gl_Ledger2.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger2.GlAccountId = gl_account_2?.GlAccountId ?? Guid.Empty;
                         gl_Ledger2.PostingDate = DateTime.Now;
                         gl_Ledger2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
                         gl_Ledger2.ReferenceNo = existing_list.supplier_invoice_no;
@@ -2694,13 +2704,19 @@ namespace Faahi.Service.im_products.im_purchase
 
                         _context.gl_JournalLines.Add(gl_Journal_Lines2);
                         gl_Journal_Lines_List.Add(gl_Journal_Lines2);
+
+                        if (current_balance_2 != null)
+                        {
+                            current_balance_2.CurrentBalance += ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_2);
+                        }
                     }
-                    
-                    
+
+
                 }
                 if (existing_list.tax_amount > 0)
                 {
-                     ToalCedit = Convert.ToDecimal( ToalDebit+existing_list.tax_amount);
+                    ToalCedit = Convert.ToDecimal(ToalDebit + existing_list.tax_amount);
                     if (existing_list.doc_total != ToalCedit)
                     {
                         return new ServiceResult<gl_JournalHeaders>
@@ -2711,17 +2727,13 @@ namespace Faahi.Service.im_products.im_purchase
                         };
                     }
                 }
-                if (current_balance != null)
-                {
-                    current_balance.CurrentBalance += ToalDebit+ToalCedit;
-                    _context.gl_AccountCurrentBalances.Update(current_balance);
-                }
+                
                 if (table != null)
                 {
                     table_key_.next_key = key + 1;
                     _context.am_table_next_key.Update(table_key_);
                 }
-                gl_Journal_Header.JournalLines=gl_Journal_Lines_List;
+                gl_Journal_Header.JournalLines = gl_Journal_Lines_List;
                 _context.gl_JournalHeaders.Add(gl_Journal_Header);
                 await _context.SaveChangesAsync();
                 return new ServiceResult<gl_JournalHeaders>
