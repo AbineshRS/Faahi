@@ -87,6 +87,7 @@ namespace Faahi.Service.im_products.sales
 
 
         }
+
         public async Task<ServiceResult<List<so_payment_type>>> get_payment(Guid company_id)
         {
             try
@@ -132,6 +133,7 @@ namespace Faahi.Service.im_products.sales
             }
 
         }
+
         public async Task<ServiceResult<so_payment_type>> Get_payment(Guid payment_type_id)
         {
             try
@@ -166,6 +168,7 @@ namespace Faahi.Service.im_products.sales
             }
 
         }
+
         public async Task<ServiceResult<so_payment_type>> Update_payment(Guid payment_type_id, so_payment_type so_payment)
         {
             var transation = await _context.Database.BeginTransactionAsync();
@@ -217,6 +220,7 @@ namespace Faahi.Service.im_products.sales
             }
 
         }
+
         public async Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches(Guid variant_id)
         {
             if (variant_id == null)
@@ -246,6 +250,7 @@ namespace Faahi.Service.im_products.sales
             };
 
         }
+
         public async Task<ServiceResult<List<im_ItemBatches>>> Get_item_batches_list(Guid variant_id)
         {
             if (variant_id == null)
@@ -556,7 +561,7 @@ namespace Faahi.Service.im_products.sales
                     _context.im_InventoryTransactions.AddRange(im_InventoryTransactions1);
                     if(so_SalesHeaders.doc_type == "MARKETPLACE")
                     {
-                        var order = await Add_order(so_SalesHeaders?.sales_id, so_SalesHeaders.address_id, so_SalesHeaders.source_id);
+                        var order = await Add_order(so_SalesHeaders?.sales_id, so_SalesHeaders.address_id, so_SalesHeaders.source_id,so_SalesHeaders.urget_delivery);
                         {
                             if (!order.Success)
                             {
@@ -645,6 +650,7 @@ namespace Faahi.Service.im_products.sales
 
 
         }
+
         public async Task<ServiceResult<so_SalesHeaders>> Update_sales(Guid salesId, so_SalesHeaders so_SalesHeaders)
         {
             var transaction = await _context.Database.BeginTransactionAsync();
@@ -938,6 +944,7 @@ namespace Faahi.Service.im_products.sales
             }
 
         }
+
         public async Task<ServiceResult<List<so_SalesHeaders_dto>>> Get_sales(Guid company_id)
         {
             try
@@ -987,6 +994,7 @@ namespace Faahi.Service.im_products.sales
             }
 
         }
+
         public async Task<ServiceResult<so_SalesHeaders>> Get_sales_salesId(Guid salesId)
         {
             try
@@ -1033,6 +1041,7 @@ namespace Faahi.Service.im_products.sales
             }
 
         }
+
         public async Task<ServiceResult<SalesReportResponseDTO>> Get_sales_report_by_date(Guid store_id, DateOnly? start_date, DateOnly? end_date)
         {
             try
@@ -1110,6 +1119,7 @@ namespace Faahi.Service.im_products.sales
 
             }
         }
+
         public async Task<ServiceResult<Dictionary<string, List<SalesLineDTO>>>> Get_sales_detailed_by_date(Guid store_id, DateOnly? start_date, DateOnly? end_date)
         {
             try
@@ -1179,6 +1189,7 @@ namespace Faahi.Service.im_products.sales
                 };
             }
         }
+
         public async Task<ServiceResult<List<DailySalesSummaryDto>>> Get_sales_detailed_by_day_report(Guid store_id, DateOnly? start_date, DateOnly? end_date)
         {
             try
@@ -1364,6 +1375,7 @@ namespace Faahi.Service.im_products.sales
 
             }
         }
+
         public async Task<ServiceResult<List<TaxClassReportDTO>>> Get_sales_tax_report(Guid store_id, DateOnly? start_date, DateOnly? end_date)
         {
             try
@@ -1428,6 +1440,7 @@ namespace Faahi.Service.im_products.sales
 
             }
         }
+
         public async Task<ServiceResult<List<OutstandingSalesDTO>>> Get_sales_out_standing(Guid store_id, DateOnly? start_date, DateOnly? end_date)
         {
             try
@@ -1492,6 +1505,7 @@ namespace Faahi.Service.im_products.sales
 
             }
         }
+
         public async Task<ServiceResult<List<HourlySalesReportDTO>>> Get_sales_hourly_base(Guid store_id, DateOnly? start_date, DateOnly? end_date)
         {
             try
@@ -1760,7 +1774,7 @@ namespace Faahi.Service.im_products.sales
             }
         }
 
-        public async Task<ServiceResult<om_CustomerOrders>> Add_order(Guid? salesId, Guid? address_id, Guid? source_id)
+        public async Task<ServiceResult<om_CustomerOrders>> Add_order(Guid? salesId, Guid? address_id, Guid? source_id,string urget_delivery)
         {
             try
             {
@@ -1791,6 +1805,7 @@ namespace Faahi.Service.im_products.sales
                 om_Customer.order_date = DateTime.Now;
                 om_Customer.expected_payment_method = om_Customer.expected_payment_method;
                 om_Customer.payment_status = "UNPAID";
+                om_Customer.urget_delivery = urget_delivery??"F";
                 om_Customer.order_status = "NEW";
                 om_Customer.fulfillment_status = "PENDING";
                 om_Customer.delivery_status = "PENDING";

@@ -751,6 +751,7 @@ namespace Faahi.Service.market_place
                     source_name = a.First().source_name,
                     order_no = a.First().order_no,
                     zone_name = a.First().zone_name,
+                    urget_delivery = a.First().urget_delivery,
 
                     om_CustomerOrdersLine_Dtos = a.Where(a => a.customer_order_line_id != null)
                     .GroupBy(a => a.customer_order_line_id).Select(l => new om_CustomerOrdersLine_dto
@@ -759,7 +760,7 @@ namespace Faahi.Service.market_place
                         product_id = l.First().product_id,
                         title = l.First().title,
                         variant_id = l.First().variant_id,
-                        image_url = a.First().image_url,
+                        image_url = l.First().image_url,
                         batch_id = l.First().batch_id,
                         ordered_qty = l.First().ordered_qty,
                         unit_price = l.First().unit_price,

@@ -484,6 +484,7 @@ namespace Faahi.Controllers.Application
                 entity.Property(a => a.order_status).HasColumnType("nvarchar(30)").HasDefaultValue("NEW");
                 entity.Property(a => a.fulfillment_status).HasColumnType("nvarchar(30)").HasDefaultValue("PENDING");
                 entity.Property(a => a.delivery_status).HasColumnType("nvarchar(30)").HasDefaultValue("PENDING");
+                entity.Property(a => a.urget_delivery).HasColumnType("char(1)").HasDefaultValue("F");
                 entity.Property(a => a.currency_code).HasColumnType("nvarchar(15)");
                 entity.Property(a => a.exchange_rate).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
                 entity.Property(a => a.sub_total).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
