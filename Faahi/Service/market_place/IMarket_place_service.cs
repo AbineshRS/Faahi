@@ -29,5 +29,8 @@ namespace Faahi.Service.market_place
         Task<ServiceResult<List<om_CustomerOrders_dto>>> Get_order_list(Guid business_id);
 
         Task<ServiceResult<mk_blacklisted_numbers_dto>> check_black_list(Guid business_id,string phone_number);
+
+        Task<ServiceResult<List<om_CustomerOrders_dto>>> Get_order_list_customer_order_id(Guid customer_order_id);
+
     }
 }
