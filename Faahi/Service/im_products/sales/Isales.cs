@@ -41,7 +41,7 @@ namespace Faahi.Service.im_products.sales
 
         Task<ServiceResult<so_SalesHeaders>> Add_sales_return(Guid salesId, so_SalesHeaders so_SalesHeaders);
 
-        Task<ServiceResult<om_CustomerOrders>> Add_order(Guid? salesId, Guid? address_id,Guid? source_id);
+        Task<ServiceResult<om_CustomerOrders>> Add_order(Guid? salesId, Guid? address_id,Guid? source_id,string urget_delivery);
 
         Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header(Guid? sales_id);
 

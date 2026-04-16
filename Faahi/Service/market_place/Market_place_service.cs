@@ -748,9 +748,11 @@ namespace Faahi.Service.market_place
                     delivery_status = a.First().delivery_status,
                     currency_code = a.First().currency_code,
                     platform_name = a.First().platform_name,
+                    delevery_date = a.First().delevery_date,
                     source_name = a.First().source_name,
                     order_no = a.First().order_no,
                     zone_name = a.First().zone_name,
+                    urget_delivery = a.First().urget_delivery,
 
                     om_CustomerOrdersLine_Dtos = a.Where(a => a.customer_order_line_id != null)
                     .GroupBy(a => a.customer_order_line_id).Select(l => new om_CustomerOrdersLine_dto
@@ -759,7 +761,7 @@ namespace Faahi.Service.market_place
                         product_id = l.First().product_id,
                         title = l.First().title,
                         variant_id = l.First().variant_id,
-                        image_url = a.First().image_url,
+                        image_url = l.First().image_url,
                         batch_id = l.First().batch_id,
                         ordered_qty = l.First().ordered_qty,
                         unit_price = l.First().unit_price,
@@ -817,6 +819,87 @@ namespace Faahi.Service.market_place
             catch(Exception ex)
             {
                 return new ServiceResult<mk_blacklisted_numbers_dto>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<om_CustomerOrders_dto>>> Get_order_list_customer_order_id(Guid customer_order_id)
+        {
+            try
+            {
+                var items = await _context.Set<om_CustomerOrders_dto>()
+                    .FromSqlRaw(
+                        "EXEC dbo.om_orders  @opr=@opr, @customer_order_id =@customer_order_id ",
+                        new SqlParameter("@customer_order_id ", customer_order_id),
+                        new SqlParameter("@opr", 2)
+                    )
+                .ToListAsync();
+                if (items.Count == 0)
+                {
+                    return new ServiceResult<List<om_CustomerOrders_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var result = items.GroupBy(a => a.customer_order_id).Select(a => new om_CustomerOrders_dto
+                {
+                    customer_order_id = a.Key,
+                    business_id = a.First().business_id,
+                    source_id = a.First().source_id,
+                    order_date = a.First().order_date,
+                    payment_status = a.First().payment_status,
+                    sub_total = a.First().sub_total,
+                    delivery_contact_name = a.First().delivery_contact_name,
+                    delivery_contact_no = a.First().delivery_contact_no,
+                    delivery_address1 = a.First().delivery_address1,
+                    delivery_city = a.First().delivery_city,
+                    delivery_postal_code = a.First().delivery_postal_code,
+                    delivery_latitude = a.First().delivery_latitude,
+                    delivery_longitude = a.First().delivery_longitude,
+                    delevery_end_time = a.First().delevery_end_time,
+                    delevery_start_time = a.First().delevery_start_time,
+                    delivery_status = a.First().delivery_status,
+                    currency_code = a.First().currency_code,
+                    platform_name = a.First().platform_name,
+                    delevery_date = a.First().delevery_date,
+                    source_name = a.First().source_name,
+                    order_no = a.First().order_no,
+                    zone_name = a.First().zone_name,
+                    urget_delivery = a.First().urget_delivery,
+
+                    om_CustomerOrdersLine_Dtos = a.Where(a => a.customer_order_line_id != null)
+                    .GroupBy(a => a.customer_order_line_id).Select(l => new om_CustomerOrdersLine_dto
+                    {
+                        customer_order_line_id = l.Key,
+                        product_id = l.First().product_id,
+                        title = l.First().title,
+                        variant_id = l.First().variant_id,
+                        image_url = l.First().image_url,
+                        batch_id = l.First().batch_id,
+                        ordered_qty = l.First().ordered_qty,
+                        unit_price = l.First().unit_price,
+                        line_total = l.First().line_total,
+
+                    }).ToList()
+                }).OrderBy(a => a.order_no).ToList();
+
+                return new ServiceResult<List<om_CustomerOrders_dto>>
+                {
+                    Status = 200,
+                    Message = "success",
+                    Success = true,
+                    Data = result
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<om_CustomerOrders_dto>>
                 {
                     Status = 500,
                     Success = false,

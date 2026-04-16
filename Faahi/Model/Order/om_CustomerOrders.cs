@@ -142,6 +142,9 @@ namespace Faahi.Model.Order
         [Column(TypeName = "time")]
         public TimeOnly? delevery_end_time { get; set; } = null;
 
+        [Column(TypeName = "datetime")]
+        public DateTime? delevery_date { get; set; }
+
         [Column(TypeName ="nvarchar(500)")]
         public string? notes { get; set; }=null;
 
@@ -177,6 +180,11 @@ namespace Faahi.Model.Order
 
         [Column(TypeName = "nvarchar(50)")]
         public string? zone_name { get; set; }
+
+        [Column(TypeName = "char(1)")]
+        [StringLength(1)]
+        [DefaultValue("F")]
+        public string? urget_delivery { get; set; }
 
         public ICollection<om_CustomerOrderLines>? om_CustomerOrderLines { get; set; } = null;
 

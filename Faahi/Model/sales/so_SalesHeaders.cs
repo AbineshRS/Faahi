@@ -271,5 +271,8 @@ namespace Faahi.Model.sales
 
         [NotMapped]
         public Guid? source_id { get; set; } = null;
+
+        [NotMapped]
+        public string? urget_delivery { get; set; } = null;
     }
 }

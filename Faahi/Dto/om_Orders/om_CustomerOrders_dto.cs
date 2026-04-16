@@ -48,9 +48,13 @@ namespace Faahi.Dto.om_Orders
 
         public TimeOnly? delevery_end_time { get; set; }
 
+        public DateTime? delevery_date { get; set; }
+
         public string? image_url { get; set; }
 
         public string? title { get; set; }
+
+        public string? urget_delivery { get; set; }
 
 
         public Guid? customer_order_line_id { get; set; }
