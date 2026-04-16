@@ -748,6 +748,7 @@ namespace Faahi.Service.market_place
                     delivery_status = a.First().delivery_status,
                     currency_code = a.First().currency_code,
                     platform_name = a.First().platform_name,
+                    delevery_date = a.First().delevery_date,
                     source_name = a.First().source_name,
                     order_no = a.First().order_no,
                     zone_name = a.First().zone_name,

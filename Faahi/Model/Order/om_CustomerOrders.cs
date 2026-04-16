@@ -142,6 +142,9 @@ namespace Faahi.Model.Order
         [Column(TypeName = "time")]
         public TimeOnly? delevery_end_time { get; set; } = null;
 
+        [Column(TypeName = "datetime")]
+        public DateTime? delevery_date { get; set; }
+
         [Column(TypeName ="nvarchar(500)")]
         public string? notes { get; set; }=null;
 

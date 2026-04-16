@@ -1827,6 +1827,7 @@ namespace Faahi.Service.im_products.sales
                 om_Customer.delivery_longitude = mk_address.longitude;
                 om_Customer.delevery_end_time = mk_address.delevery_end_time;
                 om_Customer.delevery_start_time = mk_address.delevery_start_time;
+                om_Customer.delevery_date = mk_address.delevery_date;
                 om_Customer.zone_name = zones?.zone_name;
                 om_Customer.confirmed_at = DateTime.Now;
                 om_Customer.created_at = DateTime.Now;
