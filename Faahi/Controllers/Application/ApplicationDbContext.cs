@@ -202,6 +202,10 @@ namespace Faahi.Controllers.Application
 
         public DbSet<mk_blacklisted_numbers> mk_blacklisted_numbers { get; set; }
 
+        public DbSet<om_FulfillmentOrders> om_FulfillmentOrders { get; set; }
+
+        public  DbSet<om_FulfillmentLines> om_FulfillmentLines { get;set; }
+
 
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }
@@ -539,6 +543,44 @@ namespace Faahi.Controllers.Application
             modelBuilder.Entity<mk_blacklisted_numbers>(entity =>
             {
                 entity.Property(a => a.is_active).HasColumnType("nchar(1)").HasDefaultValue("T");
+            });
+
+            modelBuilder.Entity<om_FulfillmentOrders>(entity =>
+            {
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.total_ordered_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_reserved_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_delivered_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_returned_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_rejected_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+
+                entity.HasIndex(a => new { a.fulfillment_id, a.business_id, a.store_id, a.customer_order_id }).HasDatabaseName("IX_om_FulfillmentOrders");
+                entity.HasIndex(a => new { a.fulfillment_no }).HasDatabaseName("IX_fulfillment_no");
+                entity.HasIndex(a => new { a.picked_by,a.pick_started_at,a.pick_completed_at,a.packed_at,a.ready_at }).HasDatabaseName("IX_Orders");
+
+                entity.HasOne(e => e.om_CustomerOrders)
+        .WithMany()
+        .HasForeignKey(e => e.customer_order_id)
+        .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<om_FulfillmentLines>(entity =>
+            {
+                entity.Property(a => a.ordered_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.reserved_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.picked_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.packed_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.delivered_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.returned_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.rejected_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+
+                entity.HasIndex(a => new { a.fulfillment_line_id, a.fulfillment_id, a.product_id, a.store_variant_inventory_id, a.batch_id }).HasDatabaseName("IX_om_FulfillmentLines");
+                entity.HasIndex(a => new { a.rejected_qty, a.line_status }).HasDatabaseName("IX_line_statuss");
+
+                entity.HasOne(e => e.om_FulfillmentOrders)
+        .WithMany()
+        .HasForeignKey(e => e.fulfillment_id)
+        .OnDelete(DeleteBehavior.Cascade);
             });
 
             // view tables

@@ -151,8 +151,8 @@ namespace Faahi.Service.Auth
                 var co_company = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == am_user_roles.business_id);
                 if (co_company != null)
                 {
-                     accessToken = CreatToken(null, co_company.company_id,null, am_user.role_name, 10);
-                     refreshToken = CreatToken(null, co_company.company_id,null, am_user.role_name, 10080);
+                     accessToken = CreatToken(null, co_company.company_id,null, am_user.role_name,co_company.business_name, 10);
+                     refreshToken = CreatToken(null, co_company.company_id,null, am_user.role_name, co_company.business_name, 10080);
 
                     return new AuthResponse
                     {
@@ -168,11 +168,12 @@ namespace Faahi.Service.Auth
                 var am_user_roles_1 = await _context.am_user_roles.FirstOrDefaultAsync(a => a.role_id == am_user.role_id && a.store_id == business_id);
                 var st_Users = await _context.st_Users.FirstOrDefaultAsync(a => a.user_id == am_user_roles_1.store_user_id);
                 var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == am_user_roles_1.store_id);
+                var am_user_data = await _context.am_users.FirstOrDefaultAsync(a => a.userId == am_user_roles_1.user_id);
 
                 if (st_store != null)
                 {
-                    accessToken = CreatToken(st_Users?.user_id, st_store.company_id, st_store.store_id, am_user.role_name, 10);
-                    refreshToken = CreatToken(st_Users?.user_id, st_store.company_id, st_store.store_id, am_user.role_name, 10080);
+                    accessToken = CreatToken(st_Users?.user_id, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, 10);
+                    refreshToken = CreatToken(st_Users?.user_id, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, 10080);
 
                     return new AuthResponse
                     {
@@ -194,7 +195,7 @@ namespace Faahi.Service.Auth
 
         }
 
-        private string CreatToken(Guid? userId,Guid? companyId,Guid? store_id,string userRole, int minutes)
+        private string CreatToken(Guid? userId,Guid? companyId,Guid? store_id,string userRole,string login_name, int minutes)
         {
             var claims = new List<Claim>
             {
@@ -204,6 +205,7 @@ namespace Faahi.Service.Auth
                  new Claim("company_id", companyId.ToString() ?? companyId.ToString()),
                  new Claim("store_id", store_id.ToString() ?? store_id.ToString()),
                  new Claim("userId", userId.ToString() ?? ""),
+                 new Claim("login_name", login_name.ToString() ?? ""),
             };
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:key")!));
@@ -247,6 +249,7 @@ namespace Faahi.Service.Auth
                 var userRole = principal.FindFirst("userRole")?.Value;
                 var companyId = principal.FindFirst("company_id")?.Value;
                 var store_userId = principal.FindFirst("company_id")?.Value;
+                var login_name = principal.FindFirst("login_name")?.Value;
 
                 if (string.IsNullOrEmpty(userId))
                     return null;
@@ -261,6 +264,7 @@ namespace Faahi.Service.Auth
                     new Claim("company_id", companyId ?? ""),
                     new Claim("userId", userId ?? ""),
                     new Claim("store_id",store_userId),
+                    new Claim("login_name",login_name),
                 }, 15); // 15 minutes
 
                 // Create new refresh token with the same claims
@@ -271,6 +275,7 @@ namespace Faahi.Service.Auth
                     new Claim("company_id", companyId ?? ""),
                     new Claim("userId", userId ?? ""),
                     new Claim("store_id",store_userId),
+                    new Claim("login_name",login_name),
                 }, 10080); // 7 days
 
                 return new AuthResponse
