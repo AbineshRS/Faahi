@@ -575,6 +575,20 @@ namespace Faahi.Service.im_products.sales
                                 };
                             }
                         }
+                        var Fullfilment = await Add_Fullfilment(order?.Data.customer_order_id);
+                        {
+                            if (!Fullfilment.Success)
+                            {
+                                await transaction.RollbackAsync();
+
+                                return new ServiceResult<so_SalesHeaders>
+                                {
+                                    Status = 500,
+                                    Success = false,
+                                    Message = Fullfilment.Message
+                                };
+                            }
+                        }
                     }
                     
                     await _context.SaveChangesAsync();
@@ -1890,7 +1904,8 @@ namespace Faahi.Service.im_products.sales
                 return new ServiceResult<om_CustomerOrders>
                 {
                     Status = 200,
-                    Success = true
+                    Success = true,
+                    Data= om_Customer
                 };
 
 
@@ -1906,6 +1921,101 @@ namespace Faahi.Service.im_products.sales
                     Message = ex.Message
                 };
             }
+        }
+
+        public async Task<ServiceResult<om_FulfillmentOrders>> Add_Fullfilment(Guid? customer_order_id)
+        {
+            try
+            {
+                if (customer_order_id == null)
+                {
+                    return new ServiceResult<om_FulfillmentOrders>
+                    {
+                        Status = 300,
+                        Success = false
+                    };
+                }
+                var existing = await _context.om_CustomerOrders.Include(a => a.om_CustomerOrderLines).FirstOrDefaultAsync(a => a.customer_order_id == customer_order_id);
+                if (existing == null)
+                {
+                    return new ServiceResult<om_FulfillmentOrders>
+                    {
+                        Status = 300,
+                        Success = false
+                    };
+                }
+                var table = "om_FulfillmentOrders";
+                var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == existing.business_id);
+                var key = Convert.ToInt16(table_key.next_key);
+                Decimal ordered_qty = 0;
+                om_FulfillmentOrders fulfillmentOrders = new om_FulfillmentOrders();
+                List<om_FulfillmentLines> om_FulfillmentLines1 = new List<om_FulfillmentLines>();
+                fulfillmentOrders.fulfillment_id = Guid.CreateVersion7();
+                fulfillmentOrders.business_id = existing.business_id;
+                fulfillmentOrders.store_id = existing.store_id;
+                fulfillmentOrders.customer_order_id = existing.customer_order_id;
+                //fulfillmentOrders.grand_total = existing.grand_total;
+                fulfillmentOrders.fulfillment_no = key+1;
+                fulfillmentOrders.total_ordered_qty = 0;
+                fulfillmentOrders.total_delivered_qty = 0;
+                fulfillmentOrders.total_rejected_qty = 0;
+                fulfillmentOrders.total_reserved_qty = 0;
+                fulfillmentOrders.total_returned_qty = 0;
+                fulfillmentOrders.collected_amount = 0;
+                fulfillmentOrders.created_at = DateTime.Now;
+                fulfillmentOrders.fulfillment_status = "PENDING";
+                foreach(var item in existing.om_CustomerOrderLines)
+                {
+                    int i = 0;
+                    om_FulfillmentLines om_FulfillmentLines = new om_FulfillmentLines();
+                    om_FulfillmentLines.fulfillment_line_id = Guid.CreateVersion7();
+                    om_FulfillmentLines.fulfillment_id = fulfillmentOrders.fulfillment_id;
+                    om_FulfillmentLines.customer_order_line_id = item.customer_order_line_id;
+                    om_FulfillmentLines.product_id = item.product_id;
+                    om_FulfillmentLines.variant_id = item.variant_id;
+                    om_FulfillmentLines.store_variant_inventory_id = item.store_variant_inventory_id;
+                    om_FulfillmentLines.batch_id = item.batch_id;
+                    om_FulfillmentLines.line_no = i;
+                    om_FulfillmentLines.ordered_qty=item.ordered_qty;
+                    ordered_qty += om_FulfillmentLines.ordered_qty;
+                    om_FulfillmentLines.reserved_qty = item.reserved_qty;
+                    om_FulfillmentLines.packed_qty = item.ordered_qty;
+                    om_FulfillmentLines.delivered_qty = 0;
+                    om_FulfillmentLines.returned_qty = 0;
+                    om_FulfillmentLines.rejected_qty = 0;
+                    om_FulfillmentLines.remarks = "";
+                    om_FulfillmentLines.line_status = "PENDING";
+                    om_FulfillmentLines1.Add(om_FulfillmentLines);
+
+                    i++;
+                }
+                fulfillmentOrders.total_ordered_qty = ordered_qty;
+                fulfillmentOrders.om_FulfillmentLines=om_FulfillmentLines1;
+                _context.om_FulfillmentOrders.Add(fulfillmentOrders);
+                if (table_key != null)
+                {
+                    table_key.next_key = key + 1;
+                    _context.am_table_next_key.Update(table_key);
+                }
+                await _context.SaveChangesAsync();
+
+                return new ServiceResult<om_FulfillmentOrders>
+                {
+                    Status = 200,
+                    Success = true
+                };
+            }
+            catch(Exception ex)
+            {
+                return new ServiceResult<om_FulfillmentOrders>
+                {
+                    Success = false,
+                    Status = 500,
+                    Message = ex.Message
+                };
+            }
+            
+
         }
 
         public async Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header(Guid? sales_id)
