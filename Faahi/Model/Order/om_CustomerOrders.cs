@@ -18,6 +18,7 @@ namespace Faahi.Model.Order
         [Column(TypeName ="uniqueidentifier")]
         public Guid customer_order_id { get; set; }
 
+
         [Column(TypeName = "uniqueidentifier")]
         public Guid business_id { get; set; }
         [ForeignKey(nameof(business_id))]
