@@ -5,6 +5,7 @@ using Faahi.Dto.om_Orders;
 using Faahi.Model.am_users;
 using Faahi.Model.Order;
 using Faahi.Model.site_settings;
+using Faahi.Dto.om_Orders;
 
 namespace Faahi.Service.market_place
 {
@@ -31,6 +32,14 @@ namespace Faahi.Service.market_place
         Task<ServiceResult<mk_blacklisted_numbers_dto>> check_black_list(Guid business_id,string phone_number);
 
         Task<ServiceResult<List<om_CustomerOrders_dto>>> Get_order_list_customer_order_id(Guid customer_order_id);
+
+        Task<ServiceResult<om_FulfillmentOrders>> Create_fulfillment(om_FulfillmentOrders model);
+
+        Task<ServiceResult<List<om_FulfillmentOrders>>> Get_fulfillments(Guid business_id);
+
+        Task<ServiceResult<om_FulfillmentOrders>> Get_fulfillment_by_id(Guid fulfillment_id);
+
+        Task<ServiceResult<update_quantity_result_dto>> Update_order_line_quantity(update_quantity_dto model);
 
     }
 }
