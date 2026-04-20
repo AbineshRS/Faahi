@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Org.BouncyCastle.Utilities;
 
 namespace Faahi.Service.im_products.sales
 {
@@ -417,6 +418,7 @@ namespace Faahi.Service.im_products.sales
                 so_SalesHeaders.qo_attention = so_SalesHeaders.qo_attention;
                 so_SalesHeaders.sales_on_hold = so_SalesHeaders.sales_on_hold;
                 so_SalesHeaders.is_mutiple_payment = so_SalesHeaders.is_mutiple_payment;
+                so_SalesHeaders.created_user_id = so_SalesHeaders.created_user_id;
                 so_SalesHeaders.status = so_SalesHeaders.status;
                 foreach (var item in so_SalesHeaders.so_SalesLines)
                 {
@@ -432,6 +434,12 @@ namespace Faahi.Service.im_products.sales
                             Message = "selected Item  is out of stock",
                             Success = false
                         };
+                    }
+                    if (st_store.sales_mode == "ROUNDOFF")
+                    {
+                        await Roundoff_CalculationResult(item.product_id, item.variant_id, item.quantity);
+
+
                     }
                     item.sales_id = so_SalesHeaders.sales_id;
                     item.business_id = so_SalesHeaders.business_id;
@@ -477,11 +485,13 @@ namespace Faahi.Service.im_products.sales
                     item.created_at = DateTime.Now;
 
                     discount_total += item.discount_amount;
-                    if (item.tax_class == "TAXABLE")
+                    var im_product = await _context.im_Products.FirstOrDefaultAsync(a => a.product_id == item.product_id);
+                    var tax_clas = await _context.tx_TaxClasses.FirstOrDefaultAsync(a => a.tax_class_id == im_product.tax_class_id);
+                    if (tax_clas.rate_percent>=0)
                     {
                         total_taxable_value += item.unit_price;
                     }
-                    else if (item.tax_class == "NO Taxable")
+                    else if (tax_clas.rate_percent == 0)
                     {
                         total_zero_value += item.unit_price;
                     }
@@ -575,7 +585,7 @@ namespace Faahi.Service.im_products.sales
                                 };
                             }
                         }
-                        var Fullfilment = await Add_Fullfilment(order?.Data.customer_order_id);
+                        var Fullfilment = await Add_Fullfilment(order?.Data.customer_order_id, so_SalesHeaders.login_user_id);
                         {
                             if (!Fullfilment.Success)
                             {
@@ -663,6 +673,50 @@ namespace Faahi.Service.im_products.sales
 
 
 
+        }
+
+        public async Task<sales_CalculationResult> Roundoff_CalculationResult(Guid? product_id, Guid? vareint_id, decimal quantity)
+        {
+            try
+            {
+                var im_product = await _context.im_Products.FirstOrDefaultAsync(a => a.product_id == product_id);
+                
+                var tax_class = await _context.tx_TaxClasses.FirstOrDefaultAsync(a => a.tax_class_id == im_product.tax_class_id);
+
+                var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.variant_id == vareint_id);
+
+
+                decimal base_price = (im_varient.base_price ?? 0m) * quantity;
+                base_price = Math.Round(base_price, 2, MidpointRounding.AwayFromZero);
+
+                decimal rate_percent = tax_class.rate_percent ?? 0m;
+
+                decimal gst =  (rate_percent / 100)+1;
+                gst = Math.Round(gst, 2, MidpointRounding.AwayFromZero);
+
+                decimal rate = base_price / gst;
+                rate = Math.Round(rate, 2, MidpointRounding.AwayFromZero);
+                gst = base_price - rate;
+
+                decimal total_price = rate + gst;
+                decimal price_rate = Math.Round(rate, 2, MidpointRounding.AwayFromZero);
+                total_price = Math.Round(total_price, 2, MidpointRounding.AwayFromZero);
+
+                return new sales_CalculationResult
+                {
+                    price_rate = price_rate,
+                    total_price = total_price,
+                    gst = gst,
+                    success = true
+                };
+            }
+            catch (Exception)
+            {
+                return new sales_CalculationResult
+                {
+                    success = false
+                };
+            }
         }
 
         public async Task<ServiceResult<so_SalesHeaders>> Update_sales(Guid salesId, so_SalesHeaders so_SalesHeaders)
@@ -1811,6 +1865,7 @@ namespace Faahi.Service.im_products.sales
                 om_Customer.customer_order_id = Guid.CreateVersion7();
                 om_Customer.business_id = existing_sales.business_id ?? Guid.Empty;
                 om_Customer.store_id = existing_sales.store_id;
+                om_Customer.sales_id = existing_sales.sales_id??Guid.Empty;
                 om_Customer.source_id = source_id;
                 om_Customer.order_no = key + 1;
                 om_Customer.customer_id = existing_sales.customer_id;
@@ -1828,7 +1883,6 @@ namespace Faahi.Service.im_products.sales
                 om_Customer.sub_total = existing_sales.sub_total;
                 om_Customer.discount_amount = existing_sales.discount_total;
                 om_Customer.tax_amount = existing_sales.tax_total;
-                om_Customer.delivery_city = "";
                 om_Customer.other_charges = 0;
                 var mk_address = await _context.mk_customer_addresses.FirstOrDefaultAsync(a => a.address_id == address_id);
                 var zones = await _context.mk_business_zones.FirstOrDefaultAsync(a => a.zone_id == mk_address.zone_id);
@@ -1842,12 +1896,16 @@ namespace Faahi.Service.im_products.sales
                 om_Customer.delevery_end_time = mk_address.delevery_end_time;
                 om_Customer.delevery_start_time = mk_address.delevery_start_time;
                 om_Customer.delevery_date = mk_address.delevery_date;
+                om_Customer.delivery_city = mk_address.city;
+                om_Customer.created_by = existing_sales.created_by;
+                om_Customer.created_user_id = existing_sales.created_user_id;
                 om_Customer.zone_name = zones?.zone_name;
                 om_Customer.confirmed_at = DateTime.Now;
                 om_Customer.created_at = DateTime.Now;
                 foreach (var item in existing_sales.so_SalesLines)
                 {
                     int i = 0;
+                    im_InventoryReservations im_Inventory = new im_InventoryReservations();
                     om_CustomerOrderLines lines = new om_CustomerOrderLines();
                     var store_varient = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id);
                     if (store_varient != null)
@@ -1879,6 +1937,25 @@ namespace Faahi.Service.im_products.sales
                     lines.updated_at = DateTime.Now;
                     lines.line_status = "OPEN";
                     i++;
+
+                    im_Inventory.reservation_id = Guid.CreateVersion7();
+                    im_Inventory.business_id = item.business_id??Guid.Empty;
+                    im_Inventory.store_id = item.store_id;
+                    im_Inventory.customer_order_id = lines.customer_order_id;
+                    im_Inventory.customer_order_line_id = lines.customer_order_line_id;
+                    im_Inventory.product_id = lines.product_id;
+                    im_Inventory.variant_id = lines.variant_id;
+                    im_Inventory.batch_id = lines.batch_id;
+                    im_Inventory.reserved_qty = lines.reserved_qty;
+                    im_Inventory.released_qty = 0;
+                    im_Inventory.consumed_qty = 0;
+                    im_Inventory.reserved_at = DateTime.Now;
+                    im_Inventory.remarks = "";
+                    im_Inventory.created_at=DateTime.Now;
+                    im_Inventory.created_by = om_Customer.created_by;
+                    im_Inventory.created_user_id = om_Customer.created_user_id;
+                    im_Inventory.reservation_status = "ACTIVE";
+                    _context.im_InventoryReservations.Add(im_Inventory);
                     _context.om_CustomerOrderLines.Add(lines);
                     om_CustomerOrderLines.Add(lines);
                 }
@@ -1923,10 +2000,11 @@ namespace Faahi.Service.im_products.sales
             }
         }
 
-        public async Task<ServiceResult<om_FulfillmentOrders>> Add_Fullfilment(Guid? customer_order_id)
+        public async Task<ServiceResult<om_FulfillmentOrders>> Add_Fullfilment(Guid? customer_order_id,Guid? login_user_id)
         {
             try
             {
+
                 if (customer_order_id == null)
                 {
                     return new ServiceResult<om_FulfillmentOrders>
@@ -1948,12 +2026,15 @@ namespace Faahi.Service.im_products.sales
                 var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == existing.business_id);
                 var key = Convert.ToInt16(table_key.next_key);
                 Decimal ordered_qty = 0;
+                var am_user = await _context.am_users.FirstOrDefaultAsync(a => a.userId == login_user_id);
                 om_FulfillmentOrders fulfillmentOrders = new om_FulfillmentOrders();
                 List<om_FulfillmentLines> om_FulfillmentLines1 = new List<om_FulfillmentLines>();
                 fulfillmentOrders.fulfillment_id = Guid.CreateVersion7();
                 fulfillmentOrders.business_id = existing.business_id;
                 fulfillmentOrders.store_id = existing.store_id;
                 fulfillmentOrders.customer_order_id = existing.customer_order_id;
+                fulfillmentOrders.created_by = am_user.fullName;
+                fulfillmentOrders.created_user_id = am_user.userId;
                 //fulfillmentOrders.grand_total = existing.grand_total;
                 fulfillmentOrders.fulfillment_no = key+1;
                 fulfillmentOrders.total_ordered_qty = 0;
@@ -2052,7 +2133,7 @@ namespace Faahi.Service.im_products.sales
                 gl_Journal_Header.ExchangeRate = existing_list.fx_rate_to_base;
                 gl_Journal_Header.IsSystemGenerated = true;
                 gl_Journal_Header.PostedAt = DateTime.Now;
-                gl_Journal_Header.PostedBy = "";
+                gl_Journal_Header.PostedBy = existing_list.created_by;
                 gl_Journal_Header.ReferenceNo = existing_list.invoice_no;
                 gl_Journal_Header.Remarks = $"Journal entry for Sales order {existing_list.sales_no} with invoice number {existing_list.invoice_no}";
                 gl_Journal_Header.StoreId = existing_list.store_id;
@@ -2099,6 +2180,7 @@ namespace Faahi.Service.im_products.sales
                         gl_Ledger.PostingDate = DateTime.Now;
                         gl_Ledger.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
                         gl_Ledger.ReferenceNo = existing_list.invoice_no;
+                        gl_Ledger.CreatedBy = existing_list.created_by;
                         gl_Ledger.Module = "PURCHASE";
                         gl_Ledger.Description = $"Ledger entry for Sales order {existing_list.sales_no} with invoice number {existing_list.invoice_no}";
                         gl_Ledger.CreatedAt = DateTime.Now;
@@ -2166,6 +2248,7 @@ namespace Faahi.Service.im_products.sales
                         gl_Ledger2.JournalLineId = gl_Journal_Lines2.JournalLineId;
                         gl_Ledger2.GlAccountId = gl_account_3?.GlAccountId ?? Guid.Empty;
                         gl_Ledger2.PostingDate = DateTime.Now;
+                        gl_Ledger2.CreatedBy = existing_list.created_by;
                         gl_Ledger2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
                         gl_Ledger2.ReferenceNo = existing_list.invoice_no;
                         gl_Ledger2.Module = "POS";
@@ -2262,7 +2345,7 @@ namespace Faahi.Service.im_products.sales
                 gl_Journal_Header.ExchangeRate = existing_list.fx_rate_to_base;
                 gl_Journal_Header.IsSystemGenerated = true;
                 gl_Journal_Header.PostedAt = DateTime.Now;
-                gl_Journal_Header.PostedBy = "";
+                gl_Journal_Header.PostedBy = existing_list.created_by;
                 gl_Journal_Header.ReferenceNo = existing_list.invoice_no;
                 gl_Journal_Header.Remarks = $"Journal entry for Sales order {existing_list.sales_no} with invoice number {existing_list.invoice_no}";
                 gl_Journal_Header.StoreId = existing_list.store_id;
@@ -2307,6 +2390,7 @@ namespace Faahi.Service.im_products.sales
                         gl_Ledger.JournalLineId = gl_Journal_Lines.JournalLineId;
                         gl_Ledger.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
                         gl_Ledger.PostingDate = DateTime.Now;
+                        gl_Ledger.CreatedBy = existing_list.created_by;
                         gl_Ledger.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
                         gl_Ledger.ReferenceNo = existing_list.invoice_no;
                         gl_Ledger.Module = "PURCHASE";
@@ -2381,7 +2465,7 @@ namespace Faahi.Service.im_products.sales
                         gl_Ledger2.Module = "POS";
                         gl_Ledger2.Description = $"Ledger entry for Sales order {existing_list.sales_no} with invoice number {existing_list.invoice_no}";
                         gl_Ledger2.CreatedAt = DateTime.Now;
-                        gl_Ledger2.CreatedBy = "";
+                        gl_Ledger2.CreatedBy = existing_list.created_by;
                         gl_Ledger2.ExchangeRate = existing_list.fx_rate_to_base;
                         gl_Ledger2.SourceId = existing_list.source_id;
                         gl_Ledger2.SourceType = "Account Receivable (A/R)";
@@ -2438,6 +2522,89 @@ namespace Faahi.Service.im_products.sales
                     Message = ex.Message
                 };
             }
+        }
+        public async Task<ServiceResult<so_SalesHeaders>> update_market_places(Guid salesId,Guid userId)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (salesId == null)
+                {
+                    _logger.LogInformation("not salesId found");
+                    return new ServiceResult<so_SalesHeaders>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "not salesId found"
+                    };
+                }
+                var existing_sales = await _context.so_SalesHeaders.Include(a => a.so_SalesLines).FirstOrDefaultAsync(a => a.sales_id == salesId);
+                var om_order = await _context.om_CustomerOrders.Include(a => a.om_CustomerOrderLines).FirstOrDefaultAsync(a => a.sales_id == existing_sales.sales_id);
+                var am_user = await _context.am_users.FirstOrDefaultAsync(a => a.userId == userId);
+                if (existing_sales != null)
+                {
+                    existing_sales.status = "POSTED";
+                    var journal = await Add_Journal_header(existing_sales.sales_id);
+                    if (!journal.Success)
+                    {
+                        await transaction.RollbackAsync();
+                        return new ServiceResult<so_SalesHeaders>
+                        {
+                            Success = false,
+                            Status = 300,
+                            Message = "Error"
+                        };
+                    }
+                    foreach(var item in om_order.om_CustomerOrderLines)
+                    {
+                        im_InventoryReservations im_Inventory = new im_InventoryReservations();
+                        im_Inventory.reservation_id = Guid.CreateVersion7();
+                        im_Inventory.business_id = existing_sales.business_id ?? Guid.Empty;
+                        im_Inventory.store_id = existing_sales.store_id;
+                        im_Inventory.customer_order_id = item.customer_order_id;
+                        im_Inventory.customer_order_line_id = item.customer_order_line_id;
+                        im_Inventory.product_id = item.product_id;
+                        im_Inventory.variant_id = item.variant_id;
+                        im_Inventory.batch_id = item.batch_id;
+                        im_Inventory.reserved_qty = item.reserved_qty;
+                        im_Inventory.released_qty = 0;
+                        im_Inventory.consumed_qty = 0;
+                        im_Inventory.reserved_at = DateTime.Now;
+                        im_Inventory.remarks = "";
+                        im_Inventory.created_at = DateTime.Now;
+                        im_Inventory.created_by = am_user.fullName;
+                        im_Inventory.created_user_id = am_user.userId;
+                        im_Inventory.reservation_status = "ACTIVE";
+                        _context.im_InventoryReservations.Add(im_Inventory);
+                    }
+                    
+                    var spResults = _context.Database.SqlQueryRaw<string>(
+                                         "EXEC dbo.sp_PostSales @sales_id=@sales_id ,@store_id=@store_id",
+                                          new SqlParameter("@sales_id", existing_sales.sales_id),
+                                          new SqlParameter("@store_id ", existing_sales.store_id)).AsEnumerable().ToList();
+                    var spResponse = spResults.FirstOrDefault();
+                }
+                _context.so_SalesHeaders.Update(existing_sales);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<so_SalesHeaders>
+                {
+                    Success = true,
+                    Status = 200,
+                    Data = existing_sales
+                };
+            }
+            catch(Exception ex)
+            {
+                _logger.LogInformation("Error while update_market_places");
+                return new ServiceResult<so_SalesHeaders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+            
         }
     }
 }

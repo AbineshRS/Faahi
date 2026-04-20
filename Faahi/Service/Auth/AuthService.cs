@@ -166,14 +166,14 @@ namespace Faahi.Service.Auth
             else
             {
                 var am_user_roles_1 = await _context.am_user_roles.FirstOrDefaultAsync(a => a.role_id == am_user.role_id && a.store_id == business_id);
-                var st_Users = await _context.st_Users.FirstOrDefaultAsync(a => a.user_id == am_user_roles_1.store_user_id);
+                //var st_Users = await _context.st_Users.FirstOrDefaultAsync(a => a.am_user_Id == am_user_roles_1.user_id);
                 var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == am_user_roles_1.store_id);
                 var am_user_data = await _context.am_users.FirstOrDefaultAsync(a => a.userId == am_user_roles_1.user_id);
 
                 if (st_store != null)
                 {
-                    accessToken = CreatToken(st_Users?.user_id, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, 10);
-                    refreshToken = CreatToken(st_Users?.user_id, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, 10080);
+                    accessToken = CreatToken(am_user_data?.userId, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, 10);
+                    refreshToken = CreatToken(am_user_data?.userId, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, 10080);
 
                     return new AuthResponse
                     {

@@ -141,58 +141,61 @@ namespace Faahi.Service.Store
                     st_UserStoreAccess.status = Store_users.status;
                     await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
                 }
-                else
-                {
-                    st_Users st_Users = new st_Users();
-                    st_Users.user_id = Guid.CreateVersion7();
-                    st_Users.company_id = Store_users.company_id;
-                    st_Users.Full_name = Store_users.Full_name;
+                //else
+                //{
+                //    st_Users st_Users = new st_Users();
+                //    st_Users.user_id = Guid.CreateVersion7();
+                //    st_Users.company_id = Store_users.company_id;
+                //    st_Users.Full_name = Store_users.Full_name;
 
-                     Gen_password = GeneratePassword(st_Users.Full_name);
-                    st_Users.email = Store_users.email;
-                    st_Users.phone = Store_users.phone;
-                    if (co_business != null)
-                    {
-                        co_business.createdSites_users += 1;
-                        _context.co_business.Update(co_business);
-                    }
-                    else if (st_Users.password == null)
-                    {
-                        st_Users.password = null;
-                    }
-                    else
-                    {
-                        st_Users.password = PasswordHelper.HashPassword(Gen_password);
+                //     Gen_password = GeneratePassword(st_Users.Full_name);
+                //    st_Users.email = Store_users.email;
+                //    st_Users.phone = Store_users.phone;
 
-                    }
-                    st_Users.account_type = Store_users.account_type;
-                    st_Users.registration_date = DateTime.Now;
-                    st_Users.status = Store_users.status;
+                //    if (co_business != null)
+                //    {
+                //        co_business.createdSites_users += 1;
+                //        _context.co_business.Update(co_business);
+                //    }
+                //    else if (st_Users.password == null)
+                //    {
+                //        st_Users.password = null;
+                //    }
+                //    else
+                //    {
+                //        st_Users.password = PasswordHelper.HashPassword(Gen_password);
 
-                    await _context.st_Users.AddAsync(st_Users);
+                //    }
+                //    st_Users.account_type = Store_users.account_type;
+                //    st_Users.registration_date = DateTime.Now;
+                //    st_Users.status = Store_users.status;
+
+                //    await _context.st_Users.AddAsync(st_Users);
 
 
 
-                    st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
-                    st_UserStoreAccess.store_access_id = Guid.CreateVersion7();
-                    st_UserStoreAccess.user_id = st_Users.user_id;
-                    st_UserStoreAccess.store_id = Store_users.store_id;
-                    st_UserStoreAccess.role_id = Store_users.role_id;
-                    st_UserStoreAccess.created_at = DateTime.Now;
-                    st_UserStoreAccess.status = Store_users.status;
-                    await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
-                    var email_exist = await _context.st_Users.FirstOrDefaultAsync(a => a.email == st_Users.email);
-                    if (email_exist == null)
-                    {
-                        //var email_auth = await _authService.email_verification(st_Users.email, "st-seller");
+                //    st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
+                //    st_UserStoreAccess.store_access_id = Guid.CreateVersion7();
+                //    st_UserStoreAccess.user_id = st_Users.user_id;
+                //    st_UserStoreAccess.store_id = Store_users.store_id;
+                //    st_UserStoreAccess.role_id = Store_users.role_id;
+                //    st_UserStoreAccess.created_at = DateTime.Now;
+                //    st_UserStoreAccess.status = Store_users.status;
+                //    await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
+                //    var email_exist = await _context.st_Users.FirstOrDefaultAsync(a => a.email == st_Users.email);
+                //    if (email_exist == null)
+                //    {
+                //        //var email_auth = await _authService.email_verification(st_Users.email, "st-seller");
 
-                    }
-                }
+                //    }
+                //}
                 var st_UserRoles = await _context.st_UserRoles.FirstOrDefaultAsync(a => a.role_id == Store_users.role_id);
                 var am_user = await _context.am_users.Include(u => u.am_roles).FirstOrDefaultAsync(a => a.email == Store_users.email);
                 if (am_user == null)
                 {
-                     isNewUser = true;
+                    
+
+                    isNewUser = true;
                     am_users am_Users = new am_users
                     {
                         userId = Guid.CreateVersion7(),
@@ -241,7 +244,44 @@ namespace Faahi.Service.Store
                         status = "T",
                         created_at = DateTime.Now
                     };
+                    st_Users st_Users = new st_Users();
+                    st_Users.user_id = Guid.CreateVersion7();
+                    st_Users.company_id = Store_users.company_id;
+                    st_Users.Full_name = Store_users.Full_name;
 
+                    Gen_password = GeneratePassword(st_Users.Full_name);
+                    st_Users.email = Store_users.email;
+                    st_Users.phone = Store_users.phone;
+                    st_Users.role_type = role.role_name;
+                    st_Users.am_user_Id = am_Users.userId;
+
+                    if (co_business != null)
+                    {
+                        co_business.createdSites_users += 1;
+                        _context.co_business.Update(co_business);
+                    }
+                    else if (st_Users.password == null)
+                    {
+                        st_Users.password = null;
+                    }
+                    else
+                    {
+                        st_Users.password = PasswordHelper.HashPassword(Gen_password);
+
+                    }
+                    st_Users.account_type = Store_users.account_type;
+                    st_Users.registration_date = DateTime.Now;
+                    st_Users.status = Store_users.status;
+
+                    await _context.st_Users.AddAsync(st_Users);
+                    st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
+                    st_UserStoreAccess.store_access_id = Guid.CreateVersion7();
+                    st_UserStoreAccess.user_id = st_Users.user_id;
+                    st_UserStoreAccess.store_id = Store_users.store_id;
+                    st_UserStoreAccess.role_id = Store_users.role_id;
+                    st_UserStoreAccess.created_at = DateTime.Now;
+                    st_UserStoreAccess.status = Store_users.status;
+                    await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
                     userRole.am_user_business_access.Add(businessAccess);
                     role.am_user_roles.Add(userRole);
                     am_Users.am_roles.Add(role);
@@ -272,8 +312,43 @@ namespace Faahi.Service.Store
                         am_user_business_access = new List<am_user_business_access>()
                     };
 
+                    st_Users st_Users = new st_Users();
+                    st_Users.user_id = Guid.CreateVersion7();
+                    st_Users.company_id = Store_users.company_id;
+                    st_Users.Full_name = Store_users.Full_name;
+                    st_Users.role_type = role.role_name;
+                    st_Users.am_user_Id = role.user_ids;
 
+                    Gen_password = GeneratePassword(st_Users.Full_name);
+                    st_Users.email = Store_users.email;
+                    st_Users.phone = Store_users.phone;
+                    if (co_business != null)
+                    {
+                        co_business.createdSites_users += 1;
+                        _context.co_business.Update(co_business);
+                    }
+                    else if (st_Users.password == null)
+                    {
+                        st_Users.password = null;
+                    }
+                    else
+                    {
+                        st_Users.password = PasswordHelper.HashPassword(Gen_password);
 
+                    }
+                    st_Users.account_type = Store_users.account_type;
+                    st_Users.registration_date = DateTime.Now;
+                    st_Users.status = Store_users.status;
+
+                    await _context.st_Users.AddAsync(st_Users);
+                    st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
+                    st_UserStoreAccess.store_access_id = Guid.CreateVersion7();
+                    st_UserStoreAccess.user_id = st_Users.user_id;
+                    st_UserStoreAccess.store_id = Store_users.store_id;
+                    st_UserStoreAccess.role_id = Store_users.role_id;
+                    st_UserStoreAccess.created_at = DateTime.Now;
+                    st_UserStoreAccess.status = Store_users.status;
+                    await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
                     _context.am_user_roles.Add(userRole);
                     _context.am_roles.Add(role);
                     role.am_user_roles.Add(userRole);
@@ -465,6 +540,7 @@ namespace Faahi.Service.Store
                 st_Stores.plastic_bag_tax_amount = store_Add.plastic_bag_tax_amount;
                 st_Stores.message_on_receipt = store_Add.message_on_receipt;
                 st_Stores.message_on_invoice = store_Add.message_on_invoice;
+                st_Stores.sales_mode = store_Add.sales_mode;
                 st_Stores.store_code = Convert.ToString(key + 1);
 
 
@@ -602,12 +678,12 @@ namespace Faahi.Service.Store
         {
             try
             {
-                var stores = await _context.st_stores.Where(s => s.company_id == company_id).ToListAsync();
-                var st_store_acces = _context.st_UserStoreAccess.AsEnumerable().Where(a => stores.Select(s => s.store_id).Contains(a.store_id)).ToList();
-                var user_ids = st_store_acces.Select(s => s.user_id).ToList();
-                var sellers = _context.st_Users.AsEnumerable().Where(a => a.user_id != null && user_ids.Contains(a.user_id.Value)).ToList();
+                //var stores = await _context.st_stores.Where(s => s.company_id == company_id).ToListAsync();
+                //var st_store_acces = _context.st_UserStoreAccess.AsEnumerable().Where(a => stores.Select(s => s.store_id).Contains(a.store_id)).ToList();
+                //var user_ids = st_store_acces.Select(s => s.user_id).ToList();
+                //var sellers = _context.st_Users.AsEnumerable().Where(a => a.user_id != null && user_ids.Contains(a.user_id.Value)).ToList();
 
-                //var sellers = await _context.st_Users.Where(s => s.user_id == company_id).ToListAsync();
+                var sellers = await _context.st_Users.Where(s => s.company_id == company_id).ToListAsync();
                 if (sellers == null || sellers.Count == 0)
                 {
                     return new ServiceResult<List<st_Users>>
@@ -1136,6 +1212,7 @@ namespace Faahi.Service.Store
                 existingStore.plastic_bag_tax_amount = st_Stores.plastic_bag_tax_amount;
                 existingStore.message_on_receipt = st_Stores.message_on_receipt;
                 existingStore.message_on_invoice = st_Stores.message_on_invoice;
+                existingStore.sales_mode = st_Stores.sales_mode;
                 //existingStore.st_StoresAddres = new List<st_StoresAddres>();
 
 

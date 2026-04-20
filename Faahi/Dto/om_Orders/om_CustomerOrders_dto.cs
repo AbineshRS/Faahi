@@ -10,6 +10,8 @@ namespace Faahi.Dto.om_Orders
 
         public Guid? business_id { get; set; }
 
+        public Guid? sales_id { get; set; }
+
         public DateTime? order_date { get; set; }
 
         public Guid? source_id { get; set; }

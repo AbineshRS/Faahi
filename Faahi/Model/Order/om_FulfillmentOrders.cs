@@ -40,8 +40,6 @@ namespace Faahi.Model.Order
         [Column(TypeName = "uniqueidentifier")]
         public Guid? packed_by { get; set; } = null;
 
-        [Column(TypeName = "uniqueidentifier")]
-        public Guid? created_by { get; set; }=null;
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid? updated_by { get; set; }=null;
@@ -110,6 +108,12 @@ namespace Faahi.Model.Order
         [Column(TypeName = "nvarchar(30)")]
         public string fulfillment_status { get; set; }
         //PENDING','PICKING','PICKED','PACKED','READY','CANCELLED
+
+        [Column(TypeName = "nvarchar(50)")]
+        public string? created_by { get; set; }
+
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? created_user_id { get; set; }
 
         public ICollection<om_FulfillmentLines>? om_FulfillmentLines { get; set; }= null;
     }
