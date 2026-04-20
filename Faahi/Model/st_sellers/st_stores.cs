@@ -112,6 +112,10 @@ namespace Faahi.Model.st_sellers
         [Column(TypeName = "nvarchar(100)")]
         public string? store_code { get; set; } = null;
 
+        [Column(TypeName ="nvarchar(50)")]
+        [DefaultValue("ROUNDOFF")]
+        public string sales_mode { get; set; } = null;
+
 
         public ICollection<st_StoresAddres>? st_StoresAddres { get; set; } = null;
 

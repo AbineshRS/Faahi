@@ -1,5 +1,6 @@
 ﻿using Faahi.Model.am_users;
 using Faahi.Model.am_vcos;
+using Faahi.Model.sales;
 using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,12 @@ namespace Faahi.Model.Order
         [Key]
         [Column(TypeName ="uniqueidentifier")]
         public Guid customer_order_id { get; set; }
+
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? sales_id { get; set; }
+        [ForeignKey(nameof(sales_id))]
+        [JsonIgnore]
+        public so_SalesHeaders? so_SalesHeaders { get; set; }
 
 
         [Column(TypeName = "uniqueidentifier")]
@@ -86,29 +93,23 @@ namespace Faahi.Model.Order
         [Column(TypeName ="decimal(18,4)")]
         public Decimal exchange_rate { get; set; }
 
-        [Column(TypeName ="decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal sub_total { get; set; }
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal sub_total { get; set; } = 0m;
 
-        [Column(TypeName ="decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal discount_amount { get; set; }
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal discount_amount { get; set; } = 0m;
 
-        [Column(TypeName ="decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal tax_amount { get; set; }
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal tax_amount { get; set; } = 0m;
 
-        [Column(TypeName ="decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal delivery_charge { get; set; }
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal delivery_charge { get; set; } = 0m;
 
-        [Column(TypeName ="decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal other_charges { get; set; }
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal other_charges { get; set; } = 0m;
 
-        [Column(TypeName ="decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal grand_total { get; set; }
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal grand_total { get; set; } = 0m;
 
         [Column(TypeName = "nvarchar(150)")]
         public string? delivery_contact_name { get; set; } = null;
@@ -170,8 +171,11 @@ namespace Faahi.Model.Order
         [Column(TypeName ="datetime")]
         public DateTime? created_at { get; set; }=null;
 
+        [Column(TypeName = "nvarchar(50)")]
+        public string? created_by { get; set; }
+
         [Column(TypeName ="uniqueidentifier")]
-        public Guid? created_by { get; set; }=null;
+        public Guid? created_user_id { get; set; }=null;
 
         [Column(TypeName = "datetime")]
         public DateTime? updated_at { get; set; } = null;

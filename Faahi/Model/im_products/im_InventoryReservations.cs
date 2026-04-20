@@ -87,8 +87,11 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "nvarchar(255)")]
         public string? remarks { get; set; } = null;
 
+        [Column(TypeName = "nvarchar(50)")]
+        public string? created_by { get; set; }
+
         [Column(TypeName = "uniqueidentifier")]
-        public Guid? created_by { get; set; } = null;
+        public Guid? created_user_id { get; set; }
 
         [Column(TypeName ="datetime")]
         public DateTime? created_at { get;set; }=null;

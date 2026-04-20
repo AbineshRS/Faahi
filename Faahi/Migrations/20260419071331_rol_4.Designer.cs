@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260419071331_rol_4")]
+    partial class rol_4
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -6719,12 +6722,6 @@ namespace Faahi.Migrations
 
                     b.Property<decimal?>("plastic_bag_tax_amount")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("sales_mode")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("ROUNDOFF");
 
                     b.Property<decimal?>("service_charge")
                         .HasColumnType("decimal(18,2)");

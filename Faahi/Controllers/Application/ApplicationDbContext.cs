@@ -218,6 +218,11 @@ namespace Faahi.Controllers.Application
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<st_stores>(entity =>
+            {
+                entity.Property(e => e.sales_mode).HasColumnType("nvarchar(50)").HasDefaultValue("ROUNDOFF");
+            });
             // Additional configurations can be added here if needed
             modelBuilder.Entity<im_ItemBatches>().ToTable(tb =>
             {

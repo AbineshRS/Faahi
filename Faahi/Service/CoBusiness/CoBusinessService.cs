@@ -120,6 +120,7 @@ namespace Faahi.Service.CoBusiness
                 business.created_at = DateTime.Now;
                 business.edit_date_time = DateTime.Now;
                 business.email = business.email;
+                business.accounting_mode = business.accounting_mode;
                 business.sites_allowed = 2;
                 business.sites_users_allowed = 2;
 
