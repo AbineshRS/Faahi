@@ -733,6 +733,7 @@ namespace Faahi.Service.market_place
                 {
                     customer_order_id = a.Key,
                     business_id = a.First().business_id,
+                    sales_id = a.First().sales_id,
                     source_id = a.First().source_id,
                     order_date = a.First().order_date,
                     payment_status = a.First().payment_status,
@@ -853,6 +854,7 @@ namespace Faahi.Service.market_place
                     customer_order_id = a.Key,
                     business_id = a.First().business_id,
                     source_id = a.First().source_id,
+                    sales_id = a.First().sales_id,
                     order_date = a.First().order_date,
                     payment_status = a.First().payment_status,
                     sub_total = a.First().sub_total,

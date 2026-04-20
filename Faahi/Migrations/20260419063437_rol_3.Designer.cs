@@ -4,6 +4,7 @@ using Faahi.Controllers.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Faahi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260419063437_rol_3")]
+    partial class rol_3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,9 +98,6 @@ namespace Faahi.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("product_id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("sales_id")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("source_id")
@@ -1536,10 +1536,7 @@ namespace Faahi.Migrations
                     b.Property<DateTime?>("created_at")
                         .HasColumnType("datetime");
 
-                    b.Property<string>("created_by")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("created_user_id")
+                    b.Property<Guid?>("created_by")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("currency_code")
@@ -1836,10 +1833,7 @@ namespace Faahi.Migrations
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<string>("created_by")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("created_user_id")
+                    b.Property<Guid?>("created_by")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("customer_order_id")
@@ -3840,10 +3834,7 @@ namespace Faahi.Migrations
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("GETDATE()");
 
-                    b.Property<string>("created_by")
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<Guid?>("created_user_id")
+                    b.Property<Guid?>("created_by")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("customer_order_id")
@@ -5822,9 +5813,6 @@ namespace Faahi.Migrations
                     b.Property<string>("created_by")
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<Guid?>("created_user_id")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("customer_id")
                         .HasColumnType("uniqueidentifier");
 
@@ -6719,12 +6707,6 @@ namespace Faahi.Migrations
 
                     b.Property<decimal?>("plastic_bag_tax_amount")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("sales_mode")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("ROUNDOFF");
 
                     b.Property<decimal?>("service_charge")
                         .HasColumnType("decimal(18,2)");

@@ -54,25 +54,25 @@ namespace Faahi.Model.Order
         public int? line_no { get; set; } = null;
 
         [Column(TypeName = "decimal(18,4)")]
-        public Decimal ordered_qty { get; set; }
+        public Decimal ordered_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        public Decimal reserved_qty { get; set; }
+        public Decimal reserved_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        public Decimal picked_qty { get; set; }
+        public Decimal picked_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        public Decimal packed_qty { get; set; }
+        public Decimal packed_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        public Decimal delivered_qty { get; set; }
+        public Decimal delivered_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        public Decimal returned_qty { get; set; }
+        public Decimal returned_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        public Decimal rejected_qty { get; set; }
+        public Decimal rejected_qty { get; set; } = 0m;
 
         [Column(TypeName = "nvarchar(200)")]
         public string? remarks { get; set; } = null;
