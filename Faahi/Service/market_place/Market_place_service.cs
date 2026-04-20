@@ -31,7 +31,8 @@ namespace Faahi.Service.market_place
             _context = context;
             _logger = logger;
             _configuration = configuration;
-        }
+        } 
+
 
         public async Task<ServiceResult<am_users>> Add_users(am_users users)
         {
