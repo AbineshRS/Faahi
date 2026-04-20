@@ -80,7 +80,6 @@ namespace Faahi.Model.Order
         public DateTime? returned_at { get; set; } = null;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
         public Decimal? collected_amount { get; set; }=null;
 
         [Column(TypeName ="nvarchar(max)")]
@@ -90,24 +89,19 @@ namespace Faahi.Model.Order
         public string? failure_reason { get; set; }=null;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_ordered_qty { get; set; }
+        public Decimal total_ordered_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_reserved_qty { get; set; }
+        public Decimal total_reserved_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_delivered_qty { get; set; }
+        public Decimal total_delivered_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_returned_qty { get; set; }
+        public Decimal total_returned_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_rejected_qty { get; set; }
+        public Decimal total_rejected_qty { get; set; } = 0m;
 
         //[Column(TypeName = "decimal(18,4)")]
         //[DefaultValue(0)]

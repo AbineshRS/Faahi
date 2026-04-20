@@ -5,6 +5,7 @@ using Faahi.Service.market_place;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Faahi.Dto.om_Orders;
 
 namespace Faahi.Controllers.Market_place
 {
@@ -136,6 +137,45 @@ namespace Faahi.Controllers.Market_place
         public async Task<IActionResult> Get_order_list_customer_order_id(Guid customer_order_id)
         {
             var result = await _market_Place_Service.Get_order_list_customer_order_id(customer_order_id);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("create_fulfillment")]
+        public async Task<IActionResult> CreateFulfillment(om_FulfillmentOrders model)
+        {
+            var result = await _market_Place_Service.Create_fulfillment(model);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("get_fulfillments/{business_id}")]
+        public async Task<IActionResult> GetFulfillments(Guid business_id)
+        {
+            var result = await _market_Place_Service.Get_fulfillments(business_id);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("get_fulfillment/{fulfillment_id}")]
+        public async Task<IActionResult> GetFulfillmentById(Guid fulfillment_id)
+        {
+            var result = await _market_Place_Service.Get_fulfillment_by_id(fulfillment_id);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("update_order_line_quantity")]
+        public async Task<IActionResult> UpdateOrderLineQuantity(update_quantity_dto model)
+        {
+            if (model == null)
+                return Ok("No data found");
+
+            var result = await _market_Place_Service.Update_order_line_quantity(model);
             return Ok(result);
         }
     }
