@@ -135,6 +135,7 @@ namespace Faahi.Service.market_place
 
 
 
+
                     foreach (var role in users.am_roles)
                     {
                         role.role_id = Guid.CreateVersion7();
