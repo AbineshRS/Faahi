@@ -1,5 +1,6 @@
 ﻿using Faahi.Controllers.site_settings;
 using Faahi.Dto.om_Orders;
+using Faahi.Dto.sales_dto;
 using Faahi.Model;
 using Faahi.Model.Accounts;
 using Faahi.Model.Admin;
@@ -206,6 +207,8 @@ namespace Faahi.Controllers.Application
 
         public  DbSet<om_FulfillmentLines> om_FulfillmentLines { get;set; }
 
+        public DbSet<sys_Images> sys_Images { get; set; }
+
 
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }
@@ -214,6 +217,8 @@ namespace Faahi.Controllers.Application
 
         // view tables
         public DbSet<om_CustomerOrders_dto> CustomerOrdersDto { get; set; }
+
+        public DbSet<so_sales_header_customer> so_sales_header_customer { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -547,7 +552,7 @@ namespace Faahi.Controllers.Application
 
             modelBuilder.Entity<mk_blacklisted_numbers>(entity =>
             {
-                entity.Property(a => a.is_active).HasColumnType("nchar(1)").HasDefaultValue("T");
+                entity.Property(a => a.is_active).HasColumnType("char(1)").HasDefaultValue("T");
             });
 
             modelBuilder.Entity<om_FulfillmentOrders>(entity =>
@@ -588,9 +593,25 @@ namespace Faahi.Controllers.Application
         .OnDelete(DeleteBehavior.Cascade);
             });
 
+            modelBuilder.Entity<sys_Images>(entity =>
+            {
+                entity.Property(a => a.status).HasColumnType("char(1)").HasDefaultValue("T");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+
+                entity.HasIndex(a => new { a.image_id, a.source_id }).HasDatabaseName("IX_sys_Images");
+                entity.HasIndex(a => new { a.source_id }).HasDatabaseName("IX_image_url");
+            });
+
             // view tables
 
             modelBuilder.Entity<om_CustomerOrders_dto>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToView(null); 
+            });
+
+            modelBuilder.Entity<so_sales_header_customer>(entity =>
             {
                 entity.HasNoKey();
                 entity.ToView(null); 

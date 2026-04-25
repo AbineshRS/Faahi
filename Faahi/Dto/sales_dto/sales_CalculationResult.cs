@@ -8,6 +8,8 @@
 
         public decimal? gst {  get; set; }
 
+        public decimal? discount_amount {  get; set; }
+
         public bool? success { get; set; }
     }
 }

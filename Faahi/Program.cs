@@ -15,6 +15,7 @@ using Faahi.Service.im_products.im_tags;
 using Faahi.Service.im_products.sales;
 using Faahi.Service.market_place;
 using Faahi.Service.PartyService;
+using Faahi.Service.SignalR;
 using Faahi.Service.site_settings_service;
 using Faahi.Service.Store;
 using Faahi.Service.table_key;
@@ -47,7 +48,7 @@ var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddSignalR();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -60,13 +61,14 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 // ? Proper CORS setup
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: myAllowSpecificOrigins,
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
+    options.AddPolicy("_myAllowSpecificOrigins", policy =>
+    {
+        policy
+            .SetIsOriginAllowed(_ => true) // allow any origin
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // required if sending cookies or auth headers
+    });
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -83,6 +85,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Key"]!)),
             ValidateIssuerSigningKey = true
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hub"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
         };
     });
 builder.Services.AddControllers();
@@ -178,5 +197,6 @@ app.UseAuthorization();
 app.UseStaticFiles();
 
 app.MapControllers();
+app.MapHub<signalr_hub>("/hub").RequireCors(myAllowSpecificOrigins);
 
 app.Run();  
