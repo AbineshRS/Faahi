@@ -3,12 +3,14 @@ using Faahi.Dto;
 using Faahi.Dto.am_users;
 using Faahi.Dto.mk_blacklisted;
 using Faahi.Dto.om_Orders;
+using Faahi.Dto.om_Orders;
 using Faahi.Migrations;
 using Faahi.Model.am_users;
 using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
 using Faahi.Model.im_products;
 using Faahi.Model.Order;
+using Faahi.Model.sales;
 using Faahi.Model.site_settings;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
@@ -17,7 +19,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using Faahi.Dto.om_Orders;
 
 namespace Faahi.Service.market_place
 {
@@ -1048,6 +1049,8 @@ namespace Faahi.Service.market_place
                     };
                 }
 
+                var now = DateTime.Now;
+
                 var orderLine = await _context.om_CustomerOrderLines
                     .FirstOrDefaultAsync(x =>
                         x.customer_order_line_id == model.customer_order_line_id &&
@@ -1079,28 +1082,75 @@ namespace Faahi.Service.market_place
                     };
                 }
 
+                so_SalesLines? salesLine = null;
+                if (orderHeader.sales_id.HasValue)
+                {
+                    salesLine = await _context.so_SalesLines
+                        .FirstOrDefaultAsync(x =>
+                            x.sales_id == orderHeader.sales_id.Value &&
+                            x.store_variant_inventory_id == orderLine.store_variant_inventory_id);
+
+                    if (salesLine == null)
+                    {
+                        return new ServiceResult<update_quantity_result_dto>
+                        {
+                            Status = 404,
+                            Success = false,
+                            Message = "Sales line not found for this order line"
+                        };
+                    }
+                }
+
+                if (salesLine != null && model.new_ordered_qty > orderLine.ordered_qty)
+                {
+                    var maxAllowed = salesLine.original_quantity > 0 ? salesLine.original_quantity : salesLine.quantity;
+                    if (model.new_ordered_qty > maxAllowed)
+                    {
+                        return new ServiceResult<update_quantity_result_dto>
+                        {
+                            Status = 409,
+                            Success = false,
+                            Message = $"Only {maxAllowed:0.####} items are available."
+                        };
+                    }
+                }
+
+                if (orderLine.ordered_qty == 1m && model.new_ordered_qty < 1m)
+                {
+                    if (!model.confirm_delete)
+                    {
+                        return new ServiceResult<update_quantity_result_dto>
+                        {
+                            Status = 409,
+                            Success = false,
+                            Message = "Confirm delete required for last quantity."
+                        };
+                    }
+
+                    model.new_ordered_qty = 0m;
+                }
+
                 var oldQty = orderLine.ordered_qty;
                 var newQty = model.new_ordered_qty;
 
-                if (newQty <= 0)
+                if (newQty < 0)
                 {
                     return new ServiceResult<update_quantity_result_dto>
                     {
                         Status = 400,
                         Success = false,
-                        Message = "Quantity must be greater than zero"
+                        Message = "Quantity cannot be negative"
                     };
                 }
 
-                // Prevent setting below already processed quantity
                 var alreadyProcessed = new[]
                 {
-            orderLine.picked_qty ?? 0m,
-            orderLine.packed_qty,
-            orderLine.dispatched_qty,
-            orderLine.delivered_qty,
-            orderLine.returned_qty
-        }.Max();
+                    orderLine.picked_qty ?? 0m,
+                    orderLine.packed_qty,
+                    orderLine.dispatched_qty,
+                    orderLine.delivered_qty,
+                    orderLine.returned_qty
+                }.Max();
 
                 if (newQty < alreadyProcessed)
                 {
@@ -1114,7 +1164,6 @@ namespace Faahi.Service.market_place
 
                 var delta = newQty - oldQty;
                 decimal totalReleased = 0m;
-                var now = DateTime.Now;
 
                 // 1) om_CustomerOrderLines
                 orderLine.ordered_qty = newQty;
@@ -1125,7 +1174,7 @@ namespace Faahi.Service.market_place
                 orderLine.remarks = model.remarks ?? orderLine.remarks;
                 _context.om_CustomerOrderLines.Update(orderLine);
 
-                // 2) om_FulfillmentLines (all linked by customer_order_line_id, or specific fulfillment_id if passed)
+                // 2) om_FulfillmentLines
                 var fulfillmentLinesQuery = _context.om_FulfillmentLines
                     .Where(x => x.customer_order_line_id == model.customer_order_line_id);
 
@@ -1136,6 +1185,7 @@ namespace Faahi.Service.market_place
                 }
 
                 var fulfillmentLines = await fulfillmentLinesQuery.ToListAsync();
+
                 foreach (var fLine in fulfillmentLines)
                 {
                     fLine.ordered_qty = newQty;
@@ -1153,7 +1203,7 @@ namespace Faahi.Service.market_place
                 if (fulfillmentLines.Count > 0)
                     _context.om_FulfillmentLines.UpdateRange(fulfillmentLines);
 
-                // 3) im_InventoryReservations + 4) im_StoreVariantInventory (release flow when reducing qty)
+                // 3) im_InventoryReservations + 4) im_StoreVariantInventory
                 if (delta < 0)
                 {
                     var needToRelease = Math.Abs(delta);
@@ -1184,7 +1234,6 @@ namespace Faahi.Service.market_place
                         totalReleased += releaseNow;
                         needToRelease -= releaseNow;
 
-                        // Update committed quantity in inventory
                         var inv = await _context.im_StoreVariantInventory
                             .FirstOrDefaultAsync(i =>
                                 i.store_id == r.store_id &&
@@ -1202,7 +1251,7 @@ namespace Faahi.Service.market_place
                     _context.im_InventoryReservations.UpdateRange(reservations);
                 }
 
-                // 5) Recalculate om_FulfillmentOrders totals
+                // 5) om_FulfillmentOrders totals
                 var affectedFulfillmentIds = fulfillmentLines
                     .Select(x => x.fulfillment_id)
                     .Distinct()
@@ -1210,9 +1259,14 @@ namespace Faahi.Service.market_place
 
                 if (affectedFulfillmentIds.Count > 0)
                 {
-                    var headers = await _context.om_FulfillmentOrders
+                    //var headers = await _context.om_FulfillmentOrders
+                    //    .Where(x => affectedFulfillmentIds.Contains(x.fulfillment_id))
+                    //    .ToListAsync();
+
+                    var allHeadersForOrder = await _context.om_FulfillmentOrders.Where(x => x.customer_order_id == model.customer_order_id).ToListAsync();
+                    var headers = allHeadersForOrder
                         .Where(x => affectedFulfillmentIds.Contains(x.fulfillment_id))
-                        .ToListAsync();
+                        .ToList();
 
                     foreach (var h in headers)
                     {
@@ -1232,7 +1286,7 @@ namespace Faahi.Service.market_place
                     _context.om_FulfillmentOrders.UpdateRange(headers);
                 }
 
-                // 6) Recalculate om_CustomerOrders totals
+                // 6) om_CustomerOrders totals
                 var orderLines = await _context.om_CustomerOrderLines
                     .Where(x => x.customer_order_id == model.customer_order_id)
                     .ToListAsync();
@@ -1246,6 +1300,65 @@ namespace Faahi.Service.market_place
                 orderHeader.updated_at = now;
                 orderHeader.updated_by = model.updated_by;
                 _context.om_CustomerOrders.Update(orderHeader);
+
+                // 7) so_SalesLines + 8) so_SalesHeaders via om_CustomerOrders.sales_id
+                if (orderHeader.sales_id.HasValue)
+                {
+                    var salesId = orderHeader.sales_id.Value;
+
+                    if (salesLine != null)
+                    {
+                        var oldSalesQty = salesLine.quantity;
+                        salesLine.quantity = newQty;
+
+                        var ratio = oldSalesQty > 0 ? (newQty / oldSalesQty) : 1m;
+
+                        salesLine.discount_amount = Math.Round(salesLine.discount_amount * ratio, 4);
+                        salesLine.tax_amount = Math.Round(salesLine.tax_amount * ratio, 4);
+                        salesLine.discount_amount_base = Math.Round(salesLine.discount_amount_base * ratio, 4);
+                        salesLine.tax_amount_base = Math.Round(salesLine.tax_amount_base * ratio, 4);
+
+                     
+                        salesLine.line_total = Math.Round((salesLine.unit_price * newQty) - salesLine.discount_amount + salesLine.tax_amount, 4);
+                        salesLine.line_total_base = Math.Round((salesLine.unit_price_base * newQty) - salesLine.discount_amount_base + salesLine.tax_amount_base, 4);
+
+                        _context.so_SalesLines.Update(salesLine);
+                    }
+
+                    var salesHeader = await _context.so_SalesHeaders.FirstOrDefaultAsync(x => x.sales_id == salesId);
+                    if (salesHeader != null)
+                    {
+                        var allSalesLines = await _context.so_SalesLines
+                            .Where(x => x.sales_id == salesId)
+                            .ToListAsync();
+
+                        var subTotal = allSalesLines.Sum(x => x.unit_price * x.quantity);
+                        var discountTotal = allSalesLines.Sum(x => x.discount_amount);
+                        var taxTotal = allSalesLines.Sum(x => x.tax_amount);
+
+                        var subTotalBase = allSalesLines.Sum(x => x.unit_price_base * x.quantity);
+                        var discountTotalBase = allSalesLines.Sum(x => x.discount_amount_base);
+                        var taxTotalBase = allSalesLines.Sum(x => x.tax_amount_base);
+
+                        salesHeader.sub_total = Math.Round(subTotal, 4);
+                        salesHeader.discount_total = Math.Round(discountTotal, 4);
+                        salesHeader.tax_total = Math.Round(taxTotal, 4);
+                        salesHeader.grand_total = Math.Round(
+                            salesHeader.sub_total - salesHeader.discount_total + salesHeader.tax_total + salesHeader.service_charge,
+                            4
+                        );
+
+                        salesHeader.sub_total_base = Math.Round(subTotalBase, 4);
+                        salesHeader.discount_total_base = Math.Round(discountTotalBase, 4);
+                        salesHeader.tax_total_base = Math.Round(taxTotalBase, 4);
+                        salesHeader.grand_total_base = Math.Round(
+                            salesHeader.sub_total_base - salesHeader.discount_total_base + salesHeader.tax_total_base + salesHeader.service_charge_base,
+                            4
+                        );
+
+                        _context.so_SalesHeaders.Update(salesHeader);
+                    }
+                }
 
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
