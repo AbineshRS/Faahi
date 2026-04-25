@@ -1,4 +1,5 @@
-﻿using Faahi.Model.am_vcos;
+﻿using Faahi.Dto.sales_dto;
+using Faahi.Model.am_vcos;
 using Faahi.Model.Shared_tables;
 using Faahi.Service.Users;
 using Microsoft.AspNetCore.Authorization;
@@ -161,6 +162,40 @@ namespace Faahi.Controllers.Users
                 return Ok("No data found");
             }
             var result = await _iuser.Get_all_parties(company_id);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("order_list_customer/{customer_id}")]
+        public async Task<IActionResult> Order_list_customer(Guid customer_id)
+        {
+            if (customer_id == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _iuser.Order_list_customer(customer_id);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("Update_sales_payment/{salesId}")]
+        public async Task<IActionResult> Update_sales_payment([FromForm] sales_customer_update_payment_dto sales_Customer)
+        {
+            if (sales_Customer == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _iuser.Update_sales_payment(sales_Customer);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("customer_payment_history/{salesId}")]
+        public async Task<IActionResult> Customer_payment_history(Guid salesId)
+        {
+            var result = await _iuser.Customer_payment_history(salesId);
             return Ok(result);
         }
     }
