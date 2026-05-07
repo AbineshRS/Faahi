@@ -39,7 +39,11 @@ namespace Faahi.Service.market_place
 
         Task<ServiceResult<om_FulfillmentOrders>> Get_fulfillment_by_id(Guid fulfillment_id);
 
-        Task<ServiceResult<update_quantity_result_dto>> Update_order_line_quantity(update_quantity_dto model);
+        Task<ServiceResult<update_order_details_result_dto>> Update_order_details(update_order_details_dto model);
+
+        Task<ServiceResult<update_sales_mode_result_dto>> Update_sales_mode(update_sales_mode_dto model);
+
+        Task<ServiceResult<update_quantity_result_dto>> Update_order_quantity(update_quantity_dto model);
 
     }
 }

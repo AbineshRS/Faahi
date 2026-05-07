@@ -190,13 +190,13 @@ namespace Faahi.Controllers.Users
             var result = await _iuser.Update_sales_payment(sales_Customer);
             return Ok(result);
         }
-        [Authorize]
-        [HttpGet]
-        [Route("customer_payment_history/{salesId}")]
-        public async Task<IActionResult> Customer_payment_history(Guid salesId)
-        {
-            var result = await _iuser.Customer_payment_history(salesId);
-            return Ok(result);
-        }
+        //[Authorize]
+        //[HttpGet]
+        //[Route("customer_payment_history/{salesId}")]
+        //public async Task<IActionResult> Customer_payment_history(Guid salesId)
+        //{
+        //    var result = await _iuser.Customer_payment_history(salesId);
+        //    return Ok(result);
+        //}
     }
 }
