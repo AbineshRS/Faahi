@@ -93,8 +93,9 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "nvarchar(255)")]
         public string? description_2 { get; set; } = null;
 
+        [NotMapped]
+        public string? temp_variant_key { get; set; }
 
-     
 
         public ICollection<im_VariantAttributes>? im_VariantAttributes { get; set; } = null;
         public ICollection<im_StoreVariantInventory>? im_StoreVariantInventory { get; set; } = null;

@@ -248,6 +248,9 @@ namespace Faahi.Model.sales
         [Column(TypeName = "nvarchar(50)")]
         public string? created_by { get; set; }
 
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? created_user_id { get; set; }
+
         [Column(TypeName = "char(1)")]
         [DefaultValue("F")]
         [StringLength(1)]
@@ -274,5 +277,8 @@ namespace Faahi.Model.sales
 
         [NotMapped]
         public string? urget_delivery { get; set; } = null;
+
+        [NotMapped]
+        public Guid? login_user_id { get; set; } = null;
     }
 }

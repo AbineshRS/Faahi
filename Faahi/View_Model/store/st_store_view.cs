@@ -74,7 +74,10 @@ namespace Faahi.View_Model.store
    
         public string? message_on_receipt { get; set; } = null;
 
-     
+        public string? store_code { get; set; } = null;
+
+        public string sales_mode { get; set; } = null;
+
         public string? message_on_invoice { get; set; } = null;
 
         public ICollection<st_StoresAddres_view>? st_StoresAddres { get; set; }

@@ -3,12 +3,14 @@ using Faahi.Dto;
 using Faahi.Dto.am_users;
 using Faahi.Dto.mk_blacklisted;
 using Faahi.Dto.om_Orders;
+using Faahi.Dto.om_Orders;
 using Faahi.Migrations;
 using Faahi.Model.am_users;
 using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
 using Faahi.Model.im_products;
 using Faahi.Model.Order;
+using Faahi.Model.sales;
 using Faahi.Model.site_settings;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
@@ -30,7 +32,8 @@ namespace Faahi.Service.market_place
             _context = context;
             _logger = logger;
             _configuration = configuration;
-        }
+        } 
+
 
         public async Task<ServiceResult<am_users>> Add_users(am_users users)
         {
@@ -130,6 +133,7 @@ namespace Faahi.Service.market_place
                             Status = 409
                         };
                     }
+
 
 
 
@@ -732,6 +736,7 @@ namespace Faahi.Service.market_place
                 {
                     customer_order_id = a.Key,
                     business_id = a.First().business_id,
+                    sales_id = a.First().sales_id,
                     source_id = a.First().source_id,
                     order_date = a.First().order_date,
                     payment_status = a.First().payment_status,
@@ -852,6 +857,7 @@ namespace Faahi.Service.market_place
                     customer_order_id = a.Key,
                     business_id = a.First().business_id,
                     source_id = a.First().source_id,
+                    sales_id = a.First().sales_id,
                     order_date = a.First().order_date,
                     payment_status = a.First().payment_status,
                     sub_total = a.First().sub_total,
@@ -900,6 +906,482 @@ namespace Faahi.Service.market_place
             catch (Exception ex)
             {
                 return new ServiceResult<List<om_CustomerOrders_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<om_FulfillmentOrders>> Create_fulfillment(om_FulfillmentOrders model)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (model == null)
+                {
+                    return new ServiceResult<om_FulfillmentOrders>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                model.fulfillment_id = Guid.CreateVersion7();
+                model.created_at = DateTime.Now;
+                model.fulfillment_status = model.fulfillment_status ?? "PENDING";
+
+                _context.om_FulfillmentOrders.Add(model);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ServiceResult<om_FulfillmentOrders>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Fulfillment created successfully",
+                    Data = model
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating fulfillment");
+
+                return new ServiceResult<om_FulfillmentOrders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<om_FulfillmentOrders>>> Get_fulfillments(Guid business_id)
+        {
+            try
+            {
+                var data = await _context.om_FulfillmentOrders
+                    .Where(x => x.business_id == business_id)
+                    .OrderByDescending(x => x.created_at)
+                    .ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return new ServiceResult<List<om_FulfillmentOrders>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                return new ServiceResult<List<om_FulfillmentOrders>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                    Data = data
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<om_FulfillmentOrders>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<om_FulfillmentOrders>> Get_fulfillment_by_id(Guid fulfillment_id)
+        {
+            try
+            {
+                var data = await _context.om_FulfillmentOrders
+                    .FirstOrDefaultAsync(x => x.fulfillment_id == fulfillment_id);
+
+                if (data == null)
+                {
+                    return new ServiceResult<om_FulfillmentOrders>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                return new ServiceResult<om_FulfillmentOrders>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                    Data = data
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<om_FulfillmentOrders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<update_quantity_result_dto>> Update_order_line_quantity(update_quantity_dto model)
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (model == null)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                var now = DateTime.Now;
+
+                var orderLine = await _context.om_CustomerOrderLines
+                    .FirstOrDefaultAsync(x =>
+                        x.customer_order_line_id == model.customer_order_line_id &&
+                        x.customer_order_id == model.customer_order_id);
+
+                if (orderLine == null)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Order line not found"
+                    };
+                }
+
+                var orderHeader = await _context.om_CustomerOrders
+                    .FirstOrDefaultAsync(x =>
+                        x.customer_order_id == model.customer_order_id &&
+                        x.business_id == model.business_id &&
+                        x.store_id == model.store_id);
+
+                if (orderHeader == null)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Order header not found"
+                    };
+                }
+
+                so_SalesLines? salesLine = null;
+                if (orderHeader.sales_id.HasValue)
+                {
+                    salesLine = await _context.so_SalesLines
+                        .FirstOrDefaultAsync(x =>
+                            x.sales_id == orderHeader.sales_id.Value &&
+                            x.store_variant_inventory_id == orderLine.store_variant_inventory_id);
+
+                    if (salesLine == null)
+                    {
+                        return new ServiceResult<update_quantity_result_dto>
+                        {
+                            Status = 404,
+                            Success = false,
+                            Message = "Sales line not found for this order line"
+                        };
+                    }
+                }
+
+                if (salesLine != null && model.new_ordered_qty > orderLine.ordered_qty)
+                {
+                    var maxAllowed = salesLine.original_quantity > 0 ? salesLine.original_quantity : salesLine.quantity;
+                    if (model.new_ordered_qty > maxAllowed)
+                    {
+                        return new ServiceResult<update_quantity_result_dto>
+                        {
+                            Status = 409,
+                            Success = false,
+                            Message = $"Only {maxAllowed:0.####} items are available."
+                        };
+                    }
+                }
+
+                if (orderLine.ordered_qty == 1m && model.new_ordered_qty < 1m)
+                {
+                    if (!model.confirm_delete)
+                    {
+                        return new ServiceResult<update_quantity_result_dto>
+                        {
+                            Status = 409,
+                            Success = false,
+                            Message = "Confirm delete required for last quantity."
+                        };
+                    }
+
+                    model.new_ordered_qty = 0m;
+                }
+
+                var oldQty = orderLine.ordered_qty;
+                var newQty = model.new_ordered_qty;
+
+                if (newQty < 0)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "Quantity cannot be negative"
+                    };
+                }
+
+                var alreadyProcessed = new[]
+                {
+                    orderLine.picked_qty ?? 0m,
+                    orderLine.packed_qty,
+                    orderLine.dispatched_qty,
+                    orderLine.delivered_qty,
+                    orderLine.returned_qty
+                }.Max();
+
+                if (newQty < alreadyProcessed)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 409,
+                        Success = false,
+                        Message = $"Cannot reduce below already processed qty ({alreadyProcessed:0.####})"
+                    };
+                }
+
+                var delta = newQty - oldQty;
+                decimal totalReleased = 0m;
+
+                // 1) om_CustomerOrderLines
+                orderLine.ordered_qty = newQty;
+                orderLine.reserved_qty = Math.Min(orderLine.reserved_qty, newQty);
+                orderLine.line_total = (orderLine.unit_price * newQty) - orderLine.discount_amount + orderLine.tax_amount;
+                orderLine.updated_at = now;
+                orderLine.updated_by = model.updated_by;
+                orderLine.remarks = model.remarks ?? orderLine.remarks;
+                _context.om_CustomerOrderLines.Update(orderLine);
+
+                // 2) om_FulfillmentLines
+                var fulfillmentLinesQuery = _context.om_FulfillmentLines
+                    .Where(x => x.customer_order_line_id == model.customer_order_line_id);
+
+                if (model.fulfillment_id.HasValue)
+                {
+                    fulfillmentLinesQuery = fulfillmentLinesQuery
+                        .Where(x => x.fulfillment_id == model.fulfillment_id.Value);
+                }
+
+                var fulfillmentLines = await fulfillmentLinesQuery.ToListAsync();
+
+                foreach (var fLine in fulfillmentLines)
+                {
+                    fLine.ordered_qty = newQty;
+                    fLine.reserved_qty = Math.Min(fLine.reserved_qty, newQty);
+                    fLine.remarks = model.remarks ?? fLine.remarks;
+
+                    if (newQty == 0)
+                        fLine.line_status = "CANCELLED";
+                    else if (fLine.picked_qty > 0 || fLine.packed_qty > 0)
+                        fLine.line_status = "PICKING";
+                    else
+                        fLine.line_status = "PENDING";
+                }
+
+                if (fulfillmentLines.Count > 0)
+                    _context.om_FulfillmentLines.UpdateRange(fulfillmentLines);
+
+                // 3) im_InventoryReservations + 4) im_StoreVariantInventory
+                if (delta < 0)
+                {
+                    var needToRelease = Math.Abs(delta);
+
+                    var reservations = await _context.im_InventoryReservations
+                        .Where(x => x.customer_order_line_id == model.customer_order_line_id
+                                    && (x.reservation_status == "ACTIVE" || x.reservation_status == "PARTIAL"))
+                        .OrderBy(x => x.reserved_at)
+                        .ToListAsync();
+
+                    foreach (var r in reservations)
+                    {
+                        if (needToRelease <= 0) break;
+
+                        var availableToRelease = r.reserved_qty - r.released_qty - r.consumed_qty;
+                        if (availableToRelease <= 0) continue;
+
+                        var releaseNow = Math.Min(availableToRelease, needToRelease);
+
+                        r.released_qty += releaseNow;
+                        r.released_at = now;
+                        r.updated_at = now;
+                        r.updated_by = model.updated_by;
+
+                        var remaining = r.reserved_qty - r.released_qty - r.consumed_qty;
+                        r.reservation_status = remaining <= 0 ? "RELEASED" : "PARTIAL";
+
+                        totalReleased += releaseNow;
+                        needToRelease -= releaseNow;
+
+                        var inv = await _context.im_StoreVariantInventory
+                            .FirstOrDefaultAsync(i =>
+                                i.store_id == r.store_id &&
+                                i.variant_id == r.variant_id);
+
+                        if (inv != null)
+                        {
+                            var currentCommitted = inv.committed_quantity ?? 0m;
+                            var nextCommitted = currentCommitted - releaseNow;
+                            inv.committed_quantity = nextCommitted < 0 ? 0 : nextCommitted;
+                            _context.im_StoreVariantInventory.Update(inv);
+                        }
+                    }
+
+                    _context.im_InventoryReservations.UpdateRange(reservations);
+                }
+
+                // 5) om_FulfillmentOrders totals
+                var affectedFulfillmentIds = fulfillmentLines
+                    .Select(x => x.fulfillment_id)
+                    .Distinct()
+                    .ToList();
+
+                if (affectedFulfillmentIds.Count > 0)
+                {
+                    //var headers = await _context.om_FulfillmentOrders
+                    //    .Where(x => affectedFulfillmentIds.Contains(x.fulfillment_id))
+                    //    .ToListAsync();
+
+                    var allHeadersForOrder = await _context.om_FulfillmentOrders.Where(x => x.customer_order_id == model.customer_order_id).ToListAsync();
+                    var headers = allHeadersForOrder
+                        .Where(x => affectedFulfillmentIds.Contains(x.fulfillment_id))
+                        .ToList();
+
+                    foreach (var h in headers)
+                    {
+                        var lines = await _context.om_FulfillmentLines
+                            .Where(x => x.fulfillment_id == h.fulfillment_id)
+                            .ToListAsync();
+
+                        h.total_ordered_qty = lines.Sum(x => x.ordered_qty);
+                        h.total_reserved_qty = lines.Sum(x => x.reserved_qty);
+                        h.total_delivered_qty = lines.Sum(x => x.delivered_qty);
+                        h.total_returned_qty = lines.Sum(x => x.returned_qty);
+                        h.total_rejected_qty = lines.Sum(x => x.rejected_qty);
+                        h.updated_at = now;
+                        h.updated_by = model.updated_by;
+                    }
+
+                    _context.om_FulfillmentOrders.UpdateRange(headers);
+                }
+
+                // 6) om_CustomerOrders totals
+                var orderLines = await _context.om_CustomerOrderLines
+                    .Where(x => x.customer_order_id == model.customer_order_id)
+                    .ToListAsync();
+
+                orderHeader.sub_total = orderLines.Sum(x => x.line_total);
+                orderHeader.grand_total = orderHeader.sub_total
+                                        - orderHeader.discount_amount
+                                        + orderHeader.tax_amount
+                                        + orderHeader.delivery_charge
+                                        + orderHeader.other_charges;
+                orderHeader.updated_at = now;
+                orderHeader.updated_by = model.updated_by;
+                _context.om_CustomerOrders.Update(orderHeader);
+
+                // 7) so_SalesLines + 8) so_SalesHeaders via om_CustomerOrders.sales_id
+                if (orderHeader.sales_id.HasValue)
+                {
+                    var salesId = orderHeader.sales_id.Value;
+
+                    if (salesLine != null)
+                    {
+                        var oldSalesQty = salesLine.quantity;
+                        salesLine.quantity = newQty;
+
+                        var ratio = oldSalesQty > 0 ? (newQty / oldSalesQty) : 1m;
+
+                        salesLine.discount_amount = Math.Round(salesLine.discount_amount * ratio, 4);
+                        salesLine.tax_amount = Math.Round(salesLine.tax_amount * ratio, 4);
+                        salesLine.discount_amount_base = Math.Round(salesLine.discount_amount_base * ratio, 4);
+                        salesLine.tax_amount_base = Math.Round(salesLine.tax_amount_base * ratio, 4);
+
+                     
+                        salesLine.line_total = Math.Round((salesLine.unit_price * newQty) - salesLine.discount_amount + salesLine.tax_amount, 4);
+                        salesLine.line_total_base = Math.Round((salesLine.unit_price_base * newQty) - salesLine.discount_amount_base + salesLine.tax_amount_base, 4);
+
+                        _context.so_SalesLines.Update(salesLine);
+                    }
+
+                    var salesHeader = await _context.so_SalesHeaders.FirstOrDefaultAsync(x => x.sales_id == salesId);
+                    if (salesHeader != null)
+                    {
+                        var allSalesLines = await _context.so_SalesLines
+                            .Where(x => x.sales_id == salesId)
+                            .ToListAsync();
+
+                        var subTotal = allSalesLines.Sum(x => x.unit_price * x.quantity);
+                        var discountTotal = allSalesLines.Sum(x => x.discount_amount);
+                        var taxTotal = allSalesLines.Sum(x => x.tax_amount);
+
+                        var subTotalBase = allSalesLines.Sum(x => x.unit_price_base * x.quantity);
+                        var discountTotalBase = allSalesLines.Sum(x => x.discount_amount_base);
+                        var taxTotalBase = allSalesLines.Sum(x => x.tax_amount_base);
+
+                        salesHeader.sub_total = Math.Round(subTotal, 4);
+                        salesHeader.discount_total = Math.Round(discountTotal, 4);
+                        salesHeader.tax_total = Math.Round(taxTotal, 4);
+                        salesHeader.grand_total = Math.Round(
+                            salesHeader.sub_total - salesHeader.discount_total + salesHeader.tax_total + salesHeader.service_charge,
+                            4
+                        );
+
+                        salesHeader.sub_total_base = Math.Round(subTotalBase, 4);
+                        salesHeader.discount_total_base = Math.Round(discountTotalBase, 4);
+                        salesHeader.tax_total_base = Math.Round(taxTotalBase, 4);
+                        salesHeader.grand_total_base = Math.Round(
+                            salesHeader.sub_total_base - salesHeader.discount_total_base + salesHeader.tax_total_base + salesHeader.service_charge_base,
+                            4
+                        );
+
+                        _context.so_SalesHeaders.Update(salesHeader);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return new ServiceResult<update_quantity_result_dto>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Quantity updated successfully",
+                    Data = new update_quantity_result_dto
+                    {
+                        customer_order_line_id = model.customer_order_line_id,
+                        old_qty = oldQty,
+                        new_qty = newQty,
+                        released_qty = totalReleased
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "Error updating order line quantity");
+                return new ServiceResult<update_quantity_result_dto>
                 {
                     Status = 500,
                     Success = false,

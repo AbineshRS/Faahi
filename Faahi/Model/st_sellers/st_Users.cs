@@ -23,6 +23,8 @@ namespace Faahi.Model.st_sellers
         [Column(TypeName = "uniqueidentifier")]
         public Guid? company_id { get; set; }
 
+        public Guid? am_user_Id { get; set; }
+
         [Column(TypeName ="varchar(255)")]
         public string? Full_name { get; set; }
 
@@ -37,6 +39,9 @@ namespace Faahi.Model.st_sellers
 
         [Column(TypeName = "varchar(30)")]
         public string? account_type { get; set; } = null;
+
+        [Column(TypeName = "varchar(30)")]
+        public string? role_type { get; set; } = null;
 
         [Column(TypeName = "datetime")]
         public DateTime? registration_date { get; set; }=null ;

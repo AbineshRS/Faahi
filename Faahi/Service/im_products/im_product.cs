@@ -3,6 +3,9 @@ using Amazon.S3.Model;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Dto.Product_dto;
+using Faahi.Dto.product_transfer;
+using Faahi.Dto.Purchase_dto;
+using Faahi.Migrations;
 using Faahi.Model.im_products;
 using Faahi.Model.st_sellers;
 using Microsoft.AspNetCore.Hosting;
@@ -13,6 +16,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Text.RegularExpressions;
 using System.Xml;
 using static System.Net.Mime.MediaTypeNames;
@@ -89,7 +93,7 @@ namespace Faahi.Service.im_products
                 foreach (var im_varint in im_Product.im_ProductVariants)
                 {
                     var table = "im_ProductVariants";
-                    var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a=>a.name==table && a.business_id==im_Product.company_id);
+                    var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_Product.company_id);
                     var key = Convert.ToInt16(am_table.next_key);
 
 
@@ -200,13 +204,13 @@ namespace Faahi.Service.im_products
                 foreach (var item in im_ProductVariants)
                 {
                     var table = "im_ProductVariants";
-                    var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a=>a.name==table&& a.business_id==im_product.company_id);
+                    var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_product.company_id);
                     var key = Convert.ToInt16(am_table.next_key);
 
                     item.variant_id = Guid.CreateVersion7();
                     item.product_id = product_id;
                     item.uom_name = item.uom_name;
-                   
+
                     item.sku = st_store.store_code + "-" + Convert.ToString(key + 1); ;
                     if (am_table != null)
                     {
@@ -396,7 +400,7 @@ namespace Faahi.Service.im_products
                     Data = null
                 };
             }
-        }   
+        }
 
         public async Task<long> GetStoreFolderSizeAsync(string bucketName, string storeName)
         {
@@ -567,7 +571,7 @@ namespace Faahi.Service.im_products
 
         public async Task<ServiceResult<DeleteImageDto>> Delete_ProductImage(DeleteImageDto deleteImageDto)
         {
-            var transaction = await _context.Database.BeginTransactionAsync();  
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (deleteImageDto == null || deleteImageDto.Deleted_Images == null || !deleteImageDto.Deleted_Images.Any())
             {
                 _logger.LogWarning("Delete_ProductImage: No images provided");
@@ -820,7 +824,7 @@ namespace Faahi.Service.im_products
                         foreach (var im_varint in im_Product.im_ProductVariants)
                         {
                             var table = "im_ProductVariants";
-                            var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a=>a.name==table&& a.business_id== im_Product.company_id);
+                            var am_table = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_Product.company_id);
                             var key = Convert.ToInt16(am_table.next_key);
 
 
@@ -919,7 +923,7 @@ namespace Faahi.Service.im_products
                     Data = im_Purchase
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
 
@@ -931,7 +935,7 @@ namespace Faahi.Service.im_products
                     Message = ex.Message
                 };
             }
-            
+
 
         }
 
@@ -945,12 +949,28 @@ namespace Faahi.Service.im_products
                     Message = "not found"
                 };
             }
-            var jsonResult = (await _context.Database.SqlQueryRaw<string>(
-                    "EXEC dbo.GetAllProductDetails_JSON @CompanyId = @CompanyId, @searchText=@searchText,@CategoryId=@CategoryId, @opr = @opr",
-                     new SqlParameter("@CompanyId", company_id),
-                     new SqlParameter("@searchText", (object?)searchText ?? DBNull.Value),
-                     new SqlParameter("@CategoryId", (object?)categoryId ?? DBNull.Value),
-                     new SqlParameter("@opr", 3)).ToListAsync()).FirstOrDefault();
+            var jsonResult = "";
+            var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == company_id);
+            if (st_store != null)
+            {
+                company_id = st_store.company_id ?? Guid.Empty;
+                jsonResult = (await _context.Database.SqlQueryRaw<string>(
+                   "EXEC dbo.GetAllProductDetails_JSON @CompanyId = @CompanyId, @searchText=@searchText,@CategoryId=@CategoryId, @opr = @opr",
+                    new SqlParameter("@CompanyId", st_store.store_id),
+                    new SqlParameter("@searchText", (object?)searchText ?? DBNull.Value),
+                    new SqlParameter("@CategoryId", (object?)categoryId ?? DBNull.Value),
+                    new SqlParameter("@opr", 5)).ToListAsync()).FirstOrDefault();
+            }
+            else
+            {
+                jsonResult = (await _context.Database.SqlQueryRaw<string>(
+                                       "EXEC dbo.GetAllProductDetails_JSON @CompanyId = @CompanyId, @searchText=@searchText,@CategoryId=@CategoryId, @opr = @opr",
+                                        new SqlParameter("@CompanyId", company_id),
+                                        new SqlParameter("@searchText", (object?)searchText ?? DBNull.Value),
+                                        new SqlParameter("@CategoryId", (object?)categoryId ?? DBNull.Value),
+                                        new SqlParameter("@opr", 3)).ToListAsync()).FirstOrDefault();
+            }
+
             //var all_product_details = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_PriceTiers)
             //                          .ThenInclude(a => a.im_ProductVariantPrices).ThenInclude(a => a.im_ProductImages).FirstOrDefaultAsync(a => a.company_id == company_id);
             if (jsonResult == null)
@@ -993,6 +1013,7 @@ namespace Faahi.Service.im_products
         //    };
 
         //}
+        
         public async Task<ServiceResult<List<im_Products>>> all_product_details(Guid company_id)
         {
             if (company_id == Guid.Empty)
@@ -1034,6 +1055,7 @@ namespace Faahi.Service.im_products
                 Data = products
             };
         }
+       
         //public async Task<ServiceResult<im_Products>> Get_product_details(Guid product_id)
         //{
         //    if (product_id == null)
@@ -1121,12 +1143,63 @@ namespace Faahi.Service.im_products
             }
             try
             {
+                var auditLogs = new List<im_AuditLogs>();
 
 
                 var product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
                 .FirstOrDefaultAsync(a => a.product_id == product_id);
                 //var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == product.store_id);
                 //st_store.store_code = st_store.store_code;
+                var editableFields = new List<string>
+                {
+                    "title",
+                    "description",
+                    "tax_class_id",
+                    "brand",
+                    "stock_flag",
+                    "ignore_direct",
+                    "low_stock_alert",
+                    "restrict_deciaml_qty",
+                    "allow_below_zero",
+                    "fixed_price",
+                    "published",
+                    "is_varient",
+                    "vendor_id",
+                    "track_expiry",
+                    "status"
+                };
+                var properties = typeof(im_Products).GetProperties();
+
+                foreach (var property in properties)
+                {
+                    // ONLY CHECK EDITABLE FIELDS
+                    if (!editableFields.Contains(property.Name))
+                    {
+                        continue;
+                    }
+
+                    var oldValue = property.GetValue(product)?.ToString();
+                    var newValue = property.GetValue(im_products)?.ToString();
+
+                    if (oldValue != newValue)
+                    {
+                        auditLogs.Add(new im_AuditLogs
+                        {
+                            audit_id = Guid.CreateVersion7(),
+                            record_id = product.product_id,
+                            business_id = product.company_id,
+                            field_name = property.Name,
+                            old_value = oldValue,
+                            new_value = newValue,
+                            changedby_name = im_products.login_name,
+                            changed_by_user_id = im_products.userId,
+                            action_type = "UPDATE",
+                            changed_at = DateTime.UtcNow,
+                            remarks= "UPDATE"
+                        });
+                    }
+                }
+
                 product.title = im_products.title;
                 product.description = im_products.description;
                 product.tax_class_id = im_products.tax_class_id;
@@ -1173,7 +1246,42 @@ namespace Faahi.Service.im_products
                     //existingVariant.uom_id = varient.uom_id;
                     //existingVariant.updated_at = DateTime.Now;
 
+                    var variantEditableFields = new List<string>
+                    {
+                        "base_price",
+                        "description_2",
+                        "uom_name"
+                    };
+                    var variantProperties = typeof(im_ProductVariants).GetProperties();
 
+                    foreach (var property in variantProperties)
+                    {
+                        if (!variantEditableFields.Contains(property.Name))
+                        {
+                            continue;
+                        }
+
+                        var oldValue = property.GetValue(existingVariant)?.ToString();
+                        var newValue = property.GetValue(varient)?.ToString();
+
+                        if (oldValue != newValue)
+                        {
+                            auditLogs.Add(new im_AuditLogs
+                            {
+                                audit_id = Guid.CreateVersion7(),
+                                record_id = product.product_id,
+                                business_id = product.company_id,
+                                field_name = property.Name,
+                                old_value = oldValue,
+                                new_value = newValue,
+                                changedby_name = im_products.login_name,
+                                changed_by_user_id = im_products.userId,
+                                action_type = "UPDATE",
+                                remarks = "UPDATE",
+                                changed_at = DateTime.UtcNow
+                            });
+                        }
+                    }
                     foreach (var im_store in varient.im_StoreVariantInventory)
                     {
                         var existingStoreInv = existingVariant.im_StoreVariantInventory.FirstOrDefault(s => s.store_variant_inventory_id == im_store.store_variant_inventory_id);
@@ -1181,9 +1289,50 @@ namespace Faahi.Service.im_products
                         existingStoreInv.on_hand_quantity = im_store.on_hand_quantity;
                         existingStoreInv.committed_quantity = im_store.committed_quantity;
                         //existingStoreInv.bin_number = im_store.bin_number;
+
+                        var inventoryEditableFields = new List<string>
+                        {
+                            "on_hand_quantity",
+                            "committed_quantity"
+                        };
+
+                        var inventoryProperties = typeof(im_StoreVariantInventory).GetProperties();
+
+                        foreach (var property in inventoryProperties)
+                        {
+                            if (!inventoryEditableFields.Contains(property.Name))
+                            {
+                                continue;
+                            }
+
+                            var oldValue = property.GetValue(existingStoreInv)?.ToString();
+                            var newValue = property.GetValue(im_store)?.ToString();
+
+                            if (oldValue != newValue)
+                            {
+                                auditLogs.Add(new im_AuditLogs
+                                {
+                                    audit_id = Guid.CreateVersion7(),
+                                    record_id = product.product_id,
+                                    business_id = product.company_id,
+                                    field_name = property.Name,
+                                    old_value = oldValue,
+                                    new_value = newValue,
+                                    changedby_name = im_products.login_name,
+                                    changed_by_user_id = im_products.userId,
+                                    action_type = "UPDATE",
+                                    remarks = "UPDATE",
+                                    changed_at = DateTime.UtcNow
+                                });
+                            }
+                        }
                     }
 
 
+                }
+                if (auditLogs.Any())
+                {
+                    await _context.im_AuditLogs.AddRangeAsync(auditLogs);
                 }
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -1223,12 +1372,62 @@ namespace Faahi.Service.im_products
             }
             try
             {
+                var auditLogs = new List<im_AuditLogs>();
+
                 Random rnd = new Random();
 
                 var product = await _context.im_Products.Include(a => a.im_ProductVariants).ThenInclude(a => a.im_VariantAttributes).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_StoreVariantInventory).Include(a => a.im_ProductVariants).ThenInclude(a => a.im_ProductImages)
                                 .FirstOrDefaultAsync(a => a.product_id == product_id);
                 //var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == product.store_id);
                 //st_store.store_code = st_store.store_code;
+                var productEditableFields = new List<string>
+                {
+                    "title",
+                    "category_id",
+                    "sub_category_id",
+                    "sub_sub_category_id",
+                    "tax_class_id",
+                    "description",
+                    "brand",
+                    "stock_flag",
+                    "ignore_direct",
+                    "low_stock_alert",
+                    "restrict_deciaml_qty",
+                    "allow_below_zero",
+                    "fixed_price",
+                    "published",
+                    "vendor_id",
+                    "status"
+                };
+
+                var productProperties = typeof(im_Products).GetProperties();
+
+                foreach (var property in productProperties)
+                {
+                    if (!productEditableFields.Contains(property.Name))
+                    {
+                        continue;
+                    }
+
+                    var oldValue = property.GetValue(product)?.ToString();
+                    var newValue = property.GetValue(im_Products)?.ToString();
+
+                    if (oldValue != newValue)
+                    {
+                        auditLogs.Add(new im_AuditLogs
+                        {
+                            audit_id = Guid.CreateVersion7(),
+                            record_id = product.product_id,
+                            business_id = product.company_id,
+                            field_name = property.Name,
+                            old_value = oldValue,
+                            new_value = newValue,
+                            changedby_name = im_Products.login_name,
+                            changed_by_user_id = im_Products.userId,
+                            changed_at = DateTime.UtcNow
+                        });
+                    }
+                }
                 product.title = im_Products.title;
                 product.category_id = im_Products.category_id;
                 product.sub_category_id = im_Products.sub_category_id;
@@ -1272,7 +1471,44 @@ namespace Faahi.Service.im_products
                         existingVariant.barcode = varient.barcode;
                         existingVariant.description_2 = description_2;
                         existingVariant.uom_name = varient.uom_name;
+                        var variantEditableFields = new List<string>
+                        {
+                            "base_price",
+                            "barcode",
+                            "description_2",
+                            "uom_name"
+                        };
 
+                        var variantProperties = typeof(im_ProductVariants).GetProperties();
+
+                        foreach (var property in variantProperties)
+                        {
+                            if (!variantEditableFields.Contains(property.Name))
+                            {
+                                continue;
+                            }
+
+                            var oldValue = property.GetValue(existingVariant)?.ToString();
+                            var newValue = property.GetValue(varient)?.ToString();
+
+                            if (oldValue != newValue)
+                            {
+                                auditLogs.Add(new im_AuditLogs
+                                {
+                                    audit_id = Guid.CreateVersion7(),
+                                    record_id = product.product_id,
+                                    business_id = product.company_id,
+                                    action_type= "UPDATE",
+                                    field_name = property.Name,
+                                    old_value = oldValue,
+                                    new_value = newValue,
+                                    changedby_name = im_Products.login_name,
+                                    changed_by_user_id = im_Products.userId,
+                                    remarks = "UPDATE",
+                                    changed_at = DateTime.UtcNow
+                                });
+                            }
+                        }
                         foreach (var im_attr in varient.im_VariantAttributes)
                         {
                             var existingAttr = existingVariant.im_VariantAttributes.FirstOrDefault(a => a.varient_attribute_id == im_attr.varient_attribute_id);
@@ -1296,6 +1532,42 @@ namespace Faahi.Service.im_products
                                 existingVariant.im_VariantAttributes.Add(im_attr);
                             }
 
+                            var attributeEditableFields = new List<string>
+                            {
+                                "attribute_id",
+                                "value_id"
+                            };
+
+                            var attributeProperties = typeof(im_VariantAttributes).GetProperties();
+
+                            foreach (var property in attributeProperties)
+                            {
+                                if (!attributeEditableFields.Contains(property.Name))
+                                {
+                                    continue;
+                                }
+
+                                var oldValue = property.GetValue(existingAttr)?.ToString();
+                                var newValue = property.GetValue(im_attr)?.ToString();
+
+                                if (oldValue != newValue)
+                                {
+                                    auditLogs.Add(new im_AuditLogs
+                                    {
+                                        audit_id = Guid.CreateVersion7(),
+                                        record_id = product.product_id,
+                                        action_type = "UPDATE",
+                                        business_id = product.company_id,
+                                        field_name = property.Name,
+                                        old_value = oldValue,
+                                        new_value = newValue,
+                                        changedby_name = im_Products.login_name,
+                                        changed_by_user_id = im_Products.userId,
+                                        remarks = "UPDATE",
+                                        changed_at = DateTime.UtcNow
+                                    });
+                                }
+                            }
                         }
 
                         foreach (var im_store in varient.im_StoreVariantInventory)
@@ -1304,7 +1576,42 @@ namespace Faahi.Service.im_products
 
                             existingStoreInv.on_hand_quantity = im_store.on_hand_quantity;
                             existingStoreInv.committed_quantity = im_store.committed_quantity;
+                            var inventoryEditableFields = new List<string>
+                            {
+                                "on_hand_quantity",
+                                "committed_quantity"
+                            };
 
+                            var inventoryProperties = typeof(im_StoreVariantInventory).GetProperties();
+
+                            foreach (var property in inventoryProperties)
+                            {
+                                if (!inventoryEditableFields.Contains(property.Name))
+                                {
+                                    continue;
+                                }
+
+                                var oldValue = property.GetValue(existingStoreInv)?.ToString();
+                                var newValue = property.GetValue(im_store)?.ToString();
+
+                                if (oldValue != newValue)
+                                {
+                                    auditLogs.Add(new im_AuditLogs
+                                    {
+                                        audit_id = Guid.CreateVersion7(),
+                                        record_id = product.product_id,
+                                        business_id = product.company_id,
+                                        action_type= "UPDATE",
+                                        field_name = property.Name,
+                                        old_value = oldValue,
+                                        new_value = newValue,
+                                        changedby_name = im_Products.login_name,
+                                        changed_by_user_id = im_Products.userId,
+                                        remarks = "UPDATE",
+                                        changed_at = DateTime.UtcNow
+                                    });
+                                }
+                            }
                         }
                     }
                     else
@@ -1322,7 +1629,41 @@ namespace Faahi.Service.im_products
 
                         varient.created_at = DateTime.Now;
                         varient.updated_at = DateTime.Now;
+                        var variantEditableFields = new List<string>
+                        {
+                            "base_price",
+                            "barcode",
+                            "description_2",
+                            "uom_name",
+                            "sku"
+                        };
 
+                        var variantProperties = typeof(im_ProductVariants).GetProperties();
+
+                        foreach (var property in variantProperties)
+                        {
+                            if (!variantEditableFields.Contains(property.Name))
+                            {
+                                continue;
+                            }
+
+                            var newValue = property.GetValue(varient)?.ToString();
+
+                            auditLogs.Add(new im_AuditLogs
+                            {
+                                audit_id = Guid.CreateVersion7(),
+                                record_id = product.product_id,
+                                business_id = product.company_id,
+                                field_name = property.Name,
+                                old_value = null,
+                                new_value = newValue,
+                                changedby_name = im_Products.login_name,
+                                changed_by_user_id = im_Products.userId,
+                                action_type = "INSERT",
+                                remarks = "INSERT",
+                                changed_at = DateTime.UtcNow
+                            });
+                        }
                         foreach (var im_store in varient.im_StoreVariantInventory)
                         {
                             im_store.store_variant_inventory_id = Guid.CreateVersion7();
@@ -1332,6 +1673,40 @@ namespace Faahi.Service.im_products
                             im_store.on_hand_quantity = im_store.on_hand_quantity;
                             im_store.committed_quantity = im_store.committed_quantity;
                             im_store.bin_number = im_store.bin_number;
+                            var inventoryEditableFields = new List<string>
+                            {
+                                "on_hand_quantity",
+                                "committed_quantity",
+                                "bin_number",
+                                "store_id"
+                            };
+
+                            var inventoryProperties = typeof(im_StoreVariantInventory).GetProperties();
+
+                            foreach (var property in inventoryProperties)
+                            {
+                                if (!inventoryEditableFields.Contains(property.Name))
+                                {
+                                    continue;
+                                }
+
+                                var newValue = property.GetValue(im_store)?.ToString();
+
+                                auditLogs.Add(new im_AuditLogs
+                                {
+                                    audit_id = Guid.CreateVersion7(),
+                                    record_id = product.product_id,
+                                    business_id = product.company_id,
+                                    field_name = property.Name,
+                                    old_value = null,
+                                    new_value = newValue,
+                                    changedby_name = im_Products.login_name,
+                                    changed_by_user_id = im_Products.userId,
+                                    action_type = "INSERT",
+                                    remarks = "INSERT",
+                                    changed_at = DateTime.UtcNow
+                                });
+                            }
                         }
                         foreach (var im_attr in varient.im_VariantAttributes)
                         {
@@ -1339,11 +1714,47 @@ namespace Faahi.Service.im_products
                             im_attr.value_id = im_attr.value_id;
                             im_attr.variant_id = varient.variant_id;
                             im_attr.attribute_id = im_attr.attribute_id;
+                            var attributeEditableFields = new List<string>
+                            {
+                                "attribute_id",
+                                "value_id"
+                            };
+
+                            var attributeProperties = typeof(im_VariantAttributes).GetProperties();
+
+                            foreach (var property in attributeProperties)
+                            {
+                                if (!attributeEditableFields.Contains(property.Name))
+                                {
+                                    continue;
+                                }
+
+                                var newValue = property.GetValue(im_attr)?.ToString();
+
+                                auditLogs.Add(new im_AuditLogs
+                                {
+                                    audit_id = Guid.CreateVersion7(),
+                                    record_id = product.product_id,
+                                    business_id = product.company_id,
+                                    field_name = property.Name,
+                                    old_value = null,
+                                    new_value = newValue,
+                                    changedby_name = im_Products.login_name,
+                                    changed_by_user_id = im_Products.userId,
+                                    action_type = "INSERT",
+                                    remarks = "INSERT",
+                                    changed_at = DateTime.UtcNow
+                                });
+                            }
                         }
 
                         _context.im_ProductVariants.Add(varient);
                         product.im_ProductVariants.Add(varient);
                     }
+                }
+                if (auditLogs.Any())
+                {
+                    await _context.im_AuditLogs.AddRangeAsync(auditLogs);
                 }
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -1487,7 +1898,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
-                    await transaction.RollbackAsync();
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Add_subCategory: An error occurred while adding subcategory");
                 return new ServiceResult<im_ProductVariants>
                 {
@@ -1553,7 +1964,8 @@ namespace Faahi.Service.im_products
             }
             var jsonResult = (await _context.Database
                .SqlQueryRaw<string>(
-                   "EXEC dbo.sp_SearchProducts @store_id = @store_id, @search_text = @search_text",
+                   "EXEC dbo.sp_SearchProducts @opr=@opr, @store_id = @store_id, @search_text = @search_text",
+                   new SqlParameter("@opr", 1),
                    new SqlParameter("@store_id", store_id),
                    new SqlParameter("@search_text", search_text) // single product
                )
@@ -1873,7 +2285,7 @@ namespace Faahi.Service.im_products
             }
             catch (Exception ex)
             {
-                    await transaction.RollbackAsync();
+                await transaction.RollbackAsync();
                 _logger.LogInformation("Error while product_transfer_store");
                 return new ServiceResult<im_product>
                 {
@@ -1884,6 +2296,109 @@ namespace Faahi.Service.im_products
                 };
             }
 
+
+        }
+
+        public async Task<ServiceResult<List<product_transfer_dto>>> Product_search_item(Guid store_id, string search)
+        {
+            try
+            {
+                if (search == null)
+                {
+                    return new ServiceResult<List<product_transfer_dto>>
+                    {
+                        Success = false,
+                        Message = "not found"
+                    };
+                }
+                var jsonResult = await _context.Database
+                   .SqlQueryRaw<product_transfer_dto>(
+                       "EXEC dbo.sp_SearchProducts @opr=@opr, @store_id = @store_id, @search_text = @search_text",
+                       new SqlParameter("@opr", 2),
+                       new SqlParameter("@store_id", store_id),
+                       new SqlParameter("@search_text", search) // single product
+                   )
+                   .ToListAsync();
+
+                if (!jsonResult.Any())
+                {
+                    return new ServiceResult<List<product_transfer_dto>>
+                    {
+                        Success = false
+                    };
+
+                }
+
+
+
+                return new ServiceResult<List<product_transfer_dto>>
+                {
+                    Success = true,
+                    Message = "successfully",
+                    Data = jsonResult
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<product_transfer_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+
+        }
+       
+        public async Task<ServiceResult<List<product_transfer_dto>>> Product_list(Guid product_id)
+        {
+            try
+            {
+                if (product_id == null)
+                {
+                    return new ServiceResult<List<product_transfer_dto>>
+                    {
+                        Success = false,
+                        Message = "not found"
+                    };
+                }
+                var jsonResult = await _context.Database
+                   .SqlQueryRaw<product_transfer_dto>(
+                       "EXEC dbo.sp_SearchProducts @opr=@opr, @product_id = @product_id ",
+                       new SqlParameter("@opr", 3),
+                       new SqlParameter("@product_id", product_id)
+                   )
+                   .ToListAsync();
+
+                if (!jsonResult.Any())
+                {
+                    return new ServiceResult<List<product_transfer_dto>>
+                    {
+                        Success = false
+                    };
+
+                }
+
+
+
+                return new ServiceResult<List<product_transfer_dto>>
+                {
+                    Success = true,
+                    Message = "successfully",
+                    Data = jsonResult
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<product_transfer_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
 
         }
 
@@ -1931,6 +2446,154 @@ namespace Faahi.Service.im_products
             };
         }
 
+        public async Task<ServiceResult<List<im_Store_wise_stock_dto>>> store_wise_stock(Guid variant_id)
+        {
+            try
+            {
+                if (variant_id == null)
+                {
+                    return new ServiceResult<List<im_Store_wise_stock_dto>>
+                    {
+                        Success = false,
+                        Message = "not found"
+                    };
+                }
+                var jsonResult = await _context.Database
+                   .SqlQueryRaw<im_Store_wise_stock_dto>(
+                       "EXEC dbo.GetAllProductDetails_JSON @opr=@opr, @variant_id = @variant_id ",
+                       new SqlParameter("@opr", 6),
+                       new SqlParameter("@variant_id", variant_id)
+                   )
+                   .ToListAsync();
+
+                if (!jsonResult.Any())
+                {
+                    return new ServiceResult<List<im_Store_wise_stock_dto>>
+                    {
+                        Success = false
+                    };
+
+                }
+
+
+
+                return new ServiceResult<List<im_Store_wise_stock_dto>>
+                {
+                    Success = true,
+                    Message = "successfully",
+                    Data = jsonResult
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<im_Store_wise_stock_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+
+        }
+        
+        public async Task<ServiceResult<List<im_audit_log_dto>>> Get_audit_list(Guid record_id)
+        {
+            try
+            {
+                if (record_id == null)
+                {
+                    return new ServiceResult<List<im_audit_log_dto>>
+                    {
+                        Success = false,
+                        Message = "not found"
+                    };
+                }
+                var jsonResult = await _context.Database
+                   .SqlQueryRaw<im_audit_log_dto>(
+                       "EXEC dbo.GetAllProductDetails_JSON @opr=@opr, @record_id = @record_id ",
+                       new SqlParameter("@opr", 7),
+                       new SqlParameter("@record_id", record_id)
+                   )
+                   .ToListAsync();
+
+                if (!jsonResult.Any())
+                {
+                    return new ServiceResult<List<im_audit_log_dto>>
+                    {
+                        Success = false
+                    };
+
+                }
+
+
+
+                return new ServiceResult<List<im_audit_log_dto>>
+                {
+                    Success = true,
+                    Message = "successfully",
+                    Data = jsonResult
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<im_audit_log_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+
+        }
+
+        public async Task<ServiceResult<List<product_transfer_dto>>> Product_search_iteminventory(Guid store_id, Guid product_id)
+        {
+            try
+            {
+                if (product_id == null)
+                {
+                    return new ServiceResult<List<product_transfer_dto>>
+                    {
+                        Success = false,
+                        Message = "not found"
+                    };
+                }
+                
+
+                var im_transfer = await _context.im_StockTransferHeader.Include(a=>a.im_StockTransferLines)
+                    .Where(a=>a.status != "Completed" &&  a.from_store_id== store_id && a.im_StockTransferLines.Any(l => l.product_id == product_id)).ToListAsync();
+                if (im_transfer.Any())
+                {
+                    return new ServiceResult<List<product_transfer_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "This product is currently in stock transfer process and cannot be updated."
+                    };
+                }
+
+
+                return new ServiceResult<List<product_transfer_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "successfully",
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<product_transfer_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+
+        }
 
     }
 }

@@ -40,8 +40,6 @@ namespace Faahi.Model.Order
         [Column(TypeName = "uniqueidentifier")]
         public Guid? packed_by { get; set; } = null;
 
-        [Column(TypeName = "uniqueidentifier")]
-        public Guid? created_by { get; set; }=null;
 
         [Column(TypeName = "uniqueidentifier")]
         public Guid? updated_by { get; set; }=null;
@@ -80,7 +78,6 @@ namespace Faahi.Model.Order
         public DateTime? returned_at { get; set; } = null;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
         public Decimal? collected_amount { get; set; }=null;
 
         [Column(TypeName ="nvarchar(max)")]
@@ -90,24 +87,19 @@ namespace Faahi.Model.Order
         public string? failure_reason { get; set; }=null;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_ordered_qty { get; set; }
+        public Decimal total_ordered_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_reserved_qty { get; set; }
+        public Decimal total_reserved_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_delivered_qty { get; set; }
+        public Decimal total_delivered_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_returned_qty { get; set; }
+        public Decimal total_returned_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal total_rejected_qty { get; set; }
+        public Decimal total_rejected_qty { get; set; } = 0m;
 
         //[Column(TypeName = "decimal(18,4)")]
         //[DefaultValue(0)]
@@ -116,6 +108,12 @@ namespace Faahi.Model.Order
         [Column(TypeName = "nvarchar(30)")]
         public string fulfillment_status { get; set; }
         //PENDING','PICKING','PICKED','PACKED','READY','CANCELLED
+
+        [Column(TypeName = "nvarchar(50)")]
+        public string? created_by { get; set; }
+
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? created_user_id { get; set; }
 
         public ICollection<om_FulfillmentLines>? om_FulfillmentLines { get; set; }= null;
     }

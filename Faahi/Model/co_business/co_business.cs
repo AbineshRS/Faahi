@@ -85,6 +85,12 @@ namespace Faahi.Model.co_business
         [Column(TypeName = "varchar(50)")]
         public string? email { get; set; } = null;
 
+
+        [StringLength(1)]
+        [DefaultValue("T")]
+        [Column(TypeName = "char(1)")]
+        public string accounting_mode { get; set; } = "T";
+
         [StringLength(1)]
         [DefaultValue("T")]
         [Column(TypeName = "char(1)")]

@@ -1,8 +1,13 @@
-﻿using Faahi.Controllers.Application;
+﻿using Amazon.S3;
+using Amazon.S3.Model;
+using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Dto.sales_dto;
 using Faahi.Model.am_vcos;
+using Faahi.Model.pos_tables;
 using Faahi.Model.Shared_tables;
 using Faahi.Model.st_sellers;
+using Faahi.Service.im_products.sales;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
@@ -14,10 +19,16 @@ namespace Faahi.Service.Users
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<User_service> _logger;
-        public User_service(ApplicationDbContext context, ILogger<User_service> logger)
+        private readonly Isales _sales_serv;
+        private readonly IAmazonS3 _s3Client;
+        private readonly IConfiguration _configure;
+        public User_service(ApplicationDbContext context, ILogger<User_service> logger,Isales sales_serv, IAmazonS3 s3Client, IConfiguration configure)
         {
             _context = context;
             _logger = logger;
+            _sales_serv = sales_serv;
+            _s3Client = s3Client ?? throw new ArgumentNullException(nameof(s3Client));
+            _configure = configure;
         }
         public async Task<ServiceResult<st_Parties>> Create_vendors(st_Parties st_Parties)
         {
@@ -106,6 +117,7 @@ namespace Faahi.Service.Users
 
 
         }
+       
         public async Task<ServiceResult<st_Parties>> Create_customer(st_Parties st_Parties)
         {
             var transaction = await _context.Database.BeginTransactionAsync();
@@ -146,11 +158,13 @@ namespace Faahi.Service.Users
 
                 foreach(var ar_Customers in st_Parties.ar_Customers)
                 {
+                    var ar_due = await _context.payment_terms.FirstOrDefaultAsync(a => a.payment_term_id == ar_Customers.payment_term_id);
+
                     ar_Customers.customer_id = Guid.CreateVersion7();
                     ar_Customers.customer_code = "C-" + customerCode;
                     ar_Customers.price_tier_id = ar_Customers.price_tier_id;
-                    ar_Customers.party_id = st_Parties.party_id;
                     ar_Customers.payment_term_id = ar_Customers.payment_term_id;
+                    ar_Customers.party_id = st_Parties.party_id;
                     ar_Customers.credit_limit = ar_Customers.credit_limit;
                     ar_Customers.default_shipping_address_id = ar_Customers.default_shipping_address_id;
                     ar_Customers.default_billing_address_id = ar_Customers.default_billing_address_id;
@@ -169,6 +183,8 @@ namespace Faahi.Service.Users
                     ar_Customers.contact_phone1 = ar_Customers.contact_phone1;
                     ar_Customers.contact_phone2 = ar_Customers.contact_phone2;
                     ar_Customers.tex_identification_number = ar_Customers.tex_identification_number;
+                    ar_Customers.due_days = ar_due?.due_days;
+                    ar_Customers.due_description = ar_due?.due_description;
                     ar_Customers.credit_hold = "T";
                 }
                 await _context.st_Parties.AddAsync(st_Parties);
@@ -197,6 +213,7 @@ namespace Faahi.Service.Users
             }
 
         }
+       
         public async Task<ServiceResult<ar_Customers>> Update_arcustomer(Guid customer_id, ar_Customers ar_Customers)
         {
             var transaction = await _context.Database.BeginTransactionAsync();
@@ -214,7 +231,9 @@ namespace Faahi.Service.Users
                     };
                 }
                 var customer = await _context.ar_Customers.Include(a => a.fin_PartyBankAccounts).Include(a => a.st_PartyAddresses).FirstOrDefaultAsync(a => a.customer_id == customer_id);
+                var ar_due = await _context.payment_terms.FirstOrDefaultAsync(a => a.payment_term_id == ar_Customers.payment_term_id);
 
+                customer.payment_term_id = ar_Customers.payment_term_id;
                 customer.contact_name = ar_Customers.contact_name;
                 customer.contact_phone1 = ar_Customers.contact_phone1;
                 customer.contact_phone2 = ar_Customers.contact_phone2;
@@ -223,7 +242,8 @@ namespace Faahi.Service.Users
                 customer.tex_identification_number = ar_Customers.tex_identification_number;
                 customer.default_currency = ar_Customers.default_currency;
                 customer.updated_at = DateTime.Now;
-
+                customer.due_days = ar_due?.due_days;
+                customer.due_description = ar_due?.due_description;
                 var existing_bank = await _context.fin_PartyBankAccounts.Where(a => a.customer_id == customer_id).ToListAsync();
                 var newbank = ar_Customers.fin_PartyBankAccounts.Select(a => a.party_account_id).ToList();
                 var delete_bank = existing_bank.Where(a => !newbank.Contains(a.party_account_id)).ToList();
@@ -386,6 +406,7 @@ namespace Faahi.Service.Users
             }
             
         }
+       
         public async Task<ServiceResult<ap_Vendors>> Update_apvendor(Guid vendor_id, ap_Vendors ap_Vendors)
         {
             var transaction = await _context.Database.BeginTransactionAsync();
@@ -538,6 +559,7 @@ namespace Faahi.Service.Users
             }
             
         }
+        
         public async Task<ServiceResult<ar_Customers>> Get_customer(Guid customer_id)
         {
             if (customer_id == null)
@@ -592,6 +614,7 @@ namespace Faahi.Service.Users
             }
 
         }
+        
         public async Task<ServiceResult<ap_Vendors>> Get_vendor (Guid vendor_id)
         {
             if (vendor_id == null)
@@ -651,6 +674,7 @@ namespace Faahi.Service.Users
             }
 
         }
+        
         public async Task<ServiceResult<List<ar_Customers>>> Get_all_customer(Guid company_id)
         {
             if (company_id == null)
@@ -948,6 +972,346 @@ namespace Faahi.Service.Users
                 Status = 1,
                 Data = parties
             };
+        }
+
+        public async Task<ServiceResult<List<so_sales_header_customer>>> Order_list_customer(Guid customer_id)
+        {
+            try
+            {
+                if (customer_id == null)
+                {
+                    return new ServiceResult<List<so_sales_header_customer>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var sales = await _context.Set<so_sales_header_customer>()
+                    .FromSqlRaw("EXEC dbo.sp_Getusers  @opr=@opr, @customer_id=@customer_id",
+                    new SqlParameter("@customer_id", customer_id),
+                    new SqlParameter("@opr", 7)).ToListAsync();
+
+                if(sales==null || sales.Count == 0)
+                {
+                    return new ServiceResult<List<so_sales_header_customer>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                return new ServiceResult<List<so_sales_header_customer>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Data = sales
+                };
+
+            }catch(Exception ex)
+            {
+                _logger.LogInformation("Error while Order_list_customer");
+                return new ServiceResult<List<so_sales_header_customer>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<sales_customer_update_payment_dto>>> Update_sales_payment(List<sales_customer_update_payment_dto> sales_Customer)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (sales_Customer == null)
+                {
+                    return new ServiceResult<List<sales_customer_update_payment_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                Guid? business_id = Guid.Empty;
+                Guid? sales_id = Guid.Empty;
+                decimal total_amount = 0;
+                foreach (var item in sales_Customer)
+                {
+                    var exisitng_sales = await _context.so_SalesHeaders.FirstOrDefaultAsync(a => a.sales_id == item.sales_id);
+                    foreach (var payment in item.pos_SalePayments_dto)
+                    {
+                        pos_SalePayments pos_Sale = new pos_SalePayments();
+                        int i = 1;
+                        pos_Sale.sale_payment_id = Guid.CreateVersion7();
+                        pos_Sale.business_id = exisitng_sales.business_id;
+                        business_id = pos_Sale.business_id;
+                        pos_Sale.sale_id = exisitng_sales.sales_id;
+                        pos_Sale.store_id = exisitng_sales.store_id;
+                        pos_Sale.payment_method_id = payment.payment_method_id;
+                        pos_Sale.terminal_id = payment.terminal_id;
+                        pos_Sale.shift_id = payment.shift_id;
+                        pos_Sale.drawer_session_id = payment.drawer_session_id;
+                        pos_Sale.receipt_no = exisitng_sales.invoice_no;
+                        pos_Sale.line_no = i;
+                        pos_Sale.currency_code = exisitng_sales.doc_currency_code;
+                        pos_Sale.fx_rate = exisitng_sales.fx_rate_to_base;
+                        pos_Sale.amount = payment.amount;
+                        total_amount += pos_Sale.amount;
+                        pos_Sale.base_amount = payment.base_amount;
+                        pos_Sale.change_given = 0;
+                        pos_Sale.reference_no = exisitng_sales.reference_no;
+                        pos_Sale.notes = exisitng_sales.notes;
+                        pos_Sale.is_voided = payment.is_voided;
+                        pos_Sale.voided_by = payment.voided_by;
+                        pos_Sale.created_by = payment.created_by;
+                        pos_Sale.created_at = DateTime.Now;
+                        i++;
+
+                        _context.pos_SalePayments.Add(pos_Sale);
+                        var balance = await _sales_serv.Update_current_balace(exisitng_sales.sales_id, business_id, total_amount);
+                        if (!balance.Success)
+                        {
+                            await transaction.RollbackAsync();
+                            return new ServiceResult<List<sales_customer_update_payment_dto>>
+                            {
+                                Status = 300,
+                                Success = false,
+                                Message = "Error while Update_current_balace"
+                            };
+                        }
+                        foreach (var img in payment.sys_Images_dto)
+                        {
+                            if (img.file != null)
+                            {
+
+                                var file = await UploadImage(img.file, pos_Sale.sale_payment_id, exisitng_sales.invoice_no, "PAYMENT", exisitng_sales.business_id ?? Guid.Empty);
+                                if (!file.Success)
+                                {
+                                    await transaction.RollbackAsync();
+                                    return new ServiceResult<List<sales_customer_update_payment_dto>>
+                                    {
+                                        Status = 300,
+                                        Success = false,
+                                        Message = file.Message
+                                    };
+                                }
+                            }
+                        }
+
+                    }
+                }
+                
+               
+
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<List<sales_customer_update_payment_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                    Data = sales_Customer
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogInformation("Error Update_sales_payment");
+                return new ServiceResult<List<sales_customer_update_payment_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
+        
+        public async Task<ServiceResult<string>> UploadImage(IFormFile file, Guid? sale_payment_id, string invoice_no, string source_type, Guid business_id)
+        {
+            try
+            {
+                var co_business = await _context.co_business.FirstOrDefaultAsync(c => c.company_id == business_id);
+                long planLimitInBytes;
+
+                if (co_business.plan_type == "Basic")
+                {
+                    planLimitInBytes = 5L * 1024 * 1024 * 1024; // 5 GB 
+                }
+                else if (co_business.plan_type == "Intermediate")
+                {
+                    planLimitInBytes = 20L * 1024 * 1024 * 1024; // 20 GB
+                }
+                else if (co_business.plan_type == "Advanced")
+                {
+                    planLimitInBytes = 50L * 1024 * 1024 * 1024; // 50 GB
+                }
+                else
+                {
+                    planLimitInBytes = 5L * 1024 * 1024 * 1024; // default 5 GB
+                }
+
+
+                string storeName = co_business.business_name;
+                long storeFolderSize = await GetStoreFolderSizeAsync(_configure["Wasabi:BucketName"], storeName);
+                if (storeFolderSize + file.Length > planLimitInBytes)
+                {
+                    return new ServiceResult<string>
+                    {
+                        Success = false,
+                        Message = "Store storage limit reached",
+                        Data = null
+                    };
+                }
+                var bucketName = _configure["Wasabi:BucketName"];
+                var fileInfo = new FileInfo(file.FileName);
+                var newFileName = $"{source_type}_{sale_payment_id}_{Guid.NewGuid()}{fileInfo.Extension}";
+
+                // folder structure → faahi/company/{company_code}/{source_type}/{source_id}/
+                var key = $"faahi/company/{co_business.company_code}/{source_type}/{invoice_no}/{newFileName}";
+
+                // 5. upload to Wasabi S3
+                using var stream = file.OpenReadStream();
+                var request = new PutObjectRequest
+                {
+                    BucketName = bucketName,
+                    Key = key,
+                    InputStream = stream,
+                    ContentType = file.ContentType,
+                    CannedACL = S3CannedACL.PublicRead,
+                    Headers = { CacheControl = "public,max-age=604800" } // 1 week
+                };
+                await _s3Client.PutObjectAsync(request);
+
+                var imageUrl = $"https://cdn.faahi.com/{key}";
+
+                _context.sys_Images.Add(new sys_Images
+                {
+                    image_id = Guid.NewGuid(),
+                    source_id = sale_payment_id ?? Guid.Empty,
+                    source_type = source_type,
+                    business_id = business_id,
+                    image_url = imageUrl,
+                    status = "T",
+                    created_at = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+
+                return new ServiceResult<string>
+                {
+                    Success = true,
+                    Status = 1,
+                    Message = "image uploaded",
+                    Data = imageUrl
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error uploading image");
+                return new ServiceResult<string>
+                {
+                    Success = false,
+                    Status = -1,
+                    Message = ex.Message
+                };
+            }
+        }
+       
+        public async Task<long> GetStoreFolderSizeAsync(string bucketName, string storeName)
+        {
+            long totalSize = 0;
+
+            var request = new Amazon.S3.Model.ListObjectsV2Request
+            {
+                BucketName = bucketName,
+                Prefix = $"faahi/company/{storeName}/"
+                // All objects under this store
+            };
+
+            ListObjectsV2Response response;
+            do
+            {
+                response = await _s3Client.ListObjectsV2Async(request);
+
+                foreach (var obj in response.S3Objects)
+                {
+                    totalSize += obj.Size;
+                }
+
+                request.ContinuationToken = response.NextContinuationToken;
+
+            } while (response.IsTruncated);
+
+            return totalSize;
+        }
+
+        public async Task<ServiceResult<List<customer_payment_group_dto>>> Customer_payment_history(Guid salesId)
+        {
+            try
+            {
+                if (salesId == null)
+                {
+                    return new ServiceResult<List<customer_payment_group_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                var data = await _context.Set<customer_payment_history>()
+                    .FromSqlRaw("EXEC dbo.sp_Getusers  @opr=@opr, @sale_id =@sale_id",
+                    new SqlParameter("@sale_id", salesId),
+                    new SqlParameter("@opr", 8)).ToListAsync();
+
+                var result = data
+    .GroupBy(a => a.sale_id)
+    .Select(group => new customer_payment_group_dto
+    {
+        sale_id = group.Key,
+
+        payments = group
+            .GroupBy(x => x.sale_payment_id) // 🔥 important
+            .Select(p => new customer_payment_history
+            {
+                sale_id = group.Key,
+                sale_payment_id = p.Key,
+                source_id = p.First().source_id,
+                created_at = p.First().created_at,
+                amount = p.First().amount,
+                PayTypeCode = p.First().PayTypeCode,
+                Description = p.First().Description,
+
+                sys_Images = p
+                    .Where(img => img.image_id != null)
+                    .GroupBy(img => img.image_id)
+                    .Select(img => new sys_Images_dto
+                    {
+                        image_id = img.Key,
+                        image_url = img.First().image_url
+                    }).ToList()
+            }).ToList()
+    }).ToList();
+                return new ServiceResult<List<customer_payment_group_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Data = result
+                };
+
+            }catch(Exception ex)
+            {
+                return new ServiceResult<List<customer_payment_group_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
         }
     }
 }

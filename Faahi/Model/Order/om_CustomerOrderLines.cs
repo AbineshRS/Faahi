@@ -57,51 +57,41 @@ namespace Faahi.Model.Order
         //public im_UnitsOfMeasure? im_UnitsOfMeasure { get; set; } = null;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal ordered_qty { get; set; }
+        public Decimal ordered_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
         [DefaultValue(0)]
-        public Decimal reserved_qty { get; set; }
+        public Decimal reserved_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal? picked_qty { get; set; }
+        public Decimal? picked_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal packed_qty { get; set; }
+        public Decimal packed_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal dispatched_qty { get; set; }
+        public Decimal dispatched_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal delivered_qty { get; set; }
+        public Decimal delivered_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal returned_qty { get; set; }
+        public Decimal returned_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal cancelled_qty { get; set; }
+        public Decimal cancelled_qty { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal unit_price { get; set; }
+        public Decimal unit_price { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal discount_amount { get; set; }
-        [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal tax_amount { get; set; }
+        public Decimal discount_amount { get; set; } = 0m;
 
         [Column(TypeName = "decimal(18,4)")]
-        [DefaultValue(0)]
-        public Decimal line_total { get; set; }
+        public Decimal tax_amount { get; set; } = 0m;
+
+        [Column(TypeName = "decimal(18,4)")]
+        public Decimal line_total { get; set; } = 0m;
 
         [Column(TypeName = "nvarchar(255)")]
         [DefaultValue(0)]

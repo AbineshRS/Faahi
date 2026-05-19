@@ -1,5 +1,6 @@
 ﻿using Faahi.Dto;
 using Faahi.Dto.mk_blacklisted;
+using Faahi.Model.am_vcos;
 using Faahi.Model.site_settings;
 using Faahi.Model.tax_class_table;
 
@@ -20,5 +21,9 @@ namespace Faahi.Service.site_settings_service
         Task<ServiceResult<List<mk_blacklisted_numbers>>> blacklist(Guid company_id);
 
         Task<ServiceResult<mk_blacklisted_numbers_dto>> Change_status(Guid blacklist_id, mk_blacklisted_numbers_dto mk_Blacklisted_Numbers);
+
+        Task<ServiceResult<payment_terms>> Add_customer_due(payment_terms ar_customer_due);
+
+        Task<ServiceResult<List<payment_terms>>> get_customer_due(Guid business_id);
     }
 }

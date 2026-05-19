@@ -244,5 +244,17 @@ namespace Faahi.Controllers.im_products.sales
             var result = await _isalse.Add_sales_return(salesId, so_SalesHeaders);
             return Ok(result);
         }
+        [Authorize]
+        [HttpPost]
+        [Route("update_market_places_sales/{salesId}/{userId}")]
+        public async Task<IActionResult> update_market_places(Guid salesId, Guid userId)
+        {
+            if (salesId == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _isalse.update_market_places(salesId, userId);
+            return Ok(result);
+        }
     }
 }

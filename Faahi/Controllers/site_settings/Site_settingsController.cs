@@ -1,4 +1,5 @@
 ﻿using Faahi.Dto.mk_blacklisted;
+using Faahi.Model.am_vcos;
 using Faahi.Model.site_settings;
 using Faahi.Model.tax_class_table;
 using Faahi.Service.site_settings_service;
@@ -99,6 +100,30 @@ namespace Faahi.Controllers.site_settings
                 return Ok("No data found");
             }
             var result =await _site_settings.Change_status(blacklist_id,mk_Blacklisted_Numbers);
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpPost]
+        [Route("Add_customer_due")]
+        public async Task<ActionResult<payment_terms>> Add_customer_due(payment_terms ar_Customer_Due)
+        {
+            if(ar_Customer_Due == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _site_settings.Add_customer_due(ar_Customer_Due);
+            return Ok(result);
+        }
+
+        [HttpGet]
+        [Route("get_customer_due/{business_id}")]
+        public  async Task<IActionResult> get_customer_due(Guid business_id)
+        {
+            if (business_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _site_settings.get_customer_due(business_id);
             return Ok(result);
         }
     }

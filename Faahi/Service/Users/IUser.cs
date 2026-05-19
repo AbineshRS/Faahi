@@ -1,4 +1,5 @@
 ﻿using Faahi.Dto;
+using Faahi.Dto.sales_dto;
 using Faahi.Model.am_vcos;
 using Faahi.Model.Shared_tables;
 
@@ -29,5 +30,11 @@ namespace Faahi.Service.Users
         Task<ServiceResult<st_Parties>> Create_other_party(st_Parties st_Parties);
 
         Task<ServiceResult<List<st_Parties>>> Get_all_parties(Guid company_id);
+
+        Task<ServiceResult<List<so_sales_header_customer>>> Order_list_customer(Guid customer_id);
+
+        Task<ServiceResult<List<sales_customer_update_payment_dto>>> Update_sales_payment(List<sales_customer_update_payment_dto> sales_Customer);
+
+        Task<ServiceResult<List<customer_payment_group_dto>>> Customer_payment_history(Guid salesId);
     }
 }

@@ -1,8 +1,14 @@
-﻿using Faahi.Controllers.Application;
+﻿using AutoMapper;
+using Dekiru.QueryFilter.Extensions;
+using Faahi.Controllers.Application;
 using Faahi.Dto;
+using Faahi.Dto.Inventory_adjustment;
+using Faahi.Dto.Inventory_adjustment.adjustment_rejection;
 using Faahi.Dto.Purchase_dto;
 using Faahi.Dto.sales_dto;
+using Faahi.Dto.temp;
 using Faahi.Model.Accounts;
+using Faahi.Model.am_vcos;
 using Faahi.Model.im_products;
 using Faahi.Model.st_sellers;
 using Faahi.Model.temp_tables;
@@ -23,10 +29,12 @@ namespace Faahi.Service.im_products.im_purchase
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<im_purchase_service> _logger;
-        public im_purchase_service(ApplicationDbContext context, ILogger<im_purchase_service> logger)
+        private readonly IMapper _mapper;
+        public im_purchase_service(ApplicationDbContext context, ILogger<im_purchase_service> logger, IMapper mapper)
         {
             _context = context;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<ServiceResult<im_purchase_listing>> Create_im_purchase(im_purchase_listing im_Purchase_Listing)
@@ -697,6 +705,10 @@ namespace Faahi.Service.im_products.im_purchase
                 var table_key_3 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_3 && a.business_id == im_site.company_id);
                 var key_3 = Convert.ToInt16(table_key_3.next_key);
 
+                var table_4 = "im_InventoryCommitments";
+                var table_key_4 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_4 && a.business_id == im_site.company_id);
+                var key_4 = Convert.ToInt16(table_key_4.next_key);
+
                 if (existing_purchase != null)
                 {
 
@@ -832,6 +844,37 @@ namespace Faahi.Service.im_products.im_purchase
                         _context.im_InventoryTransactions.AddRange(im_InventoryTransactions1);
                         await _context.SaveChangesAsync();
 
+                        List<im_InventoryCommitments> im_InventoryCommitments = new List<im_InventoryCommitments>();
+                        foreach (var item in im_purchase_list)
+                        {
+                            var im_InventoryCommitments1 = new im_InventoryCommitments()
+                            {
+                                business_id = im_site.company_id ?? Guid.Empty,
+                                store_id = existing_purchase.site_id,
+                                source_no = Convert.ToString(key_4 + 1),
+                                variant_id = item.sub_variant_id,
+                                product_id = item.product_id??Guid.Empty,
+                                source_id = item.detail_id,
+                                action_type = "INCREASE",
+                                source_type = "PURCHASE",
+                                remarks = "",
+                                committed_quantity = item.quantity ?? 0m,
+                                created_by = existing_purchase.edit_user_id,
+                                created_at = DateTime.Now
+                            };
+
+                            im_InventoryCommitments.Add(im_InventoryCommitments1);
+                            if (table_4 != null)
+                            {
+                                table_key_4.next_key = key_4 + 1;
+                                _context.am_table_next_key.Update(table_key_4);
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+                        _context.im_InventoryCommitments.AddRange(im_InventoryCommitments);
+                        await _context.SaveChangesAsync();
+
+
                         var temp_calult = await Update_temp_discount(listing_id);
                         if (!temp_calult.Success)
                         {
@@ -869,17 +912,36 @@ namespace Faahi.Service.im_products.im_purchase
                                 Message = goodsHeaderResult.Message
                             };
                         }
-                        var accountResult = await Add_Journal_header(listing_id);
-                        if (!accountResult.Success)
+                        if (existing_purchase.payment_mode == "cash")
                         {
-                            await transaction.RollbackAsync();
-                            return new ServiceResult<im_purchase_listing>
+                            var accountResult = await Add_Journal_header(listing_id);
+                            if (!accountResult.Success)
                             {
-                                Status = 500,
-                                Success = false,
-                                Message = accountResult.Message
-                            };
+                                await transaction.RollbackAsync();
+                                return new ServiceResult<im_purchase_listing>
+                                {
+                                    Status = 500,
+                                    Success = false,
+                                    Message = accountResult.Message
+                                };
+                            }
+
                         }
+                        else if (existing_purchase.payment_mode == "")
+                        {
+                            var accountResult = await Add_Journal_header_credit_inv(listing_id, existing_purchase.vendor_id);
+                            if (!accountResult.Success)
+                            {
+                                await transaction.RollbackAsync();
+                                return new ServiceResult<im_purchase_listing>
+                                {
+                                    Status = 500,
+                                    Success = false,
+                                    Message = accountResult.Message
+                                };
+                            }
+                        }
+
 
 
                         var spResults = _context.Database.SqlQueryRaw<string>(
@@ -994,6 +1056,7 @@ namespace Faahi.Service.im_products.im_purchase
                         existing_batches.received_quantity = existing_batches.received_quantity - item.return_quantity;
                         _context.im_itemBatches.Update(existing_batches);
                     }
+
                 }
                 foreach (var temp_varient in im_Purchase_Listing.temp_Im_Purchase_Listing_Details)
                 {
@@ -1085,7 +1148,7 @@ namespace Faahi.Service.im_products.im_purchase
                     };
                 }
                 await _context.SaveChangesAsync();
-                //await transaction.CommitAsync();
+                await transaction.CommitAsync();
                 return new ServiceResult<im_purchase_listing_dto>
                 {
                     Status = 200,
@@ -1130,7 +1193,7 @@ namespace Faahi.Service.im_products.im_purchase
                 var exisitng_purchase = await _context.im_purchase_listing.Include(a => a.im_purchase_listing_details).FirstOrDefaultAsync(a => a.listing_id == listing_id);
                 var ap_vendor = await _context.ap_Vendors.FirstOrDefaultAsync(a => a.vendor_id == exisitng_purchase.vendor_id);
                 var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == exisitng_purchase.site_id);
-                var table_3 = "im_purchase_listing_details";
+                var table_3 = "im_GoodsReceiptHeaders";
                 var table_key_3 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_3 && a.business_id == st_store.company_id);
                 var key_3 = Convert.ToInt16(table_key_3.next_key);
                 im_GoodsReceiptHeaders.business_id = st_store?.company_id ?? Guid.Empty;///
@@ -2216,6 +2279,10 @@ namespace Faahi.Service.im_products.im_purchase
                 var key = Convert.ToInt16(am_table.next_key);
                 var goods_header = await _context.im_GoodsReceiptHeaders.Include(a => a.im_GoodsReceiptLines).FirstOrDefaultAsync(a => a.purchase_order_id == existing_list.listing_id);
 
+                var table_4 = "im_InventoryCommitments";
+                var table_key_4 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_4 && a.business_id == im_store.company_id);
+                var key_4 = Convert.ToInt16(table_key_4.next_key);
+
                 im_Purchase_Return_Header.return_id = Guid.CreateVersion7();
                 im_Purchase_Return_Header.return_code = "RE-" + im_store.store_code + "-" + Convert.ToString(key + 1);
                 im_Purchase_Return_Header.listing_id = existing_list.listing_id;
@@ -2309,6 +2376,33 @@ namespace Faahi.Service.im_products.im_purchase
 
                     }
                     _context.im_GoodsReceiptLines.Add(im_GoodsReceiptLines);
+                    List<im_InventoryCommitments> im_InventoryCommitments = new List<im_InventoryCommitments>();
+                    foreach (var items in _Purchase_Listing.im_purchase_listing_details)
+                    {
+                        var im_InventoryCommitments1 = new im_InventoryCommitments()
+                        {
+                            business_id = im_store.company_id ?? Guid.Empty,
+                            store_id = im_Purchase_Return_Header.site_id,
+                            source_no = Convert.ToString(key_4 + 1),
+                            variant_id = item.sub_variant_id,
+                            source_id = item.detail_id,
+                            action_type = "INCREASE",
+                            source_type = "PURCHASE",
+                            committed_quantity = item.quantity ?? 0m,
+                            created_by = existing_list.edit_user_id,
+                            created_at = DateTime.Now
+                        };
+
+                        im_InventoryCommitments.Add(im_InventoryCommitments1);
+                        if (table_4 != null)
+                        {
+                            table_key_4.next_key = key_4 + 1;
+                            _context.am_table_next_key.Update(table_key_4);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    _context.im_InventoryCommitments.AddRange(im_InventoryCommitments);
+                    await _context.SaveChangesAsync();
                     goods_header.im_GoodsReceiptLines.Add(im_GoodsReceiptLines);
 
                     _context.im_InventoryTransactions.AddRange(im_InventoryTransactions1);
@@ -2318,6 +2412,7 @@ namespace Faahi.Service.im_products.im_purchase
                 }
                 foreach (var temp_item in _Purchase_Listing.temp_Im_Purchase_Listing_Details)
                 {
+
                     im_purchase_return_details_line im_Purchase_Return_Details_Line = new im_purchase_return_details_line();
                     im_Purchase_Return_Details_Line.return_detail_id = Guid.CreateVersion7();
                     im_Purchase_Return_Details_Line.return_id = im_Purchase_Return_Header.return_id;
@@ -2395,7 +2490,35 @@ namespace Faahi.Service.im_products.im_purchase
                     im_Purchase_Return_Details_Lines.AddRange(im_Purchase_Return_Details_Line);
                     im_Purchase_Return_Header.im_purchase_return_details_line = im_Purchase_Return_Details_Lines;
                 }
+                if (existing_list.payment_mode == "Credit")
+                {
+                    var credit = await Add_Journal_header_retun_credit(im_Purchase_Return_Header.return_id, im_Purchase_Return_Header.vendor_id);
+                    if (!credit.Success)
+                    {
 
+                        return new ServiceResult<im_purchase_listing_dto>
+                        {
+                            Status = 300,
+                            Message = "Erro Add_Journal_header_retun_credit ",
+                            Success = false
+                        };
+                    }
+                }
+                else if (existing_list.payment_mode == "")
+                {
+                    var credit = await Add_Journal_header_retun(im_Purchase_Return_Header.return_id, im_Purchase_Return_Header.vendor_id);
+                    if (!credit.Success)
+                    {
+
+                        return new ServiceResult<im_purchase_listing_dto>
+                        {
+                            Status = 300,
+                            Message = "Erro Add_Journal_header_retun ",
+                            Success = false
+                        };
+                    }
+
+                }
 
                 decimal taxableAmount = Convert.ToDecimal(sub_total - (im_Purchase_Return_Header.discount_amount ?? 0) + (im_Purchase_Return_Header.freight_amount ?? 0) + other_expenses + ((im_Purchase_Return_Header.plastic_bag ?? 0) * (im_Purchase_Return_Header.exchange_rate ?? 1)));
                 decimal gstPercent = Convert.ToDecimal(im_Purchase_Return_Header.tax_amount ?? 0);
@@ -2585,8 +2708,10 @@ namespace Faahi.Service.im_products.im_purchase
 
                     if (existing_list.tax_amount > 0)
                     {
-                        var gl_account = await _context.gl_AccountMapping.FirstOrDefaultAsync(a =>a.Module== "PURCHASE" && a.PurposeCode == "Tax Payable" && a.CompanyId == im_store.company_id);
+                        var gl_account = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "PURCHASE" && a.PurposeCode == "Tax Payable" && a.CompanyId == im_store.company_id);
                         var current_balance = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account.GlAccountId);
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "INVENTORY" && a.PurposeCode == "Inventory Assets" && a.CompanyId == im_store.company_id);
+                        var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
 
                         gl_Journal_Lines.JournalLineId = Guid.CreateVersion7();
                         gl_Journal_Lines.JournalId = gl_Journal_Header.JournalId;
@@ -2600,6 +2725,7 @@ namespace Faahi.Service.im_products.im_purchase
                         gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(existing_list.tax_amount);
                         gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(existing_list.tax_amount);
                         //ToalCedit+= Convert.ToDecimal(item.line_total);
+                        ToalDebit += Convert.ToDecimal(item.line_total);
                         gl_Journal_Lines.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
                         gl_Journal_Lines.ExchangeRate = existing_list.exchange_rate;
                         gl_Journal_Lines.SourceLineId = item.detail_id;
@@ -2642,14 +2768,20 @@ namespace Faahi.Service.im_products.im_purchase
 
                         if (current_balance != null)
                         {
-                            current_balance.CurrentBalance +=  ToalCedit;
+                            current_balance.CurrentBalance += ToalCedit;
                             _context.gl_AccountCurrentBalances.Update(current_balance);
                         }
-
+                        if (current_balance_2 != null)
+                        {
+                            current_balance_2.CurrentBalance += ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_2);
+                        }
+                        ToalCedit = 0;
+                        ToalDebit = 0;
                     }
                     if (existing_list.tax_amount == 0)
                     {
-                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a =>a.Module== "INVENTORY" && a.PurposeCode == "Inventory Assets" && a.CompanyId == im_store.company_id);
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "INVENTORY" && a.PurposeCode == "Inventory Assets" && a.CompanyId == im_store.company_id);
                         var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
 
                         gl_JournalLines gl_Journal_Lines2 = new gl_JournalLines();
@@ -2711,6 +2843,7 @@ namespace Faahi.Service.im_products.im_purchase
                             _context.gl_AccountCurrentBalances.Update(current_balance_2);
                         }
                     }
+                    ToalDebit = 0;
 
 
                 }
@@ -2727,7 +2860,7 @@ namespace Faahi.Service.im_products.im_purchase
                         };
                     }
                 }
-                
+
                 if (table != null)
                 {
                     table_key_.next_key = key + 1;
@@ -2757,6 +2890,2260 @@ namespace Faahi.Service.im_products.im_purchase
             }
 
         }
+
+        public async Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header_credit_inv(Guid listing_id, Guid? vendor_id)
+        {
+            gl_JournalHeaders gl_Journal_Header = new gl_JournalHeaders();
+            List<gl_JournalLines> gl_Journal_Lines_List = new List<gl_JournalLines>();
+            try
+            {
+                Decimal ToalCedit = 0;
+                Decimal ToalDebit = 0;
+                bool isTaxInserted = false;
+                var existing_list = await _context.im_purchase_listing.Include(a => a.im_purchase_listing_details).FirstOrDefaultAsync(a => a.listing_id == listing_id);
+                var im_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == existing_list.site_id);
+                var year = DateTime.Now.Year;
+                var table = "gl_JournalHeaders";
+
+                var table_key_ = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_store.company_id);
+                var key = Convert.ToInt16(table_key_.next_key);
+
+                var ap_vendor = await _context.ap_Vendors.FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
+
+                gl_Journal_Header.JournalId = Guid.CreateVersion7();
+                gl_Journal_Header.BusinessId = im_store?.company_id ?? Guid.Empty;
+                gl_Journal_Header.JournalDate = DateTime.Now;
+                gl_Journal_Header.PostingDate = DateTime.Now;
+                gl_Journal_Header.JournalNo = "JE" + year + "-" + Convert.ToString(key + 1); ;
+                gl_Journal_Header.SourceId = existing_list.listing_id;
+                gl_Journal_Header.SourceType = "Inventory Assets";
+                gl_Journal_Header.JournalMemo = $"Journal entry for Credit purchase order {existing_list.listing_code}";
+                gl_Journal_Header.Status = "POSTED";
+                gl_Journal_Header.CreatedAt = DateTime.Now;
+                gl_Journal_Header.CreatedBy = "";
+                gl_Journal_Header.BaseCurrencyCode = existing_list.currency_code;
+                gl_Journal_Header.ExchangeRate = existing_list.exchange_rate;
+                gl_Journal_Header.IsSystemGenerated = true;
+                gl_Journal_Header.PostedAt = DateTime.Now;
+                gl_Journal_Header.PostedBy = "";
+                gl_Journal_Header.ReferenceNo = existing_list.supplier_invoice_no;
+                gl_Journal_Header.Remarks = $"Journal entry for Credit purchase order {existing_list.listing_code} with invoice number {existing_list.supplier_invoice_no}";
+                gl_Journal_Header.StoreId = im_store.store_id;
+                gl_Journal_Header.TotalCreditBC = existing_list.doc_total;
+                gl_Journal_Header.TotalCreditFC = existing_list.doc_total;
+                gl_Journal_Header.TotalDebitBC = existing_list.doc_total;
+                gl_Journal_Header.TotalDebitFC = existing_list.doc_total;
+                foreach (var item in existing_list.im_purchase_listing_details)
+                {
+                    gl_JournalLines gl_Journal_Lines = new gl_JournalLines();
+
+                    if (existing_list.tax_amount > 0)
+                    {
+                        var gl_account = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "PURCHASE" && a.PurposeCode == "Tax Payable" && a.CompanyId == im_store.company_id);
+                        var current_balance = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account.GlAccountId);
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "POS" && a.PurposeCode == "Account Receivable (A/R)" && a.CompanyId == im_store.company_id);
+                        var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
+
+                        gl_Journal_Lines.JournalLineId = Guid.CreateVersion7();
+                        gl_Journal_Lines.JournalId = gl_Journal_Header.JournalId;
+                        gl_Journal_Lines.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Journal_Lines.StoreId = im_store.store_id;
+                        gl_Journal_Lines.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        //gl_Journal_Lines.DebitAmountBC =Convert.ToDecimal( item.line_total);
+                        //gl_Journal_Lines.DebitAmountFC =Convert.ToDecimal( item.line_total);
+                        gl_Journal_Lines.Description = item.Product_title;
+                        gl_Journal_Lines.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(existing_list.tax_amount);
+                        //ToalCedit+= Convert.ToDecimal(item.line_total);
+                        ToalDebit += Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Journal_Lines.ExchangeRate = existing_list.exchange_rate;
+                        gl_Journal_Lines.SourceLineId = item.detail_id;
+                        gl_Journal_Lines.SourceType = "Input Tax";
+                        gl_Journal_Lines.SupplierId = existing_list.vendor_id;
+                        gl_Journal_Lines.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines.UpdatedAt = DateTime.Now;
+
+                        gl_Ledger gl_Ledger = new gl_Ledger();
+                        gl_Ledger.LedgerId = Guid.CreateVersion7();
+                        gl_Ledger.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Ledger.StoreId = im_store.store_id;
+                        gl_Ledger.JournalId = gl_Journal_Header.JournalId;
+                        gl_Ledger.JournalLineId = gl_Journal_Lines.JournalLineId;
+                        gl_Ledger.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger.PostingDate = DateTime.Now;
+                        gl_Ledger.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger.ReferenceNo = existing_list.supplier_invoice_no;
+                        gl_Ledger.Module = "PURCHASE";
+                        gl_Ledger.Description = $"Ledger entry for Credit purchase order {existing_list.listing_id} with invoice number {existing_list.supplier_invoice_no}";
+                        gl_Ledger.CreatedAt = DateTime.Now;
+                        gl_Ledger.CreatedBy = "";
+                        gl_Ledger.ExchangeRate = existing_list.exchange_rate;
+                        gl_Ledger.SourceId = existing_list.listing_id;
+                        gl_Ledger.SourceType = "Input Tax";
+                        gl_Ledger.SourceLineId = item.detail_id;
+                        gl_Ledger.TransactionDate = DateTime.Now;
+                        gl_Ledger.UpdatedAt = DateTime.Now;
+                        gl_Ledger.BaseCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        //gl_Ledger.CreditAmountBC= Convert.ToDecimal( item.line_total);
+                        //gl_Ledger.CreditAmountFC= Convert.ToDecimal( item.line_total);
+                        gl_Ledger.DebitAmountBC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Ledger.DebitAmountFC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Ledger.TransactionCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        _context.gl_ledger.Add(gl_Ledger);
+
+                        _context.gl_JournalLines.Add(gl_Journal_Lines);
+                        gl_Journal_Lines_List.Add(gl_Journal_Lines);
+                        ToalCedit = Convert.ToDecimal(existing_list.tax_amount);
+
+                        if (current_balance != null)
+                        {
+                            current_balance.CurrentBalance += ToalCedit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance);
+                        }
+                        if (current_balance_2 != null)
+                        {
+                            current_balance_2.CurrentBalance += ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_2);
+                        }
+                        ToalCedit = 0;
+                        ToalDebit = 0;
+                    }
+                    if (existing_list.tax_amount == 0)
+                    {
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "POS" && a.PurposeCode == "Account Receivable (A/R)" && a.CompanyId == im_store.company_id);
+                        var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
+
+                        gl_JournalLines gl_Journal_Lines2 = new gl_JournalLines();
+
+                        gl_Journal_Lines2.JournalLineId = Guid.CreateVersion7();
+                        gl_Journal_Lines2.JournalId = gl_Journal_Header.JournalId;
+                        gl_Journal_Lines2.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Journal_Lines2.StoreId = im_store.store_id;
+                        gl_Journal_Lines2.GlAccountId = gl_account_2?.GlAccountId ?? Guid.Empty;
+                        gl_Journal_Lines2.DebitAmountBC = Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.DebitAmountFC = Convert.ToDecimal(item.line_total);
+                        ToalDebit += Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.Description = item.Product_title;
+                        gl_Journal_Lines2.CreatedAt = DateTime.Now;
+                        //gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(item.line_total);
+                        //gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Journal_Lines2.ExchangeRate = existing_list.exchange_rate;
+                        gl_Journal_Lines2.SourceLineId = item.detail_id;
+                        gl_Journal_Lines2.SourceType = "Account Receivable (A/R)";
+                        gl_Journal_Lines2.SupplierId = existing_list.vendor_id;
+                        gl_Journal_Lines2.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines2.UpdatedAt = DateTime.Now;
+
+                        gl_Ledger gl_Ledger2 = new gl_Ledger();
+                        gl_Ledger2.LedgerId = Guid.CreateVersion7();
+                        gl_Ledger2.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Ledger2.StoreId = im_store.store_id;
+                        gl_Ledger2.JournalId = gl_Journal_Header.JournalId;
+                        gl_Ledger2.JournalLineId = gl_Journal_Lines2.JournalLineId;
+                        gl_Ledger2.GlAccountId = gl_account_2?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger2.PostingDate = DateTime.Now;
+                        gl_Ledger2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger2.ReferenceNo = existing_list.supplier_invoice_no;
+                        gl_Ledger2.Module = "PURCHASE";
+                        gl_Ledger2.Description = $"Ledger entry for Credit purchase order {existing_list.listing_id} with invoice number {existing_list.supplier_invoice_no}";
+                        gl_Ledger2.CreatedAt = DateTime.Now;
+                        gl_Ledger2.CreatedBy = "";
+                        gl_Ledger2.ExchangeRate = existing_list.exchange_rate;
+                        gl_Ledger2.SourceId = existing_list.listing_id;
+                        gl_Ledger2.SourceType = "Account Receivable (A/R)";
+                        gl_Ledger2.SourceLineId = item.detail_id;
+                        gl_Ledger2.TransactionDate = DateTime.Now;
+                        gl_Ledger2.UpdatedAt = DateTime.Now;
+                        gl_Ledger2.BaseCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger2.CreditAmountBC = Convert.ToDecimal(item.line_total);
+                        gl_Ledger2.CreditAmountFC = Convert.ToDecimal(item.line_total);
+                        //gl_Ledger.DebitAmountBC = Convert.ToDecimal(item.line_total);
+                        //gl_Ledger.DebitAmountFC = Convert.ToDecimal(item.line_total);
+                        gl_Ledger2.TransactionCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        _context.gl_ledger.Add(gl_Ledger2);
+
+                        _context.gl_JournalLines.Add(gl_Journal_Lines2);
+                        gl_Journal_Lines_List.Add(gl_Journal_Lines2);
+
+                        if (current_balance_2 != null)
+                        {
+                            current_balance_2.CurrentBalance += ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_2);
+                        }
+                    }
+                    ToalDebit = 0;
+
+
+                }
+                if (ap_vendor != null)
+                {
+                    ap_vendor.withholding_tax_rate += existing_list.doc_total;
+                    _context.ap_Vendors.Update(ap_vendor);
+                }
+                if (existing_list.tax_amount > 0)
+                {
+                    ToalCedit = Convert.ToDecimal(ToalDebit + existing_list.tax_amount);
+                    if (existing_list.doc_total != ToalCedit)
+                    {
+                        return new ServiceResult<gl_JournalHeaders>
+                        {
+                            Status = 400,
+                            Success = false,
+                            Message = "Total debit and credit amount should be equal"
+                        };
+                    }
+                }
+
+                if (table != null)
+                {
+                    table_key_.next_key = key + 1;
+                    _context.am_table_next_key.Update(table_key_);
+                }
+                gl_Journal_Header.JournalLines = gl_Journal_Lines_List;
+                _context.gl_JournalHeaders.Add(gl_Journal_Header);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<gl_JournalHeaders>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Journal header added successfully",
+                    Data = gl_Journal_Header
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error while Add_Journal_header");
+                return new ServiceResult<gl_JournalHeaders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
+
+        public async Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header_retun(Guid return_id, Guid? vendor_id)
+        {
+            gl_JournalHeaders gl_Journal_Header = new gl_JournalHeaders();
+            List<gl_JournalLines> gl_Journal_Lines_List = new List<gl_JournalLines>();
+            try
+            {
+                Decimal ToalCedit = 0;
+                Decimal ToalDebit = 0;
+                bool isTaxInserted = false;
+                var existing_list = await _context.im_purchase_return_header.Include(a => a.im_purchase_return_details_line).FirstOrDefaultAsync(a => a.return_id == return_id);
+                var im_purchase = await _context.im_purchase_listing.FirstOrDefaultAsync(a => a.listing_id == existing_list.listing_id);
+
+                var im_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == existing_list.site_id);
+                var year = DateTime.Now.Year;
+                var table = "gl_JournalHeaders";
+
+                var table_key_ = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_store.company_id);
+                var key = Convert.ToInt16(table_key_.next_key);
+
+                var ap_vendor = await _context.ap_Vendors.FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
+
+                gl_Journal_Header.JournalId = Guid.CreateVersion7();
+                gl_Journal_Header.BusinessId = im_store?.company_id ?? Guid.Empty;
+                gl_Journal_Header.JournalDate = DateTime.Now;
+                gl_Journal_Header.PostingDate = DateTime.Now;
+                gl_Journal_Header.JournalNo = "JE" + year + "-" + Convert.ToString(key + 1); ;
+                gl_Journal_Header.SourceId = existing_list.listing_id;
+                gl_Journal_Header.SourceType = "Inventory Assets";
+                gl_Journal_Header.JournalMemo = $"Journal entry for cash return purchase  {existing_list.supplier_return_ref}";
+                gl_Journal_Header.Status = "POSTED";
+                gl_Journal_Header.CreatedAt = DateTime.Now;
+                gl_Journal_Header.CreatedBy = "";
+                gl_Journal_Header.BaseCurrencyCode = im_purchase.currency_code;
+                gl_Journal_Header.ExchangeRate = existing_list.exchange_rate;
+                gl_Journal_Header.IsSystemGenerated = true;
+                gl_Journal_Header.PostedAt = DateTime.Now;
+                gl_Journal_Header.PostedBy = "";
+                gl_Journal_Header.ReferenceNo = existing_list.supplier_return_ref;
+                gl_Journal_Header.Remarks = $"Journal entry for Credit purchase  {existing_list.supplier_return_ref} with invoice number {existing_list.supplier_return_ref}";
+                gl_Journal_Header.StoreId = im_store.store_id;
+                gl_Journal_Header.TotalCreditBC = existing_list.total_amount;
+                gl_Journal_Header.TotalCreditFC = existing_list.total_amount;
+                gl_Journal_Header.TotalDebitBC = existing_list.total_amount;
+                gl_Journal_Header.TotalDebitFC = existing_list.total_amount;
+                foreach (var item in existing_list.im_purchase_return_details_line)
+                {
+                    gl_JournalLines gl_Journal_Lines = new gl_JournalLines();
+
+                    if (existing_list.tax_amount > 0)
+                    {
+                        var gl_account = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "PURCHASE" && a.PurposeCode == "Tax Payable" && a.CompanyId == im_store.company_id);
+                        var current_balance = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account.GlAccountId);
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "INVENTORY" && a.PurposeCode == "Inventory Damage" && a.CompanyId == im_store.company_id);
+                        var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
+                        var gl_account_3 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "INVENTORY" && a.PurposeCode == "Inventory Assets" && a.CompanyId == im_store.company_id);
+                        var current_balance_3 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_3.GlAccountId);
+
+                        gl_Journal_Lines.JournalLineId = Guid.CreateVersion7();
+                        gl_Journal_Lines.JournalId = gl_Journal_Header.JournalId;
+                        gl_Journal_Lines.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Journal_Lines.StoreId = im_store.store_id;
+                        gl_Journal_Lines.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        //gl_Journal_Lines.DebitAmountBC =Convert.ToDecimal( item.line_total);
+                        //gl_Journal_Lines.DebitAmountFC =Convert.ToDecimal( item.line_total);
+                        gl_Journal_Lines.Description = "";
+                        gl_Journal_Lines.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(existing_list.tax_amount);
+                        //ToalCedit+= Convert.ToDecimal(item.line_total);
+                        ToalDebit += Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Journal_Lines.ExchangeRate = existing_list.exchange_rate;
+                        gl_Journal_Lines.SourceLineId = item.return_detail_id;
+                        gl_Journal_Lines.SourceType = "Input Tax";
+                        gl_Journal_Lines.SupplierId = existing_list.vendor_id;
+                        gl_Journal_Lines.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines.UpdatedAt = DateTime.Now;
+
+                        gl_Ledger gl_Ledger = new gl_Ledger();
+                        gl_Ledger.LedgerId = Guid.CreateVersion7();
+                        gl_Ledger.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Ledger.StoreId = im_store.store_id;
+                        gl_Ledger.JournalId = gl_Journal_Header.JournalId;
+                        gl_Ledger.JournalLineId = gl_Journal_Lines.JournalLineId;
+                        gl_Ledger.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger.PostingDate = DateTime.Now;
+                        gl_Ledger.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger.ReferenceNo = existing_list.supplier_return_ref;
+                        gl_Ledger.Module = "INVENTORY";
+                        gl_Ledger.Description = $"Ledger entry for Cash retun purchase  {existing_list.listing_id} with invoice number {existing_list.supplier_return_ref}";
+                        gl_Ledger.CreatedAt = DateTime.Now;
+                        gl_Ledger.CreatedBy = "";
+                        gl_Ledger.ExchangeRate = existing_list.exchange_rate;
+                        gl_Ledger.SourceId = existing_list.listing_id;
+                        gl_Ledger.SourceType = "Inventory Damage";
+                        gl_Ledger.SourceLineId = item.return_detail_id;
+                        gl_Ledger.TransactionDate = DateTime.Now;
+                        gl_Ledger.UpdatedAt = DateTime.Now;
+                        gl_Ledger.BaseCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        //gl_Ledger.CreditAmountBC= Convert.ToDecimal( item.line_total);
+                        //gl_Ledger.CreditAmountFC= Convert.ToDecimal( item.line_total);
+                        gl_Ledger.DebitAmountBC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Ledger.DebitAmountFC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Ledger.TransactionCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        _context.gl_ledger.Add(gl_Ledger);
+
+                        _context.gl_JournalLines.Add(gl_Journal_Lines);
+                        gl_Journal_Lines_List.Add(gl_Journal_Lines);
+                        ToalCedit = Convert.ToDecimal(existing_list.tax_amount);
+
+                        if (current_balance != null)
+                        {
+                            current_balance.CurrentBalance -= ToalCedit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance);
+                        }
+                        if (current_balance_2 != null)
+                        {
+                            current_balance_2.CurrentBalance += ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_2);
+                        }
+                        if (current_balance_3 != null)
+                        {
+                            current_balance_3.CurrentBalance -= ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_3);
+                        }
+                        ToalCedit = 0;
+                        ToalDebit = 0;
+                    }
+                    if (existing_list.tax_amount == 0)
+                    {
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "INVENTORY" && a.PurposeCode == "Inventory Assets" && a.CompanyId == im_store.company_id);
+                        var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
+                        var gl_account_3 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "INVENTORY" && a.PurposeCode == "Inventory Damage" && a.CompanyId == im_store.company_id);
+                        var current_balance_3 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_3.GlAccountId);
+
+                        gl_JournalLines gl_Journal_Lines2 = new gl_JournalLines();
+
+                        gl_Journal_Lines2.JournalLineId = Guid.CreateVersion7();
+                        gl_Journal_Lines2.JournalId = gl_Journal_Header.JournalId;
+                        gl_Journal_Lines2.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Journal_Lines2.StoreId = im_store.store_id;
+                        gl_Journal_Lines2.GlAccountId = gl_account_2?.GlAccountId ?? Guid.Empty;
+                        gl_Journal_Lines2.DebitAmountBC = Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.DebitAmountFC = Convert.ToDecimal(item.line_total);
+                        ToalDebit += Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.Description = "";
+                        gl_Journal_Lines2.CreatedAt = DateTime.Now;
+                        //gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(item.line_total);
+                        //gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Journal_Lines2.ExchangeRate = existing_list.exchange_rate;
+                        gl_Journal_Lines2.SourceLineId = item.return_detail_id;
+                        gl_Journal_Lines2.SourceType = "Inventory Damage";
+                        gl_Journal_Lines2.SupplierId = existing_list.vendor_id;
+                        gl_Journal_Lines2.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines2.UpdatedAt = DateTime.Now;
+
+                        gl_Ledger gl_Ledger2 = new gl_Ledger();
+                        gl_Ledger2.LedgerId = Guid.CreateVersion7();
+                        gl_Ledger2.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Ledger2.StoreId = im_store.store_id;
+                        gl_Ledger2.JournalId = gl_Journal_Header.JournalId;
+                        gl_Ledger2.JournalLineId = gl_Journal_Lines2.JournalLineId;
+                        gl_Ledger2.GlAccountId = gl_account_2?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger2.PostingDate = DateTime.Now;
+                        gl_Ledger2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger2.ReferenceNo = existing_list.supplier_return_ref;
+                        gl_Ledger2.Module = "PURCHASE";
+                        gl_Ledger2.Description = $"Ledger entry for Credit purchase order {existing_list.listing_id} with invoice number {existing_list.supplier_return_ref}";
+                        gl_Ledger2.CreatedAt = DateTime.Now;
+                        gl_Ledger2.CreatedBy = "";
+                        gl_Ledger2.ExchangeRate = existing_list.exchange_rate;
+                        gl_Ledger2.SourceId = existing_list.listing_id;
+                        gl_Ledger2.SourceType = "Inventory Damage";
+                        gl_Ledger2.SourceLineId = item.return_detail_id;
+                        gl_Ledger2.TransactionDate = DateTime.Now;
+                        gl_Ledger2.UpdatedAt = DateTime.Now;
+                        gl_Ledger2.BaseCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger2.CreditAmountBC = Convert.ToDecimal(item.line_total);
+                        gl_Ledger2.CreditAmountFC = Convert.ToDecimal(item.line_total);
+                        //gl_Ledger.DebitAmountBC = Convert.ToDecimal(item.line_total);
+                        //gl_Ledger.DebitAmountFC = Convert.ToDecimal(item.line_total);
+                        gl_Ledger2.TransactionCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        _context.gl_ledger.Add(gl_Ledger2);
+
+                        _context.gl_JournalLines.Add(gl_Journal_Lines2);
+                        gl_Journal_Lines_List.Add(gl_Journal_Lines2);
+
+                        if (current_balance_2 != null)
+                        {
+                            current_balance_2.CurrentBalance -= ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_2);
+                        }
+                        if (current_balance_3 != null)
+                        {
+                            current_balance_3.CurrentBalance += ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_3);
+                        }
+                    }
+                    ToalDebit = 0;
+
+
+                }
+                if (ap_vendor != null)
+                {
+                    ap_vendor.withholding_tax_rate += existing_list.total_amount;
+                    _context.ap_Vendors.Update(ap_vendor);
+                }
+                if (existing_list.tax_amount > 0)
+                {
+                    ToalCedit = Convert.ToDecimal(ToalDebit + existing_list.tax_amount);
+                    if (existing_list.total_amount != ToalCedit)
+                    {
+                        return new ServiceResult<gl_JournalHeaders>
+                        {
+                            Status = 400,
+                            Success = false,
+                            Message = "Total debit and credit amount should be equal"
+                        };
+                    }
+                }
+
+                if (table != null)
+                {
+                    table_key_.next_key = key + 1;
+                    _context.am_table_next_key.Update(table_key_);
+                }
+                gl_Journal_Header.JournalLines = gl_Journal_Lines_List;
+                _context.gl_JournalHeaders.Add(gl_Journal_Header);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<gl_JournalHeaders>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Journal header added successfully",
+                    Data = gl_Journal_Header
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error while Add_Journal_header");
+                return new ServiceResult<gl_JournalHeaders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
+
+        public async Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header_retun_credit(Guid return_id, Guid? vendor_id)
+        {
+            gl_JournalHeaders gl_Journal_Header = new gl_JournalHeaders();
+            List<gl_JournalLines> gl_Journal_Lines_List = new List<gl_JournalLines>();
+            try
+            {
+                Decimal ToalCedit = 0;
+                Decimal ToalDebit = 0;
+                bool isTaxInserted = false;
+                var existing_list = await _context.im_purchase_return_header.Include(a => a.im_purchase_return_details_line).FirstOrDefaultAsync(a => a.return_id == return_id);
+                var im_purchase = await _context.im_purchase_listing.FirstOrDefaultAsync(a => a.listing_id == existing_list.listing_id);
+
+                var im_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == existing_list.site_id);
+                var year = DateTime.Now.Year;
+                var table = "gl_JournalHeaders";
+
+                var table_key_ = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_store.company_id);
+                var key = Convert.ToInt16(table_key_.next_key);
+
+                var ap_vendor = await _context.ap_Vendors.FirstOrDefaultAsync(a => a.vendor_id == vendor_id);
+
+                gl_Journal_Header.JournalId = Guid.CreateVersion7();
+                gl_Journal_Header.BusinessId = im_store?.company_id ?? Guid.Empty;
+                gl_Journal_Header.JournalDate = DateTime.Now;
+                gl_Journal_Header.PostingDate = DateTime.Now;
+                gl_Journal_Header.JournalNo = "JE" + year + "-" + Convert.ToString(key + 1); ;
+                gl_Journal_Header.SourceId = existing_list.listing_id;
+                gl_Journal_Header.SourceType = "Inventory Assets";
+                gl_Journal_Header.JournalMemo = $"Journal entry for cash return purchase  {existing_list.supplier_return_ref}";
+                gl_Journal_Header.Status = "POSTED";
+                gl_Journal_Header.CreatedAt = DateTime.Now;
+                gl_Journal_Header.CreatedBy = "";
+                gl_Journal_Header.BaseCurrencyCode = im_purchase.currency_code;
+                gl_Journal_Header.ExchangeRate = existing_list.exchange_rate;
+                gl_Journal_Header.IsSystemGenerated = true;
+                gl_Journal_Header.PostedAt = DateTime.Now;
+                gl_Journal_Header.PostedBy = "";
+                gl_Journal_Header.ReferenceNo = existing_list.supplier_return_ref;
+                gl_Journal_Header.Remarks = $"Journal entry for Credit purchase  {existing_list.supplier_return_ref} with invoice number {existing_list.supplier_return_ref}";
+                gl_Journal_Header.StoreId = im_store.store_id;
+                gl_Journal_Header.TotalCreditBC = existing_list.total_amount;
+                gl_Journal_Header.TotalCreditFC = existing_list.total_amount;
+                gl_Journal_Header.TotalDebitBC = existing_list.total_amount;
+                gl_Journal_Header.TotalDebitFC = existing_list.total_amount;
+                foreach (var item in existing_list.im_purchase_return_details_line)
+                {
+                    gl_JournalLines gl_Journal_Lines = new gl_JournalLines();
+
+                    if (existing_list.tax_amount > 0)
+                    {
+                        var gl_account = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "PURCHASE" && a.PurposeCode == "Tax Payable" && a.CompanyId == im_store.company_id);
+                        var current_balance = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account.GlAccountId);
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "INVENTORY" && a.PurposeCode == "Inventory Damage" && a.CompanyId == im_store.company_id);
+                        var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
+                        var gl_account_3 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "POS" && a.PurposeCode == "Account Receivable (A/R)" && a.CompanyId == im_store.company_id);
+                        var current_balance_3 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_3.GlAccountId);
+
+                        gl_Journal_Lines.JournalLineId = Guid.CreateVersion7();
+                        gl_Journal_Lines.JournalId = gl_Journal_Header.JournalId;
+                        gl_Journal_Lines.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Journal_Lines.StoreId = im_store.store_id;
+                        gl_Journal_Lines.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        //gl_Journal_Lines.DebitAmountBC =Convert.ToDecimal( item.line_total);
+                        //gl_Journal_Lines.DebitAmountFC =Convert.ToDecimal( item.line_total);
+                        gl_Journal_Lines.Description = "";
+                        gl_Journal_Lines.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(existing_list.tax_amount);
+                        //ToalCedit+= Convert.ToDecimal(item.line_total);
+                        ToalDebit += Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Journal_Lines.ExchangeRate = existing_list.exchange_rate;
+                        gl_Journal_Lines.SourceLineId = item.return_detail_id;
+                        gl_Journal_Lines.SourceType = "Input Tax";
+                        gl_Journal_Lines.SupplierId = existing_list.vendor_id;
+                        gl_Journal_Lines.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines.UpdatedAt = DateTime.Now;
+
+                        gl_Ledger gl_Ledger = new gl_Ledger();
+                        gl_Ledger.LedgerId = Guid.CreateVersion7();
+                        gl_Ledger.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Ledger.StoreId = im_store.store_id;
+                        gl_Ledger.JournalId = gl_Journal_Header.JournalId;
+                        gl_Ledger.JournalLineId = gl_Journal_Lines.JournalLineId;
+                        gl_Ledger.GlAccountId = gl_account?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger.PostingDate = DateTime.Now;
+                        gl_Ledger.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger.ReferenceNo = existing_list.supplier_return_ref;
+                        gl_Ledger.Module = "INVENTORY";
+                        gl_Ledger.Description = $"Ledger entry for Cash retun purchase  {existing_list.listing_id} with invoice number {existing_list.supplier_return_ref}";
+                        gl_Ledger.CreatedAt = DateTime.Now;
+                        gl_Ledger.CreatedBy = "";
+                        gl_Ledger.ExchangeRate = existing_list.exchange_rate;
+                        gl_Ledger.SourceId = existing_list.listing_id;
+                        gl_Ledger.SourceType = "Inventory Damage";
+                        gl_Ledger.SourceLineId = item.return_detail_id;
+                        gl_Ledger.TransactionDate = DateTime.Now;
+                        gl_Ledger.UpdatedAt = DateTime.Now;
+                        gl_Ledger.BaseCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        //gl_Ledger.CreditAmountBC= Convert.ToDecimal( item.line_total);
+                        //gl_Ledger.CreditAmountFC= Convert.ToDecimal( item.line_total);
+                        gl_Ledger.DebitAmountBC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Ledger.DebitAmountFC = Convert.ToDecimal(existing_list.tax_amount);
+                        gl_Ledger.TransactionCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        _context.gl_ledger.Add(gl_Ledger);
+
+                        _context.gl_JournalLines.Add(gl_Journal_Lines);
+                        gl_Journal_Lines_List.Add(gl_Journal_Lines);
+                        ToalCedit = Convert.ToDecimal(existing_list.tax_amount);
+
+                        if (current_balance != null)
+                        {
+                            current_balance.CurrentBalance -= ToalCedit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance);
+                        }
+                        if (current_balance_2 != null)
+                        {
+                            current_balance_2.CurrentBalance += ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_2);
+                        }
+                        if (current_balance_3 != null)
+                        {
+                            current_balance_3.CurrentBalance -= ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_3);
+                        }
+                        ToalCedit = 0;
+                        ToalDebit = 0;
+                    }
+                    if (existing_list.tax_amount == 0)
+                    {
+                        var gl_account_2 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "POS" && a.PurposeCode == "Account Receivable (A/R)" && a.CompanyId == im_store.company_id);
+                        var current_balance_2 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_2.GlAccountId);
+                        var gl_account_3 = await _context.gl_AccountMapping.FirstOrDefaultAsync(a => a.Module == "INVENTORY" && a.PurposeCode == "Inventory Damage" && a.CompanyId == im_store.company_id);
+                        var current_balance_3 = await _context.gl_AccountCurrentBalances.FirstOrDefaultAsync(a => a.AccountId == gl_account_3.GlAccountId);
+
+                        gl_JournalLines gl_Journal_Lines2 = new gl_JournalLines();
+
+                        gl_Journal_Lines2.JournalLineId = Guid.CreateVersion7();
+                        gl_Journal_Lines2.JournalId = gl_Journal_Header.JournalId;
+                        gl_Journal_Lines2.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Journal_Lines2.StoreId = im_store.store_id;
+                        gl_Journal_Lines2.GlAccountId = gl_account_2?.GlAccountId ?? Guid.Empty;
+                        gl_Journal_Lines2.DebitAmountBC = Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.DebitAmountFC = Convert.ToDecimal(item.line_total);
+                        ToalDebit += Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.Description = "";
+                        gl_Journal_Lines2.CreatedAt = DateTime.Now;
+                        //gl_Journal_Lines.CreditAmountBC = Convert.ToDecimal(item.line_total);
+                        //gl_Journal_Lines.CreditAmountFC = Convert.ToDecimal(item.line_total);
+                        gl_Journal_Lines2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Journal_Lines2.ExchangeRate = existing_list.exchange_rate;
+                        gl_Journal_Lines2.SourceLineId = item.return_detail_id;
+                        gl_Journal_Lines2.SourceType = "Inventory Damage";
+                        gl_Journal_Lines2.SupplierId = existing_list.vendor_id;
+                        gl_Journal_Lines2.CreatedAt = DateTime.Now;
+                        gl_Journal_Lines2.UpdatedAt = DateTime.Now;
+
+                        gl_Ledger gl_Ledger2 = new gl_Ledger();
+                        gl_Ledger2.LedgerId = Guid.CreateVersion7();
+                        gl_Ledger2.BusinessId = im_store?.company_id ?? Guid.Empty;
+                        gl_Ledger2.StoreId = im_store.store_id;
+                        gl_Ledger2.JournalId = gl_Journal_Header.JournalId;
+                        gl_Ledger2.JournalLineId = gl_Journal_Lines2.JournalLineId;
+                        gl_Ledger2.GlAccountId = gl_account_2?.GlAccountId ?? Guid.Empty;
+                        gl_Ledger2.PostingDate = DateTime.Now;
+                        gl_Ledger2.CurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger2.ReferenceNo = existing_list.supplier_return_ref;
+                        gl_Ledger2.Module = "PURCHASE";
+                        gl_Ledger2.Description = $"Ledger entry for Credit purchase order {existing_list.listing_id} with invoice number {existing_list.supplier_return_ref}";
+                        gl_Ledger2.CreatedAt = DateTime.Now;
+                        gl_Ledger2.CreatedBy = "";
+                        gl_Ledger2.ExchangeRate = existing_list.exchange_rate;
+                        gl_Ledger2.SourceId = existing_list.listing_id;
+                        gl_Ledger2.SourceType = "Inventory Damage";
+                        gl_Ledger2.SourceLineId = item.return_detail_id;
+                        gl_Ledger2.TransactionDate = DateTime.Now;
+                        gl_Ledger2.UpdatedAt = DateTime.Now;
+                        gl_Ledger2.BaseCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        gl_Ledger2.CreditAmountBC = Convert.ToDecimal(item.line_total);
+                        gl_Ledger2.CreditAmountFC = Convert.ToDecimal(item.line_total);
+                        //gl_Ledger.DebitAmountBC = Convert.ToDecimal(item.line_total);
+                        //gl_Ledger.DebitAmountFC = Convert.ToDecimal(item.line_total);
+                        gl_Ledger2.TransactionCurrencyCode = gl_Journal_Header.BaseCurrencyCode;
+                        _context.gl_ledger.Add(gl_Ledger2);
+
+                        _context.gl_JournalLines.Add(gl_Journal_Lines2);
+                        gl_Journal_Lines_List.Add(gl_Journal_Lines2);
+
+                        if (current_balance_2 != null)
+                        {
+                            current_balance_2.CurrentBalance -= ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_2);
+                        }
+                        if (current_balance_3 != null)
+                        {
+                            current_balance_3.CurrentBalance += ToalDebit;
+                            _context.gl_AccountCurrentBalances.Update(current_balance_3);
+                        }
+                    }
+                    ToalDebit = 0;
+
+
+                }
+                if (ap_vendor != null)
+                {
+                    ap_vendor.withholding_tax_rate -= existing_list.total_amount;
+                    _context.ap_Vendors.Update(ap_vendor);
+                }
+                if (existing_list.tax_amount > 0)
+                {
+                    ToalCedit = Convert.ToDecimal(ToalDebit + existing_list.tax_amount);
+                    if (existing_list.total_amount != ToalCedit)
+                    {
+                        return new ServiceResult<gl_JournalHeaders>
+                        {
+                            Status = 400,
+                            Success = false,
+                            Message = "Total debit and credit amount should be equal"
+                        };
+                    }
+                }
+
+                if (table != null)
+                {
+                    table_key_.next_key = key + 1;
+                    _context.am_table_next_key.Update(table_key_);
+                }
+                gl_Journal_Header.JournalLines = gl_Journal_Lines_List;
+                _context.gl_JournalHeaders.Add(gl_Journal_Header);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<gl_JournalHeaders>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Journal header added successfully",
+                    Data = gl_Journal_Header
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error while Add_Journal_header");
+                return new ServiceResult<gl_JournalHeaders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
+
+        public async Task<ServiceResult<im_StockTransferHeader>> Add_transfer(im_StockTransferHeader im_StockTransferHeader)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (im_StockTransferHeader == null)
+                {
+                    return new ServiceResult<im_StockTransferHeader>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var table = "im_StockTransferHeader";
+                var table_key = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table && a.business_id == im_StockTransferHeader.business_id);
+                var key = Convert.ToInt16(table_key.next_key);
+
+                var table_4 = "im_InventoryCommitments";
+                var table_key_4 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_4 && a.business_id == im_StockTransferHeader.business_id);
+                var key_4 = Convert.ToInt16(table_key_4.next_key);
+
+                Decimal quantity = 0;
+                List<im_InventoryTransactions> im_InventoryTransactions1 = new List<im_InventoryTransactions>();
+                im_StockTransferHeader.transfer_id = Guid.CreateVersion7();
+                im_StockTransferHeader.transfer_code = Convert.ToString(key + 1);
+                im_StockTransferHeader.business_id = im_StockTransferHeader.business_id;
+                im_StockTransferHeader.from_store_id = im_StockTransferHeader.from_store_id;
+                im_StockTransferHeader.to_store_id = im_StockTransferHeader.to_store_id;
+                im_StockTransferHeader.total_quantity = im_StockTransferHeader.total_quantity;
+                im_StockTransferHeader.total_amount = im_StockTransferHeader.total_amount;
+                im_StockTransferHeader.created_at = im_StockTransferHeader.created_at;
+                im_StockTransferHeader.created_by_user_id = im_StockTransferHeader.created_by_user_id;
+                im_StockTransferHeader.created_by = im_StockTransferHeader.created_by;
+                im_StockTransferHeader.status = im_StockTransferHeader.status;
+                foreach (var item in im_StockTransferHeader.im_StockTransferLines)
+                {
+                    item.transfer_line_id = Guid.CreateVersion7();
+                    item.transfer_id = im_StockTransferHeader.transfer_id;
+                    item.product_id = item.product_id;
+                    item.variant_id = item.variant_id;
+                    item.store_variant_inventory_id = item.store_variant_inventory_id;
+                    item.item_batch_id = item.item_batch_id;
+                    item.batch_number = item.batch_number;
+                    item.quantity = item.quantity;
+                    quantity += item.quantity;
+                    item.expiry_date = item.expiry_date;
+                    item.average_cost = item.average_cost;
+                    item.unit_price = item.unit_price;
+                    item.line_total = item.unit_price * item.quantity;
+                    item.created_at = im_StockTransferHeader.created_at;
+                    _context.im_StockTransferLines.Add(item);
+
+                    var im_InventoryTransactions = new im_InventoryTransactions()
+                    {
+                        transfer_line_id = item.transfer_line_id,
+                        store_id = im_StockTransferHeader.from_store_id,
+                        variant_id = item.variant_id,
+                        trans_type = "INV_TRANSFER",
+                        quantity_change = item.quantity,
+                        unit_cost = item.unit_price,
+                        total_cost = item.line_total,
+                        created_date_time = im_StockTransferHeader.created_at
+                    };
+
+                    im_InventoryTransactions1.Add(im_InventoryTransactions);
+                    _context.im_InventoryTransactions.AddRange(im_InventoryTransactions1);
+
+                    List<im_InventoryCommitments> im_InventoryCommitments = new List<im_InventoryCommitments>();
+
+                    var im_InventoryCommitments1 = new im_InventoryCommitments()
+                    {
+                        business_id = im_StockTransferHeader.business_id,
+                        store_id = im_StockTransferHeader.from_store_id,
+                        source_no = Convert.ToString(key_4 + 1),
+                        product_id = item.product_id,
+                        variant_id = item.variant_id,
+                        store_variant_inventory_id = item.store_variant_inventory_id,
+                        source_id = item.transfer_line_id,
+                        action_type = "DECREASE",
+                        source_type = "INV_TRANSFER",
+                        committed_quantity = item.quantity,
+                        created_by = im_StockTransferHeader.created_by_user_id,
+                        created_at = DateTime.Now
+                    };
+
+                    im_InventoryCommitments.Add(im_InventoryCommitments1);
+                    if (table_4 != null)
+                    {
+                        table_key_4.next_key = key_4 + 1;
+                        _context.am_table_next_key.Update(table_key_4);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    _context.im_InventoryCommitments.AddRange(im_InventoryCommitments);
+                    await _context.SaveChangesAsync();
+
+                    //if (im_StockTransferHeader.status == "Completed")
+                    //{
+                    //    var varient = await _context.im_ProductVariants.Include(a => a.im_StoreVariantInventory).FirstOrDefaultAsync(a => a.variant_id == item.variant_id);
+                    //    var st_store_inv = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id && a.store_id == im_StockTransferHeader.to_store_id);
+                    //    if (st_store_inv != null)
+                    //    {
+
+                    //        if (st_store_inv != null)
+                    //        {
+                    //            st_store_inv.on_hand_quantity -= item.quantity;
+                    //            _context.im_StoreVariantInventory.Update(st_store_inv);
+                    //        }
+
+                    //    }
+                    //    else
+                    //    {
+                    //        im_StoreVariantInventory inventory = new im_StoreVariantInventory();
+                    //        inventory.store_variant_inventory_id = Guid.CreateVersion7();
+                    //        inventory.variant_id = varient.variant_id;
+                    //        inventory.company_id = im_StockTransferHeader.business_id;
+                    //        inventory.store_id = im_StockTransferHeader.to_store_id;
+                    //        inventory.on_hand_quantity = item.quantity;
+                    //        if (item.expiry_date != null)
+                    //        {
+                    //            //var item_batches = await _context.im_itemBatches.FirstOrDefaultAsync(a => a.item_batch_id == item.item_batch_id);
+                    //            //inventory.batch_number
+                    //        }
+                    //        if (st_store_inv != null)
+                    //        {
+                    //            st_store_inv.on_hand_quantity -= item.quantity;
+                    //            _context.im_StoreVariantInventory.Update(st_store_inv);
+                    //        }
+                    //        _context.im_StoreVariantInventory.Add(inventory);
+                    //        varient.im_StoreVariantInventory.Add(inventory);
+                    //        _context.im_ProductVariants.Update(varient);
+                    //    }
+
+
+                    //}
+                }
+
+                im_StockTransferHeader.total_quantity = quantity;
+
+                if (table != null)
+                {
+                    table_key.next_key = key + 1;
+                    _context.am_table_next_key.Update(table_key);
+                }
+                _context.im_StockTransferHeader.Add(im_StockTransferHeader);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+                return new ServiceResult<im_StockTransferHeader>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success",
+                    Data = im_StockTransferHeader
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogInformation("Error Add_transfer");
+                return new ServiceResult<im_StockTransferHeader>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<StockTransferFlatDto>>> Get_transfer_data(Guid transfer_id)
+        {
+            try
+            {
+                if (transfer_id == null)
+                {
+                    return new ServiceResult<List<StockTransferFlatDto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var data = await _context.Database
+                     .SqlQueryRaw<StockTransferFlatDto>(
+                         "EXEC dbo.im_purchase_list @opr=@opr, @transfer_id=@transfer_id",
+                         new SqlParameter("@opr", 6),
+                         new SqlParameter("@transfer_id", transfer_id)
+                     ).ToListAsync();
+                //var data = await _context.im_StockTransferHeader.Include(a => a.im_StockTransferLines).FirstOrDefaultAsync(a => a.transfer_id == transfer_id);
+                if (data == null)
+                {
+                    return new ServiceResult<List<StockTransferFlatDto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+
+                }
+                return new ServiceResult<List<StockTransferFlatDto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success",
+                    Data = data
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<StockTransferFlatDto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<im_StockTransferHeader_data_dto>>> Get_transfer_list(Guid store_id)
+        {
+            try
+            {
+                if (store_id == null)
+                {
+                    return new ServiceResult<List<im_StockTransferHeader_data_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var data = new List<im_StockTransferHeader_data_dto>();
+                data = await _context.Database
+                    .SqlQueryRaw<im_StockTransferHeader_data_dto>(
+                        "EXEC dbo.im_purchase_list @opr=@opr, @store_id=@store_id",
+                        new SqlParameter("@opr", 4),
+                        new SqlParameter("@store_id", store_id)
+                    ).ToListAsync();
+                if (!data.Any())
+                {
+                    data = await _context.Database
+                           .SqlQueryRaw<im_StockTransferHeader_data_dto>(
+                                    "EXEC dbo.im_purchase_list @opr=@opr, @store_id=@store_id",
+                                    new SqlParameter("@opr", 5),
+                                    new SqlParameter("@store_id", store_id)
+                            ).ToListAsync();
+                    if (!data.Any())
+                    {
+                        return new ServiceResult<List<im_StockTransferHeader_data_dto>>
+                        {
+                            Status = 300,
+                            Success = false,
+                            Message = "No data found"
+                        };
+                    }
+                }
+
+                return new ServiceResult<List<im_StockTransferHeader_data_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success",
+                    Data = data
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<im_StockTransferHeader_data_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<im_StockTransferHeader>> Update_transfer(Guid transfer_id, im_StockTransferHeader im_StockTransferHeader)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (transfer_id == null)
+                {
+                    return new ServiceResult<im_StockTransferHeader>
+                    {
+                        Success = false,
+                        Status = 300,
+                        Message = "No data found"
+                    };
+                }
+                List<im_InventoryTransactions> im_InventoryTransactions1 = new List<im_InventoryTransactions>();
+                im_GoodsReceiptHeaders im_GoodsReceiptHeaders = new im_GoodsReceiptHeaders();
+                var table_4 = "im_InventoryCommitments";
+                var table_key_4 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_4 && a.business_id == im_StockTransferHeader.business_id);
+                var key_4 = Convert.ToInt16(table_key_4.next_key);
+
+                Decimal quantity = 0;
+                var existing = await _context.im_StockTransferHeader.Include(a => a.im_StockTransferLines).FirstOrDefaultAsync(a => a.transfer_id == transfer_id);
+                if (existing == null)
+                {
+                    return new ServiceResult<im_StockTransferHeader>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                if (existing != null)
+                {
+                    existing.total_quantity = 0;
+                    _context.im_StockTransferHeader.Update(existing);
+                }
+                foreach (var item in im_StockTransferHeader.im_StockTransferLines)
+                {
+                    var exisintg_line = await _context.im_StockTransferLines.FirstOrDefaultAsync(a => a.transfer_line_id == item.transfer_line_id);
+                    if (exisintg_line != null)
+                    {
+                        exisintg_line.quantity = item.quantity;
+                        quantity += exisintg_line.quantity;
+                        exisintg_line.unit_price = item.unit_price;
+                        exisintg_line.average_cost = item.average_cost;
+                        if (item.expiry_date != null)
+                        {
+                            exisintg_line.batch_number = item.batch_number;
+                            exisintg_line.expiry_date = item.expiry_date;
+                        }
+                        exisintg_line.line_total = exisintg_line.unit_price * exisintg_line.quantity;
+                        _context.im_StockTransferLines.Update(exisintg_line);
+                        if (im_StockTransferHeader.status == "Completed")
+                        {
+                            var varient = await _context.im_ProductVariants.Include(a => a.im_StoreVariantInventory).FirstOrDefaultAsync(a => a.variant_id == item.variant_id);
+                            var st_store_inv = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id && a.store_id == existing.to_store_id);
+                            var st_store_inv_from = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id && a.store_id == existing.from_store_id);
+                            if (st_store_inv_from != null)
+                            {
+
+                                if (st_store_inv_from != null)
+                                {
+                                    st_store_inv_from.on_hand_quantity -= item.quantity;
+                                    _context.im_StoreVariantInventory.Update(st_store_inv_from);
+                                }
+
+                            }
+                            else
+                            {
+                                im_StoreVariantInventory inventory = new im_StoreVariantInventory();
+                                inventory.store_variant_inventory_id = Guid.CreateVersion7();
+                                inventory.variant_id = varient.variant_id;
+                                inventory.company_id = im_StockTransferHeader.business_id;
+                                inventory.store_id = im_StockTransferHeader.to_store_id;
+                                inventory.on_hand_quantity = item.quantity;
+                                if (item.expiry_date != null)
+                                {
+                                    //var item_batches = await _context.im_itemBatches.FirstOrDefaultAsync(a => a.item_batch_id == item.item_batch_id);
+                                    //inventory.batch_number
+                                }
+                                if (st_store_inv_from != null)
+                                {
+                                    st_store_inv_from.on_hand_quantity -= item.quantity;
+                                    _context.im_StoreVariantInventory.Update(st_store_inv_from);
+                                }
+                                _context.im_StoreVariantInventory.Add(inventory);
+                                varient.im_StoreVariantInventory.Add(inventory);
+                                _context.im_ProductVariants.Update(varient);
+                            }
+                            List<im_InventoryCommitments> im_InventoryCommitments = new List<im_InventoryCommitments>();
+
+                            var im_InventoryCommitments1 = new im_InventoryCommitments()
+                            {
+                                business_id = im_StockTransferHeader.business_id,
+                                store_id = im_StockTransferHeader.to_store_id,
+                                source_no = Convert.ToString(key_4 + 1),
+                                product_id = item.product_id,
+                                variant_id = item.variant_id,
+                                store_variant_inventory_id = item.store_variant_inventory_id,
+                                source_id = item.transfer_line_id,
+                                action_type = "INCREASE",
+                                source_type = "INV_TRANSFER",
+                                committed_quantity = item.quantity,
+                                created_by = im_StockTransferHeader.created_by_user_id,
+                                created_at = DateTime.Now
+                            };
+
+                            im_InventoryCommitments.Add(im_InventoryCommitments1);
+                            if (table_4 != null)
+                            {
+                                table_key_4.next_key = key_4 + 1;
+                                _context.am_table_next_key.Update(table_key_4);
+                                await _context.SaveChangesAsync();
+                            }
+
+                            _context.im_InventoryCommitments.AddRange(im_InventoryCommitments);
+                            await _context.SaveChangesAsync();
+
+
+                        }
+                    }
+                    else
+                    {
+                        im_StockTransferLines lines = new im_StockTransferLines();
+
+                        lines.transfer_line_id = Guid.CreateVersion7();
+                        lines.transfer_id = existing.transfer_id;
+                        lines.product_id = item.product_id;
+                        lines.variant_id = item.variant_id;
+                        lines.store_variant_inventory_id = item.store_variant_inventory_id;
+                        lines.item_batch_id = item.item_batch_id;
+                        lines.batch_number = item.batch_number;
+                        lines.expiry_date = item.expiry_date;
+                        lines.average_cost = item.average_cost;
+                        lines.quantity = item.quantity;
+                        quantity += lines.quantity;
+                        lines.unit_price = item.unit_price;
+                        lines.line_total = item.unit_price * item.quantity;
+                        _context.im_StockTransferLines.Add(lines);
+                        existing.im_StockTransferLines.Add(lines);
+                        var im_InventoryTransactions = new im_InventoryTransactions()
+                        {
+                            transfer_line_id = lines.transfer_line_id,
+                            store_id = im_StockTransferHeader.from_store_id,
+                            variant_id = lines.variant_id,
+                            trans_type = "INV_TRANSFER",
+                            quantity_change = lines.quantity,
+                            unit_cost = lines.unit_price,
+                            total_cost = lines.line_total,
+                            created_date_time = im_StockTransferHeader.created_at
+                        };
+
+                        im_InventoryTransactions1.Add(im_InventoryTransactions);
+                        _context.im_InventoryTransactions.AddRange(im_InventoryTransactions1);
+
+                        List<im_InventoryCommitments> im_InventoryCommitments = new List<im_InventoryCommitments>();
+
+                        var im_InventoryCommitments1 = new im_InventoryCommitments()
+                        {
+                            business_id = im_StockTransferHeader.business_id,
+                            store_id = im_StockTransferHeader.from_store_id,
+                            source_no = Convert.ToString(key_4 + 1),
+                            product_id = item.product_id,
+                            variant_id = item.variant_id,
+                            store_variant_inventory_id = item.store_variant_inventory_id,
+                            source_id = item.transfer_line_id,
+                            action_type = "DECREASE",
+                            source_type = "INV_TRANSFER",
+                            committed_quantity = item.quantity,
+                            created_by = im_StockTransferHeader.created_by_user_id,
+                            created_at = DateTime.Now
+                        };
+
+                        im_InventoryCommitments.Add(im_InventoryCommitments1);
+                        if (table_4 != null)
+                        {
+                            table_key_4.next_key = key_4 + 1;
+                            _context.am_table_next_key.Update(table_key_4);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        _context.im_InventoryCommitments.AddRange(im_InventoryCommitments);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                if (im_StockTransferHeader.status == "Completed")
+                {
+                    var transfer_good = await Add_GoodsHeader_store_transfer(transfer_id);
+                    if (!transfer_good.Success)
+                    {
+                        await transaction.RollbackAsync();
+                        return new ServiceResult<im_StockTransferHeader>
+                        {
+                            Status = 300,
+                            Success = false,
+                            Message = "Error Add_GoodsHeader_store_transfer"
+                        };
+                    }
+                }
+
+                if (existing != null)
+                {
+                    existing.status = im_StockTransferHeader.status;
+                    existing.total_quantity = quantity;
+                    _context.im_StockTransferHeader.Update(existing);
+                }
+                _context.im_StockTransferHeader.Update(existing);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<im_StockTransferHeader>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success",
+                    Data = existing
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ServiceResult<im_StockTransferHeader>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<im_GoodsReceiptHeaders>> Add_GoodsHeader_store_transfer(Guid transfer_id)
+        {
+            try
+            {
+
+                if (transfer_id == null)
+                {
+                    return new ServiceResult<im_GoodsReceiptHeaders>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No Add_GoodsHeader listing_id found"
+                    };
+                }
+                var year = DateTime.Now.Year;
+
+                List<im_GoodsReceiptLines> im_GoodsReceiptLines1 = new List<im_GoodsReceiptLines>();
+                im_GoodsReceiptHeaders im_GoodsReceiptHeaders = new im_GoodsReceiptHeaders();
+                var exisitng_transfer = await _context.im_StockTransferHeader.Include(a => a.im_StockTransferLines).FirstOrDefaultAsync(a => a.transfer_id == transfer_id);
+
+                var table_3 = "im_GoodsReceiptHeaders";
+                var table_key_3 = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_3 && a.business_id == exisitng_transfer.business_id);
+                var key_3 = Convert.ToInt16(table_key_3.next_key);
+                im_GoodsReceiptHeaders.business_id = exisitng_transfer.business_id;///
+                im_GoodsReceiptHeaders.store_id = exisitng_transfer?.to_store_id ?? Guid.Empty;
+                im_GoodsReceiptHeaders.transfer_id = exisitng_transfer.transfer_id;
+                im_GoodsReceiptHeaders.purchase_entry_id = exisitng_transfer.transfer_id;
+                im_GoodsReceiptHeaders.Goods_recipt_code = "GH" + year + "-" + Convert.ToString(key_3 + 1);
+                im_GoodsReceiptHeaders.received_by = exisitng_transfer.to_store_id;
+                im_GoodsReceiptHeaders.created_by = exisitng_transfer.from_store_id;
+                im_GoodsReceiptHeaders.posted_by = exisitng_transfer.from_store_id;
+                im_GoodsReceiptHeaders.receipt_no = exisitng_transfer?.transfer_code;
+                im_GoodsReceiptHeaders.receipt_date = DateTime.Now;
+                //im_GoodsReceiptHeaders.supplier_invoice_no = exisitng_purchase.supplier_invoice_no;
+                im_GoodsReceiptHeaders.supplier_do_no = im_GoodsReceiptHeaders.supplier_do_no;
+                im_GoodsReceiptHeaders.subtotal = Convert.ToDecimal(exisitng_transfer.total_amount);
+                im_GoodsReceiptHeaders.discount_amount = 0;
+                im_GoodsReceiptHeaders.tax_amount = 0;
+                im_GoodsReceiptHeaders.total_amount = Convert.ToDecimal(exisitng_transfer.total_amount);
+                im_GoodsReceiptHeaders.created_at = DateTime.Now;
+                im_GoodsReceiptHeaders.updated_at = DateTime.Now;
+                im_GoodsReceiptHeaders.posted_at = DateTime.Now;
+                im_GoodsReceiptHeaders.remarks = im_GoodsReceiptHeaders.remarks;
+                im_GoodsReceiptHeaders.status = "POSTED";
+                im_GoodsReceiptHeaders.is_posted = "T";
+                im_GoodsReceiptHeaders.is_cancelled = "F";
+                foreach (var item in exisitng_transfer.im_StockTransferLines)
+                {
+                    var im_product = await _context.im_Products.FirstOrDefaultAsync(a => a.product_id == item.product_id);
+                    var im_varinet = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.variant_id == item.variant_id);
+                    var unmo = await _context.im_UnitsOfMeasures.FirstOrDefaultAsync(a => a.name == im_varinet.uom_name);
+                    im_GoodsReceiptLines im_GoodsReceiptLines = new im_GoodsReceiptLines();
+                    im_GoodsReceiptLines.business_id = exisitng_transfer?.business_id ?? Guid.Empty;
+                    im_GoodsReceiptLines.store_id = exisitng_transfer.to_store_id;
+                    im_GoodsReceiptLines.supplier_id = im_product.vendor_id;
+                    im_GoodsReceiptHeaders.supplier_id = im_product.vendor_id;
+
+                    im_GoodsReceiptLines.variant_id = item.variant_id;
+                    im_GoodsReceiptLines.product_id = item.product_id;
+                    im_GoodsReceiptLines.uom_id = unmo.uom_id;
+                    im_GoodsReceiptLines.uom_code = im_varinet.uom_name;
+                    im_GoodsReceiptLines.line_no = 1;
+                    im_GoodsReceiptLines.ordered_qty = Convert.ToDecimal(item.quantity);
+                    im_GoodsReceiptLines.received_qty = Convert.ToDecimal(item.quantity);
+                    im_GoodsReceiptLines.free_qty = 0;
+                    im_GoodsReceiptLines.rejected_qty = 0;
+                    im_GoodsReceiptLines.trans_type = "TRANSFER";
+
+                    im_GoodsReceiptLines.accepted_qty = Convert.ToDecimal(item.quantity);
+                    im_GoodsReceiptLines.unit_cost = Convert.ToDecimal(item.unit_price);
+                    im_GoodsReceiptLines.discount_amount = 0;
+                    im_GoodsReceiptLines.discount_percent = 0;
+                    im_GoodsReceiptLines.tax_amount = 0;
+                    im_GoodsReceiptLines.tax_percent = 0;
+                    im_GoodsReceiptLines.line_amount = Convert.ToDecimal(item.unit_price) * Convert.ToDecimal(item.quantity);
+                    im_GoodsReceiptLines.net_unit_cost = Convert.ToDecimal(item.unit_price);
+                    im_GoodsReceiptLines.net_amount = Convert.ToDecimal(im_varinet.minimum_selling);
+
+                    im_GoodsReceiptLines.manufacture_date = item.expiry_date;
+                    im_GoodsReceiptLines.remarks = im_GoodsReceiptLines.remarks;
+                    im_GoodsReceiptLines.created_at = DateTime.Now;
+                    im_GoodsReceiptLines.updated_at = DateTime.Now;
+                    if (im_GoodsReceiptLines.expiry_date != null)
+                    {
+                        im_GoodsReceiptLines.batch_no = item.batch_number;
+                        im_GoodsReceiptLines.expiry_date = item.expiry_date;
+                        im_GoodsReceiptLineBatches im_GoodsReceiptLineBatches = new im_GoodsReceiptLineBatches();
+
+                        im_GoodsReceiptLineBatches.business_id = exisitng_transfer?.business_id ?? Guid.Empty;
+                        im_GoodsReceiptLineBatches.store_id = exisitng_transfer.to_store_id;
+                        im_GoodsReceiptLineBatches.variant_id = item.variant_id;
+                        im_GoodsReceiptLineBatches.batch_no = item.batch_number;
+                        im_GoodsReceiptLineBatches.expiry_date = item.expiry_date;
+                        im_GoodsReceiptLineBatches.manufacture_date = item.expiry_date;
+                        im_GoodsReceiptLineBatches.received_qty = Convert.ToDecimal(item.quantity);
+                        im_GoodsReceiptLineBatches.free_qty = Convert.ToDecimal(item.quantity);
+                        im_GoodsReceiptLineBatches.rejected_qty = 0;
+                        im_GoodsReceiptLineBatches.accepted_qty = Convert.ToDecimal(item.quantity);
+                        im_GoodsReceiptLineBatches.unit_cost = Convert.ToDecimal(item.unit_price);
+                        im_GoodsReceiptLineBatches.net_unit_cost = Convert.ToDecimal(im_varinet.minimum_selling);
+                        im_GoodsReceiptLineBatches.remarks = "";
+                        im_GoodsReceiptLineBatches.created_at = DateTime.Now;
+                        im_GoodsReceiptLineBatches.updated_at = DateTime.Now;
+                        _context.im_GoodsReceiptLineBatches.Add(im_GoodsReceiptLineBatches);
+
+                    }
+                    _context.im_GoodsReceiptLines.Add(im_GoodsReceiptLines);
+                    im_GoodsReceiptLines1.AddRange(im_GoodsReceiptLines);
+                    im_GoodsReceiptHeaders.im_GoodsReceiptLines = im_GoodsReceiptLines1;
+
+                }
+                if (table_3 != null)
+                {
+                    table_key_3.next_key = key_3 + 1;
+                    _context.am_table_next_key.Update(table_key_3);
+                    await _context.SaveChangesAsync();
+                }
+                _context.im_GoodsReceiptHeaders.Add(im_GoodsReceiptHeaders);
+                await _context.SaveChangesAsync();
+                return new ServiceResult<im_GoodsReceiptHeaders>
+                {
+                    Status = 200,
+                    Success = true,
+                    Data = im_GoodsReceiptHeaders
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<im_GoodsReceiptHeaders>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<store_inv_hold_dto>> Update_inv_hold(Guid store_variant_inventory_id)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (store_variant_inventory_id == null)
+                {
+                    return new ServiceResult<store_inv_hold_dto>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var store_inv = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == store_variant_inventory_id);
+                if (store_inv != null)
+                {
+                    store_inv.on_hold = "T";
+                    _context.im_StoreVariantInventory.Update(store_inv);
+                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<store_inv_hold_dto>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success"
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new ServiceResult<store_inv_hold_dto>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<inventory_adjustment_header_dto>> Add_adjustment(inventory_adjustment_header_dto inventory_Adjustment_Header_)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (inventory_Adjustment_Header_ == null)
+                {
+                    return new ServiceResult<inventory_adjustment_header_dto>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var inventory_Adjustment_ = _mapper.Map<inventory_adjustment_header_dto, inventory_adjustment_header>(inventory_Adjustment_Header_);
+                Decimal total_negative = 0;
+                Decimal total_positive = 0;
+                int total_items = 0;
+                var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == inventory_Adjustment_.store_id);
+                var table_ = "im_inventory_adjustment_header";
+                var table_key_ = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_ && a.business_id == st_store.company_id);
+                var key_ = Convert.ToInt16(table_key_.next_key);
+
+                inventory_Adjustment_.adjustment_id = Guid.CreateVersion7();
+                inventory_Adjustment_.adjustment_code = st_store.store_code + '-' + Convert.ToString(key_ + 1);
+                inventory_Adjustment_.store_id = inventory_Adjustment_.store_id;
+                inventory_Adjustment_.adjustment_type = inventory_Adjustment_.adjustment_type;
+
+                inventory_Adjustment_.created_by = inventory_Adjustment_.created_by;
+                inventory_Adjustment_.transaction_date = inventory_Adjustment_.transaction_date;
+                inventory_Adjustment_.created_at = inventory_Adjustment_.created_at;
+                inventory_Adjustment_.created_at = inventory_Adjustment_.created_at;
+                inventory_Adjustment_.is_posted = "F";
+                inventory_Adjustment_.status = "PENDING";
+                foreach (var item in inventory_Adjustment_.inventory_adjustment_lines)
+                {
+                    var store_inv = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id);
+                    var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.variant_id == item.variant_id);
+                    item.adjustment_detail_id = Guid.CreateVersion7();
+                    item.adjustment_id = inventory_Adjustment_.adjustment_id;
+                    item.product_id = item.product_id;
+                    item.variant_id = item.variant_id;
+                    item.store_variant_inventory_id = item.store_variant_inventory_id;
+                    item.system_qty = store_inv?.on_hand_quantity ?? 0m;
+                    item.counted_qty = item.counted_qty;
+                    item.title = item.title;
+                    item.sku = im_varient.sku;
+                    item.barcode = im_varient.barcode;
+                    item.average_cost = im_varient.average_cost ?? 0m;
+                    if (item.expiry_date != null)
+                    {
+                        item.expiry_date = item.expiry_date;
+                        item.batch_number = item.batch_number;
+                        item.track_expiry = "T";
+
+                        var batch = await Update_batch_to_zero(item.store_variant_inventory_id);
+                        if (!batch.Success)
+                        {
+                            await transaction.RollbackAsync();
+                            return new ServiceResult<inventory_adjustment_header_dto>
+                            {
+                                Status = 300,
+                                Success = false,
+                                Message = "No data found"
+                            };
+                        }
+
+                    }
+                    item.adjusted_qty = item.counted_qty - item.system_qty;
+
+                    if (item.adjusted_qty > 0)
+                    {
+                        total_positive += item.adjusted_qty;
+                    }
+                    else
+                    {
+                        total_negative += item.adjusted_qty; // will be negative already
+                    }
+                    item.total_cost = item.average_cost * item.adjusted_qty;
+                    item.created_at = item.created_at;
+                    item.is_posted = "T";
+                    item.status = "PENDING";
+                    total_items++;
+                    _context.inventory_adjustment_lines.Add(item);
+                }
+                inventory_Adjustment_.total_negative_value = total_negative;
+                inventory_Adjustment_.total_positive_value = total_positive;
+                inventory_Adjustment_.total_adjustment_value = Convert.ToInt16(total_positive + total_negative);
+                inventory_Adjustment_.total_items = total_items;
+                if (table_ != null)
+                {
+                    table_key_.next_key = key_ + 1;
+                    _context.am_table_next_key.Update(table_key_);
+                }
+                _context.inventory_adjustment_header.Add(inventory_Adjustment_);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new ServiceResult<inventory_adjustment_header_dto>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogInformation("Erroe while Add_adjustment");
+                return new ServiceResult<inventory_adjustment_header_dto>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        //This function for when it was the Inventory Quantity was Adjusted for the selected Batches was 
+        //set to Zero (0)
+        public async Task<ServiceResult<im_StoreVariantInventory>> Update_batch_to_zero(Guid? store_variant_inventory_id)
+        {
+            try
+            {
+                if (store_variant_inventory_id == null)
+                {
+                    return new ServiceResult<im_StoreVariantInventory>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No Id found"
+                    };
+                }
+                var st_inve = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == store_variant_inventory_id);
+                if (st_inve != null)
+                {
+                    var item_batch = await _context.im_itemBatches.Where(a => a.store_variant_inventory_id == st_inve.store_variant_inventory_id)
+                                     .ExecuteUpdateAsync(x => x.SetProperty(p => p.on_hand_quantity, 0));
+
+                }
+                return new ServiceResult<im_StoreVariantInventory>
+                {
+                    Status = 200,
+                    Success = true
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<im_StoreVariantInventory>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<inventory_adjustment_header_response_dto>>> Get_adjustment_list(Guid store_id)
+        {
+            try
+            {
+                if (store_id == null)
+                {
+                    return new ServiceResult<List<inventory_adjustment_header_response_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var data = new List<inventory_adjustment_header_response_dto>();
+                data = await _context.Database
+                    .SqlQueryRaw<inventory_adjustment_header_response_dto>(
+                        "EXEC dbo.im_purchase_list @opr=@opr, @store_id=@store_id",
+                        new SqlParameter("@opr", 7),
+                        new SqlParameter("@store_id", store_id)
+                    ).ToListAsync();
+
+                if (!data.Any())
+                {
+                    return new ServiceResult<List<inventory_adjustment_header_response_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                return new ServiceResult<List<inventory_adjustment_header_response_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success",
+                    Data = data
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<inventory_adjustment_header_response_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<inventory_adjustment_lines_response_dto>>> Get_adjustment_lines(Guid adjustment_id)
+        {
+            try
+            {
+                if (adjustment_id == null)
+                {
+                    return new ServiceResult<List<inventory_adjustment_lines_response_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var data = new List<inventory_adjustment_lines_response_dto>();
+                data = await _context.Database
+                    .SqlQueryRaw<inventory_adjustment_lines_response_dto>(
+                        "EXEC dbo.im_purchase_list @opr=@opr, @adjustment_id=@adjustment_id",
+                        new SqlParameter("@opr", 8),
+                        new SqlParameter("@adjustment_id", adjustment_id)
+                    ).ToListAsync();
+
+                if (!data.Any())
+                {
+                    return new ServiceResult<List<inventory_adjustment_lines_response_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+
+                return new ServiceResult<List<inventory_adjustment_lines_response_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success",
+                    Data = data
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<inventory_adjustment_lines_response_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<inventory_adjustment_header_update_req_dto>> Update_adjustment(Guid adjustment_id, inventory_adjustment_header_update_req_dto inventory_Adjustment)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (adjustment_id == null)
+                {
+                    return new ServiceResult<inventory_adjustment_header_update_req_dto>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "NO data found"
+                    };
+                }
+                Decimal total_negative = 0;
+                Decimal total_positive = 0;
+                int total_items = 0;
+                List<inventory_adjustment_lines> inventory_Adjustment_Lines = new List<inventory_adjustment_lines>();
+                inventory_adjustment_lines inventory_Adjustment_ = new inventory_adjustment_lines();
+                var invent_head = await _context.inventory_adjustment_header.Include(a => a.inventory_adjustment_lines).FirstOrDefaultAsync(a => a.adjustment_id == adjustment_id);
+                if (invent_head == null)
+                {
+                    return new ServiceResult<inventory_adjustment_header_update_req_dto>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                if (invent_head != null)
+                {
+                    invent_head.total_items = 0;
+                    invent_head.total_adjustment_value = 0;
+                    invent_head.total_negative_value = 0;
+                    invent_head.total_positive_value = 0;
+                    _context.inventory_adjustment_header.Update(invent_head);
+                }
+
+                foreach (var item in inventory_Adjustment.inventory_adjustment_lines)
+                {
+                    var store_inv = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id);
+
+                    var inv_lines = await _context.inventory_adjustment_lines.FirstOrDefaultAsync(a => a.adjustment_detail_id == item.adjustment_detail_id);
+                    if (inv_lines != null)
+                    {
+                        if (store_inv.on_hand_quantity >= inv_lines.counted_qty)
+                        {
+                            inv_lines.adjusted_qty = inv_lines.system_qty + inventory_Adjustment_.counted_qty;
+                            total_positive += inv_lines.adjusted_qty;
+                        }
+                        else if (store_inv.on_hand_quantity <= inv_lines.counted_qty)
+                        {
+                            inv_lines.adjusted_qty = inv_lines.system_qty - inv_lines.counted_qty;
+                            total_negative += inv_lines.adjusted_qty;
+                        }
+                    }
+                    else
+                    {
+                        var im_varient = await _context.im_ProductVariants.FirstOrDefaultAsync(a => a.variant_id == item.variant_id);
+                        inventory_Adjustment_.adjustment_detail_id = Guid.CreateVersion7();
+                        inventory_Adjustment_.adjustment_id = invent_head.adjustment_id;
+                        inventory_Adjustment_.product_id = item?.product_id ?? Guid.Empty;
+                        inventory_Adjustment_.variant_id = item.variant_id;
+                        inventory_Adjustment_.store_variant_inventory_id = item.store_variant_inventory_id;
+                        inventory_Adjustment_.system_qty = store_inv?.on_hand_quantity ?? 0m;
+                        inventory_Adjustment_.counted_qty = item.counted_qty;
+                        inventory_Adjustment_.barcode = im_varient.barcode;
+                        inventory_Adjustment_.title = item.title;
+                        inventory_Adjustment_.sku = im_varient.sku;
+                        inventory_Adjustment_.average_cost = im_varient.average_cost ?? 0m;
+                        if (inventory_Adjustment_.expiry_date != null)
+                        {
+                            inventory_Adjustment_.expiry_date = item.expiry_date;
+                            inventory_Adjustment_.batch_number = item.batch_number;
+                            inventory_Adjustment_.track_expiry = "T";
+
+                            var batch = await Update_batch_to_zero(item.store_variant_inventory_id);
+                            if (!batch.Success)
+                            {
+                                await transaction.RollbackAsync();
+                                return new ServiceResult<inventory_adjustment_header_update_req_dto>
+                                {
+                                    Status = 300,
+                                    Success = false,
+                                    Message = "No data found"
+                                };
+                            }
+
+                        }
+                        if (store_inv.on_hand_quantity >= inventory_Adjustment_.counted_qty)
+                        {
+                            inventory_Adjustment_.adjusted_qty = inventory_Adjustment_.system_qty + inventory_Adjustment_.counted_qty;
+                            total_positive += inventory_Adjustment_.adjusted_qty;
+                        }
+                        else if (store_inv.on_hand_quantity <= inventory_Adjustment_.counted_qty)
+                        {
+                            inventory_Adjustment_.adjusted_qty = inventory_Adjustment_.system_qty - inventory_Adjustment_.counted_qty;
+                            total_negative += inventory_Adjustment_.adjusted_qty;
+                        }
+                        item.total_cost = item.total_cost;
+                        item.created_at = item.created_at;
+                        item.is_posted = "T";
+                        item.status = "PENDING";
+
+                        _context.inventory_adjustment_lines.Add(inventory_Adjustment_);
+                        inventory_Adjustment_Lines.AddRange(inventory_Adjustment_);
+                        invent_head.inventory_adjustment_lines.Add(inventory_Adjustment_);
+
+                    }
+                    total_items++;
+                }
+                invent_head.total_negative_value += total_negative;
+                invent_head.total_positive_value += total_positive;
+                invent_head.total_adjustment_value += Convert.ToInt16(total_positive + total_negative);
+                invent_head.total_items += total_items;
+                invent_head.status = "PENDING";
+                _context.inventory_adjustment_header.Update(invent_head);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<inventory_adjustment_header_update_req_dto>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                };
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogInformation("Error while Update_adjustment ");
+                return new ServiceResult<inventory_adjustment_header_update_req_dto>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<InventoryAdjustmentResponseDto>> Get_adjustment_list_lines(Guid store_id)
+        {
+            try
+            {
+                if (store_id == Guid.Empty)
+                {
+                    return new ServiceResult<InventoryAdjustmentResponseDto>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                var data = await _context.Database
+                    .SqlQueryRaw<inventory_adjustment_lines_update_dto>(
+                        "EXEC dbo.im_purchase_list @opr=@opr, @store_id=@store_id",
+                        new SqlParameter("@opr", 9),
+                        new SqlParameter("@store_id", store_id)
+                    )
+                    .ToListAsync();
+
+                if (!data.Any())
+                {
+                    return new ServiceResult<InventoryAdjustmentResponseDto>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                var uniqueSkus = data
+                    .GroupBy(x => x.sku)
+                    .Select(g => new inventory_adjustment_lines_update_dto
+                    {
+                        adjustment_detail_id = g.First().adjustment_detail_id,
+                        adjustment_id = g.First().adjustment_id,
+                        product_id = g.First().product_id,
+                        variant_id = g.First().variant_id,
+                        store_variant_inventory_id = g.First().store_variant_inventory_id,
+
+                        barcode = g.First().barcode,
+                        sku = g.Key,
+                        title = g.First().title,
+                        batch_number = g.First().batch_number,
+                        expiry_date = g.First().expiry_date,
+                        track_expiry = g.First().track_expiry,
+
+                        system_qty = g.First().system_qty,
+                        counted_qty = g.Sum(x => x.counted_qty),
+                        adjusted_qty = g.Sum(x => x.adjusted_qty),
+                        average_cost = g.First().average_cost,
+                        total_cost = g.Sum(x => x.total_cost),
+
+                        created_at = g.First().created_at,
+                        is_posted = g.First().is_posted,
+                        status = g.First().status
+                    })
+                    .ToList();
+
+                var response = new InventoryAdjustmentResponseDto
+                {
+                    Details = data,
+                    UniqueSkus = uniqueSkus
+                };
+
+                return new ServiceResult<InventoryAdjustmentResponseDto>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success",
+                    Data = response
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<InventoryAdjustmentResponseDto>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<im_random_Stock_reject_dto>>> Add_rejected_adjustment(List<im_random_Stock_reject_dto> im_Random_Stock_Reject_Dtos)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (!im_Random_Stock_Reject_Dtos.Any())
+                {
+                    return new ServiceResult<List<im_random_Stock_reject_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                int line_no = 0;
+                var entity = _mapper.Map<List<im_random_Stock_reject>>(im_Random_Stock_Reject_Dtos);
+                foreach (var item in entity)
+                {
+                    item.stock_reject_id = Guid.CreateVersion7();
+                    item.adjustment_detail_id = item.adjustment_detail_id;
+                    item.product_id = item.product_id;
+                    item.variant_id = item.variant_id;
+                    item.store_variant_inventory_id = item.store_variant_inventory_id;
+                    item.system_qty = item.system_qty;
+                    item.counted_qty = item.counted_qty;
+                    item.title = item.title;
+                    item.sku = item.sku;
+                    item.barcode = item.barcode;
+                    item.average_cost = item.average_cost;
+                    if (item.expiry_date != null)
+                    {
+                        item.expiry_date = item.expiry_date;
+                        item.batch_number = item.batch_number;
+                        item.track_expiry = "T";
+                    }
+                    item.adjusted_qty = item.adjusted_qty;
+                    item.total_cost = item.average_cost * item.adjusted_qty;
+                    item.created_at = item.created_at;
+                    item.line_no = line_no;
+                    item.is_posted = "T";
+                    item.status = "POSTED";
+                    line_no++;
+                    _context.im_random_Stock_reject.Add(item);
+
+                    await _context.SaveChangesAsync();
+
+
+                }
+                foreach (var item in entity)
+                {
+                    var delete = await Delete_adjustment_lines(item.adjustment_detail_id);
+                    if (!delete.Success)
+                    {
+                        await transaction.RollbackAsync();
+                        return new ServiceResult<List<im_random_Stock_reject_dto>>
+                        {
+                            Status = 500,
+                            Success = false,
+                            Message = delete.Message
+                        };
+                    }
+                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<List<im_random_Stock_reject_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error while Add_rejected_adjustment");
+                await transaction.RollbackAsync();
+                return new ServiceResult<List<im_random_Stock_reject_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<inventory_adjustment_lines>> Delete_adjustment_lines(Guid? adjustment_detail_id)
+        {
+            try
+            {
+                var adjustment_line = await _context.inventory_adjustment_lines.FirstOrDefaultAsync(a => a.adjustment_detail_id == adjustment_detail_id);
+                if (adjustment_line != null)
+                {
+                    _context.inventory_adjustment_lines.Remove(adjustment_line);
+
+                    var adjustment_line_list = await _context.inventory_adjustment_lines.Where(a => a.adjustment_id == adjustment_line.adjustment_id).ToListAsync();
+                    if (!adjustment_line_list.Any())
+                    {
+                        var adjustment_header = await _context.inventory_adjustment_header.FirstOrDefaultAsync(a => a.adjustment_id == adjustment_line.adjustment_id);
+                        if (adjustment_header != null)
+                        {
+                            _context.inventory_adjustment_header.Remove(adjustment_header);
+                        }
+                    }
+                    await _context.SaveChangesAsync();
+
+                }
+                return new ServiceResult<inventory_adjustment_lines>
+                {
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<inventory_adjustment_lines>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<temp_stock_ad_lines_dto>>> add_adjustment_inv(List<temp_stock_ad_lines_dto> temp_Stock_Ad_Lines)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (temp_Stock_Ad_Lines == null)
+                {
+                    return new ServiceResult<List<temp_stock_ad_lines_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var entity = _mapper.Map<List<temp_stock_ad_lines>>(temp_Stock_Ad_Lines);
+                Guid adjustment_id = Guid.Empty;
+                foreach (var item in entity)
+                {
+                    item.tem_ad_line_id = Guid.CreateVersion7();
+                    item.adjustment_id = item.adjustment_id;
+                    adjustment_id = item.adjustment_id ?? Guid.Empty;
+                    item.adjustment_detail_id = item.adjustment_detail_id;
+                    item.store_id = item.store_id;
+                    item.product_id = item.product_id;
+                    item.variant_id = item.variant_id;
+                    item.store_variant_inventory_id = item.store_variant_inventory_id;
+                    item.barcode = item.barcode;
+                    item.sku = item.sku;
+                    item.batch_number = item.batch_number;
+                    item.expiry_date = item.expiry_date;
+                    item.counted_qty = item.counted_qty;
+                    item.adjusted_qty = item.adjusted_qty;
+                    item.average_cost = item.average_cost;
+                    item.total_cost = item.counted_qty * item.average_cost;
+                    _context.temp_stock_ad_lines.Add(item);
+                }
+                await _context.SaveChangesAsync();
+
+                var store_inv = await Add_storeinv_header(adjustment_id);
+                if (!store_inv.Success)
+                {
+                    await transaction.RollbackAsync();
+                    return new ServiceResult<List<temp_stock_ad_lines_dto>>
+                    {
+                        Status = 300,
+                        Success = false
+                    };
+                }
+                var delete_header = await _context.temp_stock_ad_lines.Where(a => a.adjustment_id == adjustment_id).ToListAsync();
+                if (delete_header != null)
+                {
+                    _context.temp_stock_ad_lines.RemoveRange(delete_header);
+
+                    await _context.SaveChangesAsync();
+                }
+                var inv_adjustment = await _context.inventory_adjustment_header.FirstOrDefaultAsync(a => a.adjustment_id == adjustment_id);
+                if (inv_adjustment != null)
+                {
+                    inv_adjustment.status = "POSTED";
+                    _context.inventory_adjustment_header.Update(inv_adjustment);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<List<temp_stock_ad_lines_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success"
+                };
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Error while add_adjustment_inv");
+                await transaction.RollbackAsync();
+                return new ServiceResult<List<temp_stock_ad_lines_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
+        
+        public async Task<ServiceResult<store_inventory_ad_header>> Add_storeinv_header(Guid adjustment_id)
+        {
+            try
+            {
+                if (adjustment_id == null)
+                {
+                    return new ServiceResult<store_inventory_ad_header>
+                    {
+                        Success = false
+                    };
+                }
+                //delete
+                var delete_data = await _context.store_inventory_ad_header.Include(a => a.store_inventory_ad_details).FirstOrDefaultAsync(a => a.adjustment_id == adjustment_id);
+                if (delete_data != null)
+                {
+                    delete_data.total_positive_value = 0;
+                    delete_data.total_negative_value = 0;
+                    delete_data.total_items = 0;
+                    delete_data.total_cost = 0;
+                    foreach (var item in delete_data.store_inventory_ad_details)
+                    {
+                         _context.store_inventory_ad_details.RemoveRange(item);
+
+                    }
+                     _context.store_inventory_ad_header.Update(delete_data);
+                }
+                var temp = await _context.temp_stock_ad_lines.FirstOrDefaultAsync(a => a.adjustment_id == adjustment_id);
+                if (temp == null)
+                {
+                    return new ServiceResult<store_inventory_ad_header>
+                    {
+                        Success = false
+                    };
+                }
+                store_inventory_ad_header store_Inventory_Ad_Header = new store_inventory_ad_header();
+                List<store_inventory_ad_details> store_Inventory_Ad_Details = new List<store_inventory_ad_details>();
+                var store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == temp.store_id);
+                int total_items = 0;
+                Decimal total_negative = 0;
+                Decimal total_positive = 0;
+                Decimal negative = 0;
+                Decimal positive = 0;
+                Decimal total_cost = 0;
+                var table_ = "store_inventory_ad_header";
+                var table_key_ = await _context.am_table_next_key.FirstOrDefaultAsync(a => a.name == table_ && a.business_id == store.company_id);
+                var key_ = Convert.ToInt16(table_key_.next_key);
+                store_Inventory_Ad_Header.store_inventory_ad_id = Guid.CreateVersion7();
+                store_Inventory_Ad_Header.adjustment_id = temp.adjustment_id;
+                store_Inventory_Ad_Header.inventory_code = store.store_code + '-' + Convert.ToString(key_ + 1);
+                store_Inventory_Ad_Header.store_id = temp.store_id;
+                var temp_list = await _context.temp_stock_ad_lines.Where(a => a.adjustment_id == adjustment_id).ToListAsync(); ;
+                if (temp_list == null)
+                {
+                    return new ServiceResult<store_inventory_ad_header>
+                    {
+                        Success = false
+                    };
+                }
+                foreach (var item in temp_list)
+                {
+                    var lines_deatil = await _context.inventory_adjustment_lines.FirstOrDefaultAsync(a => a.adjustment_detail_id == item.adjustment_detail_id);
+
+                    var store_inve = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id);
+                    item.adjusted_qty = item.counted_qty - store_inve.on_hand_quantity??0m;
+
+                    if (item.adjusted_qty > 0)
+                    {
+                        total_positive += item.adjusted_qty;
+                        positive = item.adjusted_qty;
+                        store_inve.on_hand_quantity += positive;
+                        _context.im_StoreVariantInventory.Update(store_inve);
+                    }
+                    else
+                    {
+                        total_negative += item.adjusted_qty;
+                        negative = item.adjusted_qty;
+                        store_inve.on_hand_quantity -= negative;
+                        _context.im_StoreVariantInventory.Update(store_inve);
+                    }
+                    store_inventory_ad_details store_Inventory_Ad_Detail_line = new store_inventory_ad_details();
+                    store_Inventory_Ad_Detail_line.store_inventory_detail_ad_id = Guid.CreateVersion7();
+                    store_Inventory_Ad_Detail_line.store_inventory_ad_id = store_Inventory_Ad_Header.store_inventory_ad_id;
+                    store_Inventory_Ad_Detail_line.product_id = lines_deatil.product_id;
+                    store_Inventory_Ad_Detail_line.variant_id = lines_deatil.variant_id;
+                    store_Inventory_Ad_Detail_line.store_variant_inventory_id = lines_deatil.store_variant_inventory_id;
+                    store_Inventory_Ad_Detail_line.adjustment_detail_id = lines_deatil.adjustment_detail_id;
+                    store_Inventory_Ad_Detail_line.barcode = lines_deatil.barcode;
+                    store_Inventory_Ad_Detail_line.batch_number = lines_deatil.batch_number;
+                    store_Inventory_Ad_Detail_line.system_qty = lines_deatil.system_qty;
+                    store_Inventory_Ad_Detail_line.expiry_date = lines_deatil.expiry_date;
+                    store_Inventory_Ad_Detail_line.adjusted_qty = lines_deatil.adjusted_qty;
+                    store_Inventory_Ad_Detail_line.average_cost = lines_deatil.average_cost;
+                    store_Inventory_Ad_Detail_line.total_cost = lines_deatil.total_cost;
+                    total_cost += store_Inventory_Ad_Detail_line.total_cost;
+                    store_Inventory_Ad_Detail_line.created_at = DateTime.Now;
+                    store_Inventory_Ad_Detail_line.status = "POSTED";
+                    _context.store_inventory_ad_details.Add(store_Inventory_Ad_Detail_line);
+                    store_Inventory_Ad_Details.AddRange(store_Inventory_Ad_Details);
+                    total_items++;
+                    positive = 0;
+                    negative = 0;
+                }
+                store_Inventory_Ad_Header.total_positive_value = total_positive;
+                store_Inventory_Ad_Header.total_negative_value = total_negative;
+                store_Inventory_Ad_Header.total_items = total_items;
+                store_Inventory_Ad_Header.total_cost = total_cost;
+                store_Inventory_Ad_Header.created_at = DateTime.Now;
+                store_Inventory_Ad_Header.status = "POSTED";
+
+                store_Inventory_Ad_Header.store_inventory_ad_details = store_Inventory_Ad_Details;
+
+                _context.store_inventory_ad_header.Add(store_Inventory_Ad_Header);
+                if (table_ != null)
+                {
+                    table_key_.next_key = key_ + 1;
+                    _context.am_table_next_key.Update(table_key_);
+                }
+                await _context.SaveChangesAsync();
+                return new ServiceResult<store_inventory_ad_header>
+                {
+                    Status = 200,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<store_inventory_ad_header>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
+        }
+
     }
 
 }

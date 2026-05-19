@@ -2,6 +2,7 @@
 using Faahi.Dto;
 using Faahi.Dto.mk_blacklisted;
 using Faahi.Migrations;
+using Faahi.Model.am_vcos;
 using Faahi.Model.site_settings;
 using Faahi.Model.tax_class_table;
 using Microsoft.EntityFrameworkCore;
@@ -139,6 +140,7 @@ namespace Faahi.Service.site_settings_service
             }
            
         }
+        
         public async Task<ServiceResult<tx_TaxClasses>> get_tax_class(Guid tax_class_id)
         {
             try
@@ -174,6 +176,7 @@ namespace Faahi.Service.site_settings_service
             }
            
         }
+        
         public async Task<ServiceResult<mk_blacklisted_numbers>> Add_blacklist(mk_blacklisted_numbers mk_Blacklisted_)
         {
             var transaction = await _context.Database.BeginTransactionAsync();
@@ -312,6 +315,98 @@ namespace Faahi.Service.site_settings_service
                     Message = ex.Message
                 };
             }
+        }
+
+        public async Task<ServiceResult<payment_terms>> Add_customer_due(payment_terms ar_Customer_Due)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (ar_Customer_Due == null)
+                {
+                    return new ServiceResult<payment_terms>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                ar_Customer_Due.payment_term_id = Guid.CreateVersion7();
+                ar_Customer_Due.business_id = ar_Customer_Due.business_id;
+                ar_Customer_Due.due_days=ar_Customer_Due.due_days;
+                ar_Customer_Due.due_description=ar_Customer_Due.due_description;
+                ar_Customer_Due.created_by_user_id = ar_Customer_Due.created_by_user_id;
+                ar_Customer_Due.created_by = ar_Customer_Due.created_by;
+                ar_Customer_Due.created_at = ar_Customer_Due.created_at;
+                ar_Customer_Due.updated_at = ar_Customer_Due.updated_at;
+                ar_Customer_Due.status = ar_Customer_Due.status;
+                _context.payment_terms.Add(ar_Customer_Due);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<payment_terms>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                    Data = ar_Customer_Due
+                };
+
+            }
+            catch(Exception ex)
+            {
+                _logger.LogInformation("Error while Add_customer_due");
+                await transaction.RollbackAsync();
+                return new ServiceResult<payment_terms>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<List<payment_terms>>> get_customer_due(Guid business_id)
+        {
+            try
+            {
+                if( business_id == null)
+                {
+                    return new ServiceResult<List<payment_terms>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "NO data found"
+                    };
+                }
+                var data = await _context.payment_terms.Where(a=>a.business_id==business_id).ToListAsync();
+                if (!data.Any())
+                {
+                    return new ServiceResult<List<payment_terms>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                return new ServiceResult<List<payment_terms>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                    Data = data
+                };
+
+            }
+            catch(Exception ex)
+            {
+                return new ServiceResult<List<payment_terms>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+
         }
     }
 }

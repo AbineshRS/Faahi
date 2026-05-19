@@ -13,8 +13,11 @@ using Faahi.Service.im_products.category;
 using Faahi.Service.im_products.im_purchase;
 using Faahi.Service.im_products.im_tags;
 using Faahi.Service.im_products.sales;
+using Faahi.Service.Mappper;
+using Faahi.Service.Mappper.Inventory_adjustment;
 using Faahi.Service.market_place;
 using Faahi.Service.PartyService;
+using Faahi.Service.SignalR;
 using Faahi.Service.site_settings_service;
 using Faahi.Service.Store;
 using Faahi.Service.table_key;
@@ -47,7 +50,7 @@ var myAllowSpecificOrigins = "_myAllowSpecificOrigins";
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
-
+builder.Services.AddSignalR();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
@@ -60,13 +63,14 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 // ? Proper CORS setup
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: myAllowSpecificOrigins,
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
+    options.AddPolicy("_myAllowSpecificOrigins", policy =>
+    {
+        policy
+            .SetIsOriginAllowed(_ => true) // allow any origin
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // required if sending cookies or auth headers
+    });
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -84,6 +88,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Key"]!)),
             ValidateIssuerSigningKey = true
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hub"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddControllers();
 
@@ -96,7 +117,8 @@ builder.Services.AddControllers()
 
 //Mapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-
+builder.Services.AddAutoMapper(typeof(StockTransferHeader_mapper).Assembly);
+builder.Services.AddAutoMapper(typeof(inventory_adjustment_header_mapper).Assembly);
 
 //Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -118,7 +140,6 @@ builder.Services.AddScoped<Isite_settings,site_settings_service>();
 builder.Services.AddScoped<Isales,sales_service>();
 builder.Services.AddScoped<IMarket_place_service, Market_place_service>();
 builder.Services.AddMemoryCache();
-
 
 builder.Services.AddScoped<IAccountService, AccountService>();
 
@@ -164,7 +185,7 @@ app.Use(async (context, next) =>
     {
         context.Items["BaseUrl"] = baseUrl;
     }
-
+        
     await next();
 });
 app.UseRouting();
@@ -178,5 +199,6 @@ app.UseAuthorization();
 app.UseStaticFiles();
 
 app.MapControllers();
+app.MapHub<signalr_hub>("/hub").RequireCors(myAllowSpecificOrigins);
 
 app.Run();  
