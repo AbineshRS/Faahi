@@ -197,12 +197,12 @@ namespace Faahi.Model.im_products
         //[NotMapped]
         //public string? Bin_no { get; set; }
 
-        //[NotMapped]
-        //public Guid? vendor_id { get; set; }
+        [NotMapped]
+        public Guid? userId { get; set; }
 
-        //[NotMapped]
-        //public string? listing_code { get; set; }
-      
+        [NotMapped]
+        public string? login_name { get; set; }
+
 
         public ICollection<im_ProductVariants>? im_ProductVariants { get; set; } = null;
 

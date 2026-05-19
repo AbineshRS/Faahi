@@ -37,5 +37,6 @@ namespace Faahi.Model.im_products
 
         [Column(TypeName = "datetime")]
         public DateTime? uploaded_at { get; set; } = null;
+
     }
 }

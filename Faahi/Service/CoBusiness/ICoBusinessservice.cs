@@ -34,6 +34,10 @@ namespace Faahi.Service.CoBusiness
 
         Task<ServiceResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries);
 
+        Task<ServiceResult<co_avl_countries>> curency_company(Guid avl_countries_id);
+
+        Task<ServiceResult<co_avl_countries>> Update_currency(Guid avl_countries_id, co_avl_countries co_Avl_Countries);
+
         Task<ServiceResult<List<co_avl_countries>>> CurrencyList(Guid company_id);
 
         Task<ServiceResult<im_site>> Create_im_site(im_site im_Site);

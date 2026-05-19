@@ -24,7 +24,7 @@ namespace Faahi.Service.Store
 
         Task<ServiceResult<st_UserStoreAccess>> Create_store_access(st_UserStoreAccess st_UserStoreAccess);
 
-        Task<ServiceResult<List<st_stores>>> Get_store_by_email(string email);
+        Task<ServiceResult<List<st_stores>>> Get_store_by_email(Guid role_id);
 
         Task<ServiceResult<st_UserRoles>> Get_userrole(Guid user_id,Guid store_id);
 
@@ -46,6 +46,7 @@ namespace Faahi.Service.Store
 
         Task<ServiceResult<List<st_invoice_template>>> Get_templates();
 
+        Task<ServiceResult<List<st_stores>>> store_list(Guid company_id);
 
 
     }

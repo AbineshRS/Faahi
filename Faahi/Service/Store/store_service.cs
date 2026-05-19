@@ -130,17 +130,17 @@ namespace Faahi.Service.Store
                     };
                 }
 
-                if (existing_users.Count >= 1)
-                {
-                    st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
-                    st_UserStoreAccess.store_access_id = Guid.CreateVersion7();
-                    st_UserStoreAccess.user_id = existingSeller.user_id;
-                    st_UserStoreAccess.store_id = Store_users.store_id;
-                    st_UserStoreAccess.role_id = Store_users.role_id;
-                    st_UserStoreAccess.created_at = DateTime.Now;
-                    st_UserStoreAccess.status = Store_users.status;
-                    await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
-                }
+                //if (existing_users.Count >= 1)
+                //{
+                //    st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
+                //    st_UserStoreAccess.store_access_id = Guid.CreateVersion7();
+                //    st_UserStoreAccess.user_id = existingSeller.user_id;
+                //    st_UserStoreAccess.store_id = Store_users.store_id;
+                //    st_UserStoreAccess.role_id = Store_users.role_id;
+                //    st_UserStoreAccess.created_at = DateTime.Now;
+                //    st_UserStoreAccess.status = Store_users.status;
+                //    await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
+                //}
                 //else
                 //{
                 //    st_Users st_Users = new st_Users();
@@ -193,7 +193,8 @@ namespace Faahi.Service.Store
                 var am_user = await _context.am_users.Include(u => u.am_roles).FirstOrDefaultAsync(a => a.email == Store_users.email);
                 if (am_user == null)
                 {
-                    
+                    st_Users st_Users = new st_Users();
+                    st_Users.user_id = Guid.CreateVersion7();
 
                     isNewUser = true;
                     am_users am_Users = new am_users
@@ -229,6 +230,7 @@ namespace Faahi.Service.Store
                         user_id = am_Users.userId,
                         store_id = Store_users.store_id,
                         business_id = co_business.company_id,
+                        store_user_id= st_Users.user_id,
                         created_at = DateTime.Now,
                         am_user_business_access = new List<am_user_business_access>()
                     };
@@ -244,8 +246,7 @@ namespace Faahi.Service.Store
                         status = "T",
                         created_at = DateTime.Now
                     };
-                    st_Users st_Users = new st_Users();
-                    st_Users.user_id = Guid.CreateVersion7();
+                    
                     st_Users.company_id = Store_users.company_id;
                     st_Users.Full_name = Store_users.Full_name;
 
@@ -289,22 +290,22 @@ namespace Faahi.Service.Store
                 }
                 else
                 {
-                    var role = new am_roles
-                    {
-                        role_id = Guid.CreateVersion7(),
-                        role_code = "ST",
-                        user_ids = am_user.userId,
-                        role_group = st_UserRoles.role_name,
-                        role_name = st_UserRoles.role_name,
-                        description = st_UserRoles.description,
-                        is_system_role = "T",
-                        am_user_roles = new List<am_user_roles>()
-                    };
-
+                    //var role = new am_roles
+                    //{
+                    //    role_id = Guid.CreateVersion7(),
+                    //    role_code = "ST",
+                    //    user_ids = am_user.userId,
+                    //    role_group = st_UserRoles.role_name,
+                    //    role_name = st_UserRoles.role_name,
+                    //    description = st_UserRoles.description,
+                    //    is_system_role = "T",
+                    //    am_user_roles = new List<am_user_roles>()
+                    //};
+                    var roles = await _context.am_roles.FirstOrDefaultAsync(a => a.user_ids == am_user.userId);
                     var userRole = new am_user_roles
                     {
                         user_role_id = Guid.CreateVersion7(),
-                        role_id = role.role_id,
+                        role_id = roles.role_id,
                         user_id = am_user.userId,
                         business_id = co_business.company_id,
                         store_id = Store_users.store_id,
@@ -316,8 +317,8 @@ namespace Faahi.Service.Store
                     st_Users.user_id = Guid.CreateVersion7();
                     st_Users.company_id = Store_users.company_id;
                     st_Users.Full_name = Store_users.Full_name;
-                    st_Users.role_type = role.role_name;
-                    st_Users.am_user_Id = role.user_ids;
+                    st_Users.role_type = roles.role_name;
+                    st_Users.am_user_Id = roles.user_ids;
 
                     Gen_password = GeneratePassword(st_Users.Full_name);
                     st_Users.email = Store_users.email;
@@ -343,16 +344,16 @@ namespace Faahi.Service.Store
                     await _context.st_Users.AddAsync(st_Users);
                     st_UserStoreAccess st_UserStoreAccess = new st_UserStoreAccess();
                     st_UserStoreAccess.store_access_id = Guid.CreateVersion7();
-                    st_UserStoreAccess.user_id = st_Users.user_id;
+                    st_UserStoreAccess.user_id = am_user.userId;
                     st_UserStoreAccess.store_id = Store_users.store_id;
                     st_UserStoreAccess.role_id = Store_users.role_id;
                     st_UserStoreAccess.created_at = DateTime.Now;
                     st_UserStoreAccess.status = Store_users.status;
                     await _context.st_UserStoreAccess.AddAsync(st_UserStoreAccess);
                     _context.am_user_roles.Add(userRole);
-                    _context.am_roles.Add(role);
-                    role.am_user_roles.Add(userRole);
-                    am_user.am_roles.Add(role);
+                    //_context.am_roles.Add(role);
+                    roles.am_user_roles.Add(userRole);
+                    am_user.am_roles.Add(roles);
                     _context.am_users.Update(am_user);
                 }
                 var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == Store_users.store_id);
@@ -1034,20 +1035,60 @@ namespace Faahi.Service.Store
                 };
             }
         }
-        public async Task<ServiceResult<List<st_stores>>> Get_store_by_email(string email)
+        public async Task<ServiceResult<List<st_stores>>> Get_store_by_email(Guid role_id)
         {
             try
             {
                 List<st_stores> storeList = new List<st_stores>();
-                var storeAccessList = await _context.st_Users.Where(a => a.email == email).ToListAsync();
-                if (storeAccessList.Count >= 1)
-                {
-                    var st_store = await _context.st_UserStoreAccess.Where(s => s.user_id == storeAccessList.FirstOrDefault().user_id).ToListAsync();
-                    var storeIds = st_store.Select(s => s.store_id).ToList();
+                //var storeAccessList = await _context.st_Users.Where(a => a.email == email).ToListAsync();
+                //if (storeAccessList.Count >= 1)
+                //{
+                //    var st_store = await _context.st_UserStoreAccess.Where(s => s.user_id == storeAccessList.FirstOrDefault().user_id).ToListAsync();
+                //    var storeIds = st_store.Select(s => s.store_id).ToList();
 
-                    storeList = _context.st_stores.AsEnumerable()
-                          .Where(a => storeIds.Contains(a.store_id) && a.status == "T")
-                          .ToList();
+                //    storeList = _context.st_stores.AsEnumerable()
+                //          .Where(a => storeIds.Contains(a.store_id) && a.status == "T")
+                //          .ToList();
+
+                //}
+                if (role_id == null)
+                {
+                    return new ServiceResult<List<st_stores>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var am_user_roles = await _context.am_user_roles.FirstOrDefaultAsync(a => a.role_id == role_id);
+                if (am_user_roles != null)
+                {
+                    if (am_user_roles.store_id == null)
+                    {
+                        var store = await _context.st_stores.Where(a => a.company_id == am_user_roles.business_id).ToListAsync();
+                        storeList.AddRange(store);
+                    }
+                    else
+                    {
+                        var storeAccess = await _context.st_UserStoreAccess.Where(a => a.user_id == am_user_roles.user_id).ToListAsync();
+                        foreach(var item in storeAccess)
+                        {
+                            var stores = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id==item.store_id);
+                            storeList.AddRange(stores);
+
+                        }
+
+
+                    }
+                }
+                else
+                {
+                    return new ServiceResult<List<st_stores>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
 
                 }
 
@@ -1630,6 +1671,48 @@ namespace Faahi.Service.Store
                 };
             }
 
+        }
+
+        public async Task<ServiceResult<List<st_stores>>> store_list(Guid company_id)
+        {
+            try
+            {
+                if (company_id == null)
+                {
+                    return new ServiceResult<List<st_stores>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var store= await _context.st_stores.Where(a=>a.company_id==company_id).ToListAsync();
+                if (!store.Any())
+                {
+                    return new ServiceResult<List<st_stores>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                return new ServiceResult<List<st_stores>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "success",
+                    Data = store
+                };
+
+            }catch (Exception ex)
+            {
+                return new ServiceResult<List<st_stores>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
         }
     }
 

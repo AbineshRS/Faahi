@@ -209,20 +209,51 @@ namespace Faahi.Controllers.Application
 
         public DbSet<sys_Images> sys_Images { get; set; }
 
+        public DbSet<payment_terms> payment_terms { get; set; }
+
+        public DbSet<im_StockTransferHeader> im_StockTransferHeader { get; set; }
+
+        public DbSet<im_StockTransferLines> im_StockTransferLines { get; set; }
+
+        public DbSet<im_AuditLogs> im_AuditLogs { get; set; }
+
+        public DbSet<im_InventoryCommitments> im_InventoryCommitments { get; set; }
+
+        public DbSet<inventory_adjustment_header> inventory_adjustment_header { get; set; }
+
+        public DbSet<inventory_adjustment_lines> inventory_adjustment_lines { get; set; }
+
+        public DbSet<im_random_Stock_reject> im_random_Stock_reject { get; set; }
+
+        public DbSet<store_inventory_ad_header> store_inventory_ad_header { get; set; }
+
+        public DbSet<store_inventory_ad_details> store_inventory_ad_details { get; set; }
 
         //TEMPTABLES
         public DbSet<temp_im_variant> temp_im_variants { get; set; }
 
         public DbSet<temp_im_purchase_listing_details> temp_Im_Purchase_Listing_Details { get; set; }
 
+        public DbSet<temp_stock_ad_lines> temp_stock_ad_lines { get; set; }
+
         // view tables
         public DbSet<om_CustomerOrders_dto> CustomerOrdersDto { get; set; }
 
         public DbSet<so_sales_header_customer> so_sales_header_customer { get; set; }
 
+        public DbSet<customer_payment_history> customer_payment_history { get; set; }   
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<im_StoreVariantInventory>(entity =>
+            {
+                entity.Property(e => e.on_hold).HasColumnType("char(1)").HasDefaultValue("F");
+                entity.Property(a => a.on_hand_quantity).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.committed_quantity).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+
+            });
 
             modelBuilder.Entity<st_stores>(entity =>
             {
@@ -446,6 +477,9 @@ namespace Faahi.Controllers.Application
                 entity.Property(a => a.receipt_date).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
                 entity.Property(a => a.is_posted).HasColumnType("char(1)").HasDefaultValue("F");
                 entity.Property(a => a.is_cancelled).HasColumnType("char(1)").HasDefaultValue("F");
+
+                entity.HasIndex(a => new { a.goods_receipt_id, a.business_id, a.store_id, a.Goods_recipt_code, a.status }).HasDatabaseName("IX_im_GoodsReceiptHeaders");
+                entity.HasIndex(a => new { a.transfer_id, a.purchase_order_id }).HasDatabaseName("IX_transfer_id_purchase_order_id");
             });
 
             modelBuilder.Entity<im_GoodsReceiptLines>(entity =>
@@ -466,6 +500,8 @@ namespace Faahi.Controllers.Application
                 entity.Property(a => a.tax_percent).HasColumnType("decimal(9,4)").HasDefaultValue("0");
                 entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
                 entity.Property(a => a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+
+                entity.HasIndex(a => new { a.goods_receipt_id, a.store_id }).HasDatabaseName("IX_im_GoodsReceiptLines");
 
             });
 
@@ -603,6 +639,129 @@ namespace Faahi.Controllers.Application
                 entity.HasIndex(a => new { a.source_id }).HasDatabaseName("IX_image_url");
             });
 
+            modelBuilder.Entity<payment_terms>(entity =>
+            {
+                entity.Property(a => a.status).HasColumnType("char(1)").HasDefaultValue("T");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.updated_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+
+                entity.HasIndex(a => new { a.payment_term_id, a.business_id }).HasDatabaseName("IX_ar_customer_due");
+                entity.HasIndex(a => new { a.created_at }).HasDatabaseName("IX_created_at");
+            });
+
+            modelBuilder.Entity<im_StockTransferHeader>(entity =>
+            {
+                entity.Property(e => e.transfer_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.total_quantity).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_amount).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.status).HasColumnType("nvarchar(20)").HasDefaultValue("Draft");
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+
+                entity.HasIndex(a => new { a.transfer_id, a.from_store_id, a.to_store_id }).HasDatabaseName("IX_im_StockTransferHeader");
+                entity.HasIndex(a => new { a.from_store_id, a.to_store_id }).HasDatabaseName("IX_im_StockTransferStore");
+
+            });
+
+
+            modelBuilder.Entity<im_StockTransferLines>(entity =>
+            {
+                entity.Property(e => e.transfer_line_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.average_cost).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.unit_price).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.line_total).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.quantity).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.HasIndex(a => new { a.transfer_line_id, a.product_id, a.variant_id, a.store_variant_inventory_id, a.item_batch_id }).HasDatabaseName("IX_im_StockTransferLines");
+
+            });
+
+            modelBuilder.Entity<im_AuditLogs>(entity =>
+            {
+                entity.Property(e => e.audit_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.changed_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.HasIndex(a => new { a.audit_id, a.business_id }).HasDatabaseName("IX_im_AuditLogs");
+
+            });
+
+            modelBuilder.Entity<im_InventoryCommitments>(entity =>
+            {
+                entity.Property(e => e.commitment_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.committed_quantity).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.HasIndex(a => new { a.commitment_id, a.product_id, a.variant_id }).HasDatabaseName("IX_im_InventoryCommitments");
+
+            });
+
+            modelBuilder.Entity<inventory_adjustment_header>(entity =>
+            {
+                entity.Property(e => e.adjustment_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.total_positive_value).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_adjustment_value).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_negative_value).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.status).HasColumnType("nvarchar(30)").HasDefaultValue("PENDING");
+                entity.Property(a => a.is_posted).HasColumnType("char(1)").HasDefaultValue("F");
+                entity.HasIndex(a => new { a.adjustment_id, a.adjustment_code, a.store_id }).HasDatabaseName("IX_inventory_adjustment_header");
+
+            });
+
+            modelBuilder.Entity<inventory_adjustment_lines>(entity =>
+            {
+                entity.Property(e => e.adjustment_detail_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.system_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.counted_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.adjusted_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.average_cost).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_cost).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.status).HasColumnType("nvarchar(30)").HasDefaultValue("PENDING");
+                entity.Property(a => a.is_posted).HasColumnType("char(1)").HasDefaultValue("F");
+                entity.HasIndex(a => new { a.adjustment_detail_id, a.product_id, a.variant_id }).HasDatabaseName("IX_inventory_adjustment_lines");
+
+            });
+
+            modelBuilder.Entity<im_random_Stock_reject>(entity =>
+            {
+                entity.Property(e => e.stock_reject_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.rejected_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.system_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.counted_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.adjusted_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.average_cost).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_cost).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.status).HasColumnType("nvarchar(30)").HasDefaultValue("POSTED");
+                entity.Property(a => a.is_posted).HasColumnType("char(1)").HasDefaultValue("T");
+                entity.HasIndex(a => new { a.stock_reject_id, a.product_id, a.variant_id }).HasDatabaseName("IX_inventory_adjustment_lines");
+
+            });
+
+            modelBuilder.Entity<store_inventory_ad_header>(entity =>
+            {
+                entity.Property(e => e.store_inventory_ad_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.total_negative_value).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_positive_value).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_item_adjusted).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_cost).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.status).HasColumnType("nvarchar(30)").HasDefaultValue("PENDING");
+                entity.HasIndex(a => new { a.store_inventory_ad_id, a.store_id, a.inventory_code }).HasDatabaseName("store_inventory_ad_header");
+
+            });
+
+            modelBuilder.Entity<store_inventory_ad_details>(entity =>
+            {
+                entity.Property(e => e.store_inventory_detail_ad_id).HasDefaultValueSql("NEWSEQUENTIALID()").ValueGeneratedOnAdd();
+                entity.Property(a => a.created_at).HasColumnType("datetime").HasDefaultValueSql("GETDATE()");
+                entity.Property(a => a.system_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.adjusted_qty).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.average_cost).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.total_cost).HasColumnType("decimal(18,4)").HasDefaultValue(0m);
+                entity.Property(a => a.status).HasColumnType("nvarchar(30)").HasDefaultValue("PENDING");
+                entity.HasIndex(a => new { a.store_inventory_detail_ad_id, }).HasDatabaseName("store_inventory_ad_header");
+
+            });
+
             // view tables
 
             modelBuilder.Entity<om_CustomerOrders_dto>(entity =>
@@ -612,6 +771,12 @@ namespace Faahi.Controllers.Application
             });
 
             modelBuilder.Entity<so_sales_header_customer>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToView(null); 
+            });
+
+            modelBuilder.Entity<customer_payment_history>(entity =>
             {
                 entity.HasNoKey();
                 entity.ToView(null); 

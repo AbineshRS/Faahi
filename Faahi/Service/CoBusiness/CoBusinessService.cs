@@ -1304,6 +1304,93 @@ namespace Faahi.Service.CoBusiness
 
         }
 
+        public async Task<ServiceResult<co_avl_countries>> curency_company(Guid avl_countries_id)
+        {
+            try
+            {
+                if (avl_countries_id == null)
+                {
+                    return new ServiceResult<co_avl_countries>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var existing_data = await _context.co_avl_countries.FirstOrDefaultAsync(a=>a.avl_countries_id==avl_countries_id);
+                if (existing_data == null)
+                {
+                    return new ServiceResult<co_avl_countries>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                await _context.SaveChangesAsync();
+                return new ServiceResult<co_avl_countries>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                    Data=existing_data
+                };
+
+            }catch(Exception ex)
+            {
+                _logger.LogInformation("Error while curency_company");
+                return new ServiceResult<co_avl_countries>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+        }
+
+        public async Task<ServiceResult<co_avl_countries>> Update_currency(Guid avl_countries_id, co_avl_countries co_Avl_Countries)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                if (avl_countries_id == null)
+                {
+                    return new ServiceResult<co_avl_countries>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var existing_data = await _context.co_avl_countries.FirstOrDefaultAsync(a=>a.avl_countries_id==avl_countries_id);
+                if (existing_data != null)
+                {
+                    existing_data.exchange_rate= co_Avl_Countries.exchange_rate;
+                    _context.co_avl_countries.Update(existing_data);
+                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return new ServiceResult<co_avl_countries>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Updated",
+                    Data=existing_data
+                };
+
+            }catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogInformation("Error while Update_currency");
+                return new ServiceResult<co_avl_countries>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message,
+                };
+            }
+        }
+
         public async Task<CountryInfo_Dto?> GetCountryInfoByNameAsync(string countryName)
         {
             if (string.IsNullOrWhiteSpace(countryName))

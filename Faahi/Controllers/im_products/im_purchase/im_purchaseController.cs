@@ -1,5 +1,9 @@
-﻿using Faahi.Dto.Purchase_dto;
+﻿using Faahi.Dto.Inventory_adjustment;
+using Faahi.Dto.Inventory_adjustment.adjustment_rejection;
+using Faahi.Dto.Purchase_dto;
+using Faahi.Dto.temp;
 using Faahi.Model.im_products;
+using Faahi.Model.temp_tables;
 using Faahi.Service.im_products.im_purchase;
 using Faahi.Service.im_products.sales;
 using Microsoft.AspNetCore.Authorization;
@@ -227,7 +231,7 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.Get_inventory(store_id, variant_id);
             return Ok(result);
         }
-        //[Authorize]
+        [Authorize]
         [HttpGet]
         [Route("get_inventory_report/{store_id}/{start_date}/{end_date}/{vendor_id}/{searchText}")]
         public async Task<IActionResult> Get_inventory_report(Guid store_id,DateTime? start_date,DateTime? end_date,string vendor_id,string searchText)
@@ -246,6 +250,152 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.Get_inventory_report(store_id, start_date, end_date, vid, searchText);
             return Ok(result);
         }
+        [Authorize]
+        [HttpPost]
+        [Route("Add_transfer")]
+        public async Task<IActionResult> Add_transfer(im_StockTransferHeader im_StockTransferHeader)
+        {
+            if(im_StockTransferHeader == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Add_transfer(im_StockTransferHeader);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("Get_transfer_data/{transfer_id}")]
+        public async Task<IActionResult> Get_transfer_data(Guid transfer_id)
+        {
+            if (transfer_id == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _im_purchase.Get_transfer_data(transfer_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpGet]
+        [Route("Get_transfer_list/{store_id}")]
+        public async Task<IActionResult> Get_transfer_list(Guid store_id)
+        {
+            if (store_id == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _im_purchase.Get_transfer_list(store_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("Update_transfer/{transfer_id}")]
+        public async Task<IActionResult> Update_transfer(Guid transfer_id, im_StockTransferHeader im_StockTransferHeader)
+        {
+            if (transfer_id == null)
+            {
+                return Ok("no data found");
+            }
+            var result = await _im_purchase.Update_transfer(transfer_id, im_StockTransferHeader);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("Update_inv_hold/{store_variant_inventory_id}")]
+        public async Task<IActionResult> Update_inv_hold(Guid store_variant_inventory_id)
+        {
+            if (store_variant_inventory_id == null)
+            {
+                return Ok("no Id found");
+            }
+            var result = await _im_purchase.Update_inv_hold(store_variant_inventory_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("Add_adjustment")]
+        public async Task<IActionResult> Add_adjustment(inventory_adjustment_header_dto inventory_Adjustment_Header)
+        {
+            if(inventory_Adjustment_Header == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Add_adjustment(inventory_Adjustment_Header);
+            return Ok(result);
+        }
 
+        [Authorize]
+        [HttpGet]
+        [Route("Get_adjustment_list/{store_id}")]
+        public async Task<IActionResult> Get_adjustment_list(Guid store_id)
+        {
+            if (store_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Get_adjustment_list(store_id);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("Get_adjustment_lines/{adjustment_id}")]
+        public async Task<IActionResult> Get_adjustment_lines(Guid adjustment_id)
+        {
+            if (adjustment_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Get_adjustment_lines(adjustment_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("Update_adjustment/{adjustment_id}")]
+        public async Task<IActionResult> Update_adjustment(Guid adjustment_id, inventory_adjustment_header_update_req_dto inventory_Adjustment_Lines_Response_Dto )
+        {
+            if (adjustment_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Update_adjustment(adjustment_id, inventory_Adjustment_Lines_Response_Dto);
+            return Ok(result);
+        }
+
+        //[Authorize]
+        [HttpGet]
+        [Route("Get_adjustment_list_lines/{store_id}")]
+        public async Task<IActionResult> Get_adjustment_list_lines(Guid store_id)
+        {
+            if (store_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Get_adjustment_list_lines(store_id);
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpPost]
+        [Route("Add_rejected_adjustment")]
+        public async Task<IActionResult> Add_rejected_adjustment(List<im_random_Stock_reject_dto> im_Random_Stock_Reject_Dtos)
+        {
+            if (!im_Random_Stock_Reject_Dtos.Any())
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Add_rejected_adjustment(im_Random_Stock_Reject_Dtos);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("add_adjustment_inv")]
+        public async Task<IActionResult> add_adjustment_inv(List<temp_stock_ad_lines_dto> temp_Stock_Ad_Lines)
+        {
+            if(temp_Stock_Ad_Lines == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.add_adjustment_inv(temp_Stock_Ad_Lines);
+            return Ok(result);
+        }
     }
 }

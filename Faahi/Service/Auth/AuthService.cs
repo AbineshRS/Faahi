@@ -135,45 +135,48 @@ namespace Faahi.Service.Auth
 
         public async Task<AuthResponse> am_user_login_ids(Guid user_id, Guid business_id)
         {
-            if (user_id == null || business_id == Guid.Empty)
+            try
             {
-                return new AuthResponse     {
-                    status = 300,
-                };
-            }
-            string accessToken = "";
-            string refreshToken = "";
-            var am_user = await _context.am_roles.FirstOrDefaultAsync(a=>a.role_id == user_id);
-            var am_user_roles = await _context.am_user_roles.FirstOrDefaultAsync(a=>a.role_id== am_user.role_id && a.business_id==business_id);
-
-            if (am_user_roles != null)
-            {
-                var co_company = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == am_user_roles.business_id);
-                if (co_company != null)
+                if (user_id == null || business_id == Guid.Empty)
                 {
-                     accessToken = CreatToken(null, co_company.company_id,null, am_user.role_name,co_company.business_name, 10);
-                     refreshToken = CreatToken(null, co_company.company_id,null, am_user.role_name, co_company.business_name, 10080);
-
                     return new AuthResponse
                     {
-                        status = 200,
-                        AccessToken = accessToken,
-                        RefreshToken = refreshToken
+                        status = 300,
                     };
                 }
+                string accessToken = "";
+                string refreshToken = "";
+                var am_user = await _context.am_roles.FirstOrDefaultAsync(a => a.role_id == user_id);
+                //var am_user_roles = await _context.am_user_roles.FirstOrDefaultAsync(a=>a.role_id== am_user.role_id && a.business_id==business_id);
 
-            }
-            else
-            {
-                var am_user_roles_1 = await _context.am_user_roles.FirstOrDefaultAsync(a => a.role_id == am_user.role_id && a.store_id == business_id);
+                //if (am_user_roles != null)
+                //{
+                //    var co_company = await _context.co_business.FirstOrDefaultAsync(a => a.company_id == am_user_roles.business_id);
+                //    if (co_company != null)
+                //    {
+                //         accessToken = CreatToken(null, co_company.company_id,null, am_user.role_name,co_company.business_name,null, 10);
+                //         refreshToken = CreatToken(null, co_company.company_id,null, am_user.role_name, co_company.business_name,null, 10080);
+
+                //        return new AuthResponse
+                //        {
+                //            status = 200,
+                //            AccessToken = accessToken,
+                //            RefreshToken = refreshToken
+                //        };
+                //    }
+
+                //}
+                //else
+                //{
+                var am_user_roles_1 = await _context.am_user_roles.FirstOrDefaultAsync(a => a.store_id == business_id);
                 //var st_Users = await _context.st_Users.FirstOrDefaultAsync(a => a.am_user_Id == am_user_roles_1.user_id);
                 var st_store = await _context.st_stores.FirstOrDefaultAsync(a => a.store_id == am_user_roles_1.store_id);
                 var am_user_data = await _context.am_users.FirstOrDefaultAsync(a => a.userId == am_user_roles_1.user_id);
 
                 if (st_store != null)
                 {
-                    accessToken = CreatToken(am_user_data?.userId, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, 10);
-                    refreshToken = CreatToken(am_user_data?.userId, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, 10080);
+                    accessToken = CreatToken(am_user_data?.userId, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, st_store.store_name, 10);
+                    refreshToken = CreatToken(am_user_data?.userId, st_store.company_id, st_store.store_id, am_user.role_name, am_user_data.fullName, st_store.store_name, 10080);
 
                     return new AuthResponse
                     {
@@ -182,26 +185,36 @@ namespace Faahi.Service.Auth
                         RefreshToken = refreshToken
                     };
                 }
+                //}
+
+                return new AuthResponse
+                {
+                    status = 200,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                };
+            }
+            catch(Exception ex)
+            {
+                return new AuthResponse
+                {
+                    status = 500
+                };
             }
             
-            return new AuthResponse
-            {
-                status = 200,
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            };
             
 
 
         }
 
-        private string CreatToken(Guid? userId,Guid? companyId,Guid? store_id,string userRole,string login_name, int minutes)
+        private string CreatToken(Guid? userId,Guid? companyId,Guid? store_id,string userRole,string login_name,string store_name, int minutes)
         {
             var claims = new List<Claim>
             {
                  new Claim(ClaimTypes.NameIdentifier,userId?.ToString() ?? companyId?.ToString() ?? store_id?.ToString() ?? ""),
                  new Claim(ClaimTypes.Name,userId?.ToString() ?? companyId?.ToString() ?? store_id?.ToString() ?? ""),
                  new Claim("userRole", userRole ?? ""),
+                 new Claim("store_name", store_name ?? ""),
                  new Claim("company_id", companyId.ToString() ?? companyId.ToString()),
                  new Claim("store_id", store_id.ToString() ?? store_id.ToString()),
                  new Claim("userId", userId.ToString() ?? ""),

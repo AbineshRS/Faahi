@@ -1,5 +1,8 @@
 ﻿using Faahi.Dto;
+using Faahi.Dto.Inventory_adjustment;
+using Faahi.Dto.Inventory_adjustment.adjustment_rejection;
 using Faahi.Dto.Purchase_dto;
+using Faahi.Dto.temp;
 using Faahi.Model.Accounts;
 using Faahi.Model.im_products;
 using Faahi.Model.temp_tables;
@@ -56,5 +59,30 @@ namespace Faahi.Service.im_products.im_purchase
         Task<ServiceResult<im_purchase_listing_dto>> Add_retuen_purchase(Guid listing_id, im_purchase_listing_dto _Purchase_Listing);
 
         Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header(Guid listing_id);
+
+        Task<ServiceResult<im_StockTransferHeader>> Add_transfer(im_StockTransferHeader _StockTransferHeader);
+
+        Task<ServiceResult<List<StockTransferFlatDto>>> Get_transfer_data(Guid transfer_id);
+
+        Task<ServiceResult<List<im_StockTransferHeader_data_dto>>> Get_transfer_list(Guid store_id);
+
+        Task<ServiceResult<im_StockTransferHeader>> Update_transfer(Guid transfer_id, im_StockTransferHeader im_StockTransferHeader);
+
+        Task<ServiceResult<store_inv_hold_dto>> Update_inv_hold(Guid store_variant_inventory_id);
+        
+        Task<ServiceResult<inventory_adjustment_header_dto>> Add_adjustment(inventory_adjustment_header_dto inventory_Adjustment_Header);
+
+        Task<ServiceResult<List<inventory_adjustment_header_response_dto>>> Get_adjustment_list(Guid store_id);
+        
+        Task<ServiceResult<List<inventory_adjustment_lines_response_dto>>> Get_adjustment_lines(Guid adjustment_id);
+
+        Task<ServiceResult<inventory_adjustment_header_update_req_dto>> Update_adjustment(Guid adjustment_id, inventory_adjustment_header_update_req_dto inventory_Adjustment);
+
+        Task<ServiceResult<InventoryAdjustmentResponseDto>> Get_adjustment_list_lines(Guid store_id);
+
+        Task<ServiceResult<List<im_random_Stock_reject_dto>>> Add_rejected_adjustment(List<im_random_Stock_reject_dto> im_Random_Stock_Reject_Dtos);
+
+        Task<ServiceResult<List<temp_stock_ad_lines_dto>>> add_adjustment_inv(List<temp_stock_ad_lines_dto> temp_Stock_Ad_Lines);
+
     }
 }

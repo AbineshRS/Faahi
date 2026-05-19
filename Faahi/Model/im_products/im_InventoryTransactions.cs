@@ -53,6 +53,12 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? batch_id { get;  set; }
 
+        [ForeignKey(nameof(transfer_line_id))]
+        public im_StockTransferLines? im_StockTransferLines { get; set; }=null;
+
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? transfer_line_id { get;  set; }=null;
+
 
 
         [Column(TypeName = "datetime")]
