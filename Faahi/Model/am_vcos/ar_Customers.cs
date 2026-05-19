@@ -26,6 +26,11 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName = "uniqueidentifier")]
         public Guid? company_id { get; set; }
 
+        [ForeignKey(nameof(payment_term_id))]
+        public payment_terms? payment_terms { get; set; } = null;
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? payment_term_id { get; set; }
+
         [ForeignKey("party_id")]
         [Display(Name = "party_id")]
         [Column(TypeName = "uniqueidentifier")]
@@ -34,8 +39,7 @@ namespace Faahi.Model.am_vcos
         [Column(TypeName ="varchar(30)")]
         public string? customer_code { get; set; }
 
-        [Column(TypeName ="varchar(30)")]
-        public string? payment_term_id { get; set; }=null;
+        
 
         [Column(TypeName = "decimal(18,4)")]
         public Decimal? credit_limit { get; set; } = null;
@@ -99,6 +103,12 @@ namespace Faahi.Model.am_vcos
         [DefaultValue("'USD'")]
         [Column(TypeName = "varchar(20)")]
         public string? default_currency { get; set; } = null;
+
+        [Column(TypeName = "int")]
+        public int? due_days { get; set; }
+
+        [Column(TypeName = "nvarchar(100)")]
+        public string? due_description { get; set; }
         public ICollection<fin_PartyBankAccounts>? fin_PartyBankAccounts { get; set; } = null;
 
         public ICollection<st_PartyAddresses> st_PartyAddresses { get; set; } = null;

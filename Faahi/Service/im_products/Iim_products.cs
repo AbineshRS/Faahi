@@ -1,5 +1,7 @@
 ﻿using Faahi.Dto;
 using Faahi.Dto.Product_dto;
+using Faahi.Dto.product_transfer;
+using Faahi.Dto.Purchase_dto;
 using Faahi.Model.im_products;
 using Microsoft.AspNetCore.Mvc;
 
@@ -50,6 +52,17 @@ namespace Faahi.Service.im_products
 
         Task<ServiceResult<im_product>> product_transfer_store(Guid product_id,Guid store_id);
 
+        Task<ServiceResult<List<product_transfer_dto>>> Product_search_item(Guid store_id, string search);
+
+        Task<ServiceResult<List<product_transfer_dto>>> Product_list(Guid product_id);
+
         Task<ServiceResult<im_Products>> Delete_product_data(Guid product_id);
+
+        Task<ServiceResult<List<im_Store_wise_stock_dto>>> store_wise_stock(Guid variant_id);
+
+        Task<ServiceResult<List<im_audit_log_dto>>> Get_audit_list(Guid record_id);
+
+        Task<ServiceResult<List<product_transfer_dto>>> Product_search_iteminventory(Guid store_id, Guid product_id);
+
     }
 }

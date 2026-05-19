@@ -25,6 +25,10 @@
         public decimal? grand_total { get; set; } = null;
 
         public string? status { get; set; } = null;
+
+        public string? sales_mode { get; set; } = null;
+
+        public string? purchase_order_no { get; set; } = null;
     
     }
 }

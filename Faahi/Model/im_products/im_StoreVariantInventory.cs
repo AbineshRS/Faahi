@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -40,5 +41,10 @@ namespace Faahi.Model.im_products
 
         [Column(TypeName = "nvarchar(50)")]
         public string? batch_number { get; set; }=null;
+
+        [Column(TypeName = "char(1)")]
+        [StringLength(1)]
+        [DefaultValue("F")]
+        public string on_hold { get; set; }
     }
 }

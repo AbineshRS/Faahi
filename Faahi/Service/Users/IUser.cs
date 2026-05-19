@@ -33,6 +33,8 @@ namespace Faahi.Service.Users
 
         Task<ServiceResult<List<so_sales_header_customer>>> Order_list_customer(Guid customer_id);
 
-        Task<ServiceResult<sales_customer_update_payment_dto>> Update_sales_payment(sales_customer_update_payment_dto sales_Customer);
+        Task<ServiceResult<List<sales_customer_update_payment_dto>>> Update_sales_payment(List<sales_customer_update_payment_dto> sales_Customer);
+
+        Task<ServiceResult<List<customer_payment_group_dto>>> Customer_payment_history(Guid salesId);
     }
 }

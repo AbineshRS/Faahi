@@ -26,7 +26,7 @@ namespace Faahi.Controllers.im_products
         [Authorize]
         [HttpPost]
         [Route("add_product")]
-        public async Task<ActionResult<im_Products>> Create_prodcust(im_Products im_Product)
+        public async Task<IActionResult> Create_prodcust(im_Products im_Product)
         {
             if (im_Product == null)
             {
@@ -112,7 +112,7 @@ namespace Faahi.Controllers.im_products
             var result = await _im_products.Add_product_excel(im_Products, listing_id);
             return Ok(result);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_company_product/{company_id}")]
         public async Task<IActionResult> get_company_product(Guid company_id, [FromQuery] string? searchText, [FromQuery] Guid? categoryId)
@@ -124,7 +124,7 @@ namespace Faahi.Controllers.im_products
             var all_product_details = await _im_products.get_company_product(company_id, searchText, categoryId);
             return Ok(all_product_details);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_all_product_details/{company_id}")]
         public async Task<IActionResult> all_product_details(Guid company_id)
@@ -193,7 +193,7 @@ namespace Faahi.Controllers.im_products
             return Ok(product_list);
         }
         [Authorize]
-        [HttpPost]
+        [HttpGet]
         [Route("product_search/{search}/{store_id}")]
         public async Task<IActionResult> Product_search(string search,Guid store_id)
         {
@@ -267,6 +267,31 @@ namespace Faahi.Controllers.im_products
             var result = await _im_products.product_transfer_store(product_id, store_id);
             return Ok(result);
         }
+
+        //[Authorize]
+        [HttpGet]
+        [Route("product_search_item/{store_id}/{search}")]
+        public async Task<IActionResult> Product_search_item(Guid store_id,string search )
+        {
+            if (search == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_products.Product_search_item(store_id,search );
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpGet]
+        [Route("product_list/{product_id}")]
+        public async Task<IActionResult> Product_list(Guid product_id )
+        {
+            if (product_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_products.Product_list(product_id);
+            return Ok(result);
+        }
         [HttpDelete]
         [Route("Delete_product_data/{product_id}")]
         public async Task<IActionResult> Delete_product_data(Guid product_id)
@@ -276,9 +301,43 @@ namespace Faahi.Controllers.im_products
             return Ok(result);
         }
 
+        [Authorize]
+        [HttpGet]
+        [Route("store_wise_stock/{variant_id}")]
+        public async Task<IActionResult> store_wise_stock(Guid variant_id)
+        {
+            if (variant_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_products.store_wise_stock(variant_id);
+            return Ok(result);
+        }
 
-
-
+        //[Authorize]
+        [HttpGet]
+        [Route("Get_list_audit/{record_id}")]
+        public async Task<IActionResult> Get_audit_list(Guid record_id)
+        {
+            if (record_id == null)
+            {
+                return Ok("NO data found");
+            }
+            var result = await _im_products.Get_audit_list(record_id);
+            return Ok(result);
+        }
+        //[Authorize]
+        [HttpGet]
+        [Route("product_search_item_inventory/{store_id}/{product_id}")]
+        public async Task<IActionResult> Product_search_iteminventory(Guid store_id, Guid product_id)
+        {
+            if (product_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_products.Product_search_iteminventory(store_id, product_id);
+            return Ok(result);
+        }
 
     }
 }

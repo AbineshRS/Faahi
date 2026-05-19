@@ -135,14 +135,14 @@ namespace Faahi.Controllers.Store
         }
         //[Authorize]
         [HttpGet]
-        [Route("get_store_by_email/{email}")]
-        public async Task<ActionResult> Get_store_by_email(string email)
+        [Route("get_store_by_role/{role_id}")]
+        public async Task<ActionResult> Get_store_by_email(Guid role_id)
         {
-            if (string.IsNullOrEmpty(email))
+            if (role_id==null)
             {
                 return Ok("No email found");
             }
-            var result = await _istore.Get_store_by_email(email);
+            var result = await _istore.Get_store_by_email(role_id);
             return Ok(result);
         }
         [Authorize]
@@ -254,6 +254,19 @@ namespace Faahi.Controllers.Store
         public async Task<IActionResult> Get_templates()
         {
             var result = await _istore.Get_templates();
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("store_listes/{company_id}")]
+        public async Task<IActionResult> Store_list(Guid company_id)
+        {
+            if (company_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _istore.store_list(company_id);  
             return Ok(result);
         }
     }

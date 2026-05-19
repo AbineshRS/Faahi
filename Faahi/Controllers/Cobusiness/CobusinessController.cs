@@ -150,7 +150,7 @@ namespace Faahi.Controllers.Cobusiness
             var update = await _co_businessService.Inactive_company( company_id);
             return Ok(update);
         }
-        //[Authorize]
+        [Authorize]
         [HttpPost]
         [Route("create_sh_avilable_country")]
         public async Task<ActionResult<co_avl_countries>> CreateAvailableCountry(co_avl_countries co_Avl_Countries)
@@ -162,7 +162,31 @@ namespace Faahi.Controllers.Cobusiness
             var currency = await _co_businessService.CreateAvailableCountry(co_Avl_Countries);
             return Ok(currency);
         }
-        //[Authorize]
+        [Authorize]
+        [HttpGet]
+        [Route("curency_company/{avl_countries_id}")]
+        public async Task<IActionResult> curency_company(Guid avl_countries_id)
+        {
+            if (avl_countries_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _co_businessService.curency_company(avl_countries_id);
+            return Ok(result);
+        }
+        [Authorize]
+        [HttpPost]
+        [Route("update_curency/{avl_countries_id}")]
+        public async Task<IActionResult> Update_currency(Guid avl_countries_id,co_avl_countries co_Avl_Countries)
+        {
+            if (avl_countries_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _co_businessService.Update_currency(avl_countries_id, co_Avl_Countries);
+            return Ok(result);
+        }
+        [Authorize]
         [HttpGet]
         [Route("currency_list/{company_id}")]
         public async Task<IActionResult> CurrencyList(Guid company_id)

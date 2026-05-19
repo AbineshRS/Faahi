@@ -55,6 +55,8 @@ namespace Faahi.Service.im_products.sales
 
         Task<ServiceResult<so_SalesHeaders>> update_market_places(Guid salesId, Guid userId);
 
+        Task<ServiceResult<gl_JournalHeaders>> Update_current_balace(Guid? sales_id, Guid? business_id, decimal total_amount);
+
 
     }
 }
