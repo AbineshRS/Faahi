@@ -751,7 +751,6 @@ namespace Faahi.Service.market_place
                 var result = items.GroupBy(a => a.customer_order_id).Select(a => new om_CustomerOrders_dto
                 {
                     customer_order_id = a.Key,
-                    business_id = a.First().business_id,
                     sales_id = a.First().sales_id,
                     source_id = a.First().source_id,
                     order_date = a.First().order_date,
@@ -1752,8 +1751,7 @@ namespace Faahi.Service.market_place
                 var now = DateTime.Now;
                 var order = await _context.om_CustomerOrders.FirstOrDefaultAsync(x =>
                     x.customer_order_id == model.customer_order_id &&
-                    x.business_id == model.business_id &&
-                    x.store_id == model.store_id);
+                    x.business_id == model.business_id);
 
                 if (order == null)
                 {
@@ -1761,7 +1759,17 @@ namespace Faahi.Service.market_place
                     {
                         Status = 404,
                         Success = false,
-                        Message = "Order not found"
+                        Message = "Order not found for customer_order_id + business_id"
+                    };
+                }
+
+                if (model.store_id != Guid.Empty && order.store_id != model.store_id)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 409,
+                        Success = false,
+                        Message = $"Store mismatch. Order store_id={order.store_id}, payload store_id={model.store_id}"
                     };
                 }
 
@@ -1883,6 +1891,7 @@ namespace Faahi.Service.market_place
                 var perUnitOrderTax = oldQty > 0m ? orderLine.tax_amount / oldQty : 0m;
                 var perUnitSalesTax = oldSalesQty > 0m ? salesLine.tax_amount / oldSalesQty : 0m;
                 var perUnitSalesTaxBase = oldSalesQty > 0m ? salesLine.tax_amount_base / oldSalesQty : 0m;
+                Guid? createdSalesReturnId = null;
 
                 debugStep = "update_order_line";
                 orderLine.ordered_qty = newQty;
@@ -1951,6 +1960,7 @@ namespace Faahi.Service.market_place
                         created_at = now,
                         created_by = TruncateText(updatedByName, 130)
                     };
+                    createdSalesReturnId = returnHeader.sales_return_id;
 
                     var returnLine = new so_SalesReturnLines
                     {
@@ -2180,8 +2190,41 @@ namespace Faahi.Service.market_place
                     _context.om_CustomerOrders.UpdateRange(ordersBySales);
                 }
 
-                debugStep = "save_changes";
+                // Save all quantity/line/header adjustments before posting journal entries.
+                debugStep = "save_changes_before_journal";
                 await _context.SaveChangesAsync();
+
+                debugStep = "insert_adjustment_journal";
+                if (isIncrease)
+                {
+                    var salesJournal = await _salesService.Add_Journal_header(salesId);
+                    if (!salesJournal.Success)
+                    {
+                        return new ServiceResult<update_quantity_result_dto>
+                        {
+                            Status = 500,
+                            Success = false,
+                            Message = salesJournal.Message ?? "Failed to update journal for quantity increase"
+                        };
+                    }
+                }
+                else if (createdSalesReturnId.HasValue && createdSalesReturnId.Value != Guid.Empty)
+                {
+                    var isCreditSale = string.Equals(salesHeader.payment_mode, "CREDIT", StringComparison.OrdinalIgnoreCase);
+                    var salesReturnJournal = isCreditSale
+                        ? await _salesService.Add_Journal_header_Sales_Return_credit(createdSalesReturnId.Value)
+                        : await _salesService.Add_Journal_header_Sales_Return(createdSalesReturnId.Value);
+                    if (!salesReturnJournal.Success)
+                    {
+                        return new ServiceResult<update_quantity_result_dto>
+                        {
+                            Status = 500,
+                            Success = false,
+                            Message = salesReturnJournal.Message ?? "Failed to update journal for quantity decrease"
+                        };
+                    }
+                }
+
                 await tx.CommitAsync();
 
                 return new ServiceResult<update_quantity_result_dto>

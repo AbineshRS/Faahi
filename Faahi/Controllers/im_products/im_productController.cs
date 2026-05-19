@@ -184,7 +184,7 @@ namespace Faahi.Controllers.im_products
             var sub_category =await _im_products.Add_subCategory(product_id, im_ProductVariants);
             return Ok(sub_category);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("get_product_list")]
         public async Task<IActionResult> Get_product_list()

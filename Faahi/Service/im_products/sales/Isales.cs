@@ -49,6 +49,10 @@ namespace Faahi.Service.im_products.sales
 
         Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header_credit(Guid? sales_id);
 
+        Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header_Sales_Return(Guid? sales_id);
+
+        Task<ServiceResult<gl_JournalHeaders>> Add_Journal_header_Sales_Return_credit(Guid? sales_id);
+
         Task<ServiceResult<so_SalesHeaders>> update_market_places(Guid salesId, Guid userId);
 
 
