@@ -42,6 +42,12 @@ namespace Faahi.Model.im_products
         [ForeignKey(nameof(purchase_order_id))]
         public im_purchase_listing im_purchase_listing { get; set; }
 
+        [Column(TypeName = "uniqueidentifier")]
+        public Guid? transfer_id { get; set; }
+
+        [ForeignKey(nameof(transfer_id))]
+        public im_StockTransferHeader im_StockTransferHeader { get; set; }
+
         [Column(TypeName = "nvarchar(50)")]
         public string? Goods_recipt_code { get; set; } = null;
 

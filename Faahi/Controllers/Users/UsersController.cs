@@ -165,7 +165,7 @@ namespace Faahi.Controllers.Users
             return Ok(result);
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("order_list_customer/{customer_id}")]
         public async Task<IActionResult> Order_list_customer(Guid customer_id)
@@ -181,7 +181,7 @@ namespace Faahi.Controllers.Users
         [Authorize]
         [HttpPost]
         [Route("Update_sales_payment/{salesId}")]
-        public async Task<IActionResult> Update_sales_payment([FromForm] sales_customer_update_payment_dto sales_Customer)
+        public async Task<IActionResult> Update_sales_payment([FromForm] List<sales_customer_update_payment_dto> sales_Customer)
         {
             if (sales_Customer == null)
             {
@@ -190,7 +190,7 @@ namespace Faahi.Controllers.Users
             var result = await _iuser.Update_sales_payment(sales_Customer);
             return Ok(result);
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet]
         [Route("customer_payment_history/{salesId}")]
         public async Task<IActionResult> Customer_payment_history(Guid salesId)

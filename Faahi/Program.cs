@@ -13,6 +13,8 @@ using Faahi.Service.im_products.category;
 using Faahi.Service.im_products.im_purchase;
 using Faahi.Service.im_products.im_tags;
 using Faahi.Service.im_products.sales;
+using Faahi.Service.Mappper;
+using Faahi.Service.Mappper.Inventory_adjustment;
 using Faahi.Service.market_place;
 using Faahi.Service.PartyService;
 using Faahi.Service.SignalR;
@@ -115,7 +117,8 @@ builder.Services.AddControllers()
 
 //Mapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-
+builder.Services.AddAutoMapper(typeof(StockTransferHeader_mapper).Assembly);
+builder.Services.AddAutoMapper(typeof(inventory_adjustment_header_mapper).Assembly);
 
 //Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -137,7 +140,6 @@ builder.Services.AddScoped<Isite_settings,site_settings_service>();
 builder.Services.AddScoped<Isales,sales_service>();
 builder.Services.AddScoped<IMarket_place_service, Market_place_service>();
 builder.Services.AddMemoryCache();
-
 
 builder.Services.AddScoped<IAccountService, AccountService>();
 
@@ -183,7 +185,7 @@ app.Use(async (context, next) =>
     {
         context.Items["BaseUrl"] = baseUrl;
     }
-
+        
     await next();
 });
 app.UseRouting();
