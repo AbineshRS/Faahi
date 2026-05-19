@@ -169,13 +169,37 @@ namespace Faahi.Controllers.Market_place
 
         [Authorize]
         [HttpPost]
-        [Route("update_order_line_quantity")]
-        public async Task<IActionResult> UpdateOrderLineQuantity(update_quantity_dto model)
+        [Route("update_order_details")]
+        public async Task<IActionResult> UpdateOrderDetails([FromForm] update_order_details_dto model)
         {
             if (model == null)
                 return Ok("No data found");
 
-            var result = await _market_Place_Service.Update_order_line_quantity(model);
+            var result = await _market_Place_Service.Update_order_details(model);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("update_sales_mode")]
+        public async Task<IActionResult> UpdateSalesMode([FromBody] update_sales_mode_dto model)
+        {
+            if (model == null)
+                return Ok("No data found");
+
+            var result = await _market_Place_Service.Update_sales_mode(model);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("update_order_quantity")]
+        public async Task<IActionResult> UpdateOrderQuantity([FromBody] update_quantity_dto model)
+        {
+            if (model == null)
+                return Ok("No data found");
+
+            var result = await _market_Place_Service.Update_order_quantity(model);
             return Ok(result);
         }
 

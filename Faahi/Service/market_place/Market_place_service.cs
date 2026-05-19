@@ -10,15 +10,22 @@ using Faahi.Model.am_vcos;
 using Faahi.Model.co_business;
 using Faahi.Model.im_products;
 using Faahi.Model.Order;
+using Faahi.Model.pos_tables;
 using Faahi.Model.sales;
+using Faahi.Model.Shared_tables;
 using Faahi.Model.site_settings;
 using Faahi.Model.st_sellers;
 using Faahi.Model.Stores;
 using Faahi.Service.Email;
+using Faahi.Service.im_products.sales;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace Faahi.Service.market_place
 {
@@ -27,11 +34,20 @@ namespace Faahi.Service.market_place
         private readonly ApplicationDbContext _context;
         private readonly ILogger<Market_place_service> _logger;
         private readonly IConfiguration _configuration;
-        public Market_place_service(ApplicationDbContext context, ILogger<Market_place_service> logger, IConfiguration configuration)
+        private readonly IAmazonS3 _s3Client;
+        private readonly Isales _salesService;
+        public Market_place_service(
+            ApplicationDbContext context,
+            ILogger<Market_place_service> logger,
+            IConfiguration configuration,
+            IAmazonS3 s3Client,
+            Isales salesService)
         {
             _context = context;
             _logger = logger;
             _configuration = configuration;
+            _s3Client = s3Client ?? throw new ArgumentNullException(nameof(s3Client));
+            _salesService = salesService;
         } 
 
 
@@ -1034,11 +1050,674 @@ namespace Faahi.Service.market_place
             }
         }
 
-        public async Task<ServiceResult<update_quantity_result_dto>> Update_order_line_quantity(update_quantity_dto model)
+        public async Task<ServiceResult<update_order_details_result_dto>> Update_order_details(update_order_details_dto model)
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            var debugStep = "init";
+            try
+            {
+                debugStep = "validate_input";
+                if (model == null)
+                {
+                    return new ServiceResult<update_order_details_result_dto>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                debugStep = "load_order";
+                var now = DateTime.Now;
+                var order = await _context.om_CustomerOrders
+                    .FirstOrDefaultAsync(x =>
+                        x.customer_order_id == model.customer_order_id &&
+                        x.business_id == model.business_id &&
+                        x.store_id == model.store_id);
+
+                if (order == null)
+                {
+                    return new ServiceResult<update_order_details_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Order not found"
+                    };
+                }
+
+                var previousDeliveryStatus = order.delivery_status;
+
+                if (!string.IsNullOrWhiteSpace(model.expected_payment_method))
+                    order.expected_payment_method = model.expected_payment_method.Trim();
+
+                if (!string.IsNullOrWhiteSpace(model.delivery_status))
+                    order.delivery_status = model.delivery_status.Trim().ToUpperInvariant();
+
+                if (model.notes != null)
+                    order.notes = model.notes;
+
+                if (model.internal_notes != null)
+                    order.internal_notes = model.internal_notes;
+
+                if (model.delivered_at.HasValue)
+                    order.delevery_date = model.delivered_at.Value;
+
+                var receiptFiles = (model.receipt_files ?? new List<IFormFile>())
+                    .Where(f => f != null && f.Length > 0)
+                    .ToList();
+
+                var otherFiles = (model.other_files ?? new List<IFormFile>())
+                    .Where(f => f != null && f.Length > 0)
+                    .ToList();
+
+                var hasAnyUploadedFile = receiptFiles.Count > 0 || otherFiles.Count > 0;
+
+                // Business rule: once delivery proof files are uploaded, mark delivery as completed.
+                if (hasAnyUploadedFile)
+                {
+                    model.delivery_status = "DELIVERED";
+                    order.delivery_status = "DELIVERED";
+                    if (string.IsNullOrWhiteSpace(model.sales_mode))
+                        model.sales_mode = "DELIVERED";
+                    if (!model.delivered_at.HasValue)
+                        model.delivered_at = now;
+                    order.delevery_date = model.delivered_at.Value;
+                }
+
+                Guid? insertedSalePaymentId = null;
+                var hasInsertedPayment = false;
+                var salesId = order.sales_id;
+                string computedPaymentStatus = order.payment_status;
+                so_SalesHeaders? salesHeaderRecord = null;
+                if (salesId.HasValue && salesId.Value != Guid.Empty)
+                {
+                    salesHeaderRecord = await _context.so_SalesHeaders
+                        .FirstOrDefaultAsync(x => x.sales_id == salesId.Value);
+                }
+
+                var resolvedSalesMode = string.IsNullOrWhiteSpace(model.sales_mode)
+                    ? null
+                    : model.sales_mode.Trim().ToUpperInvariant();
+
+                if (string.IsNullOrWhiteSpace(resolvedSalesMode) && hasAnyUploadedFile)
+                    resolvedSalesMode = "DELIVERED";
+
+                if (!string.IsNullOrWhiteSpace(resolvedSalesMode))
+                {
+                    if (!salesId.HasValue || salesId.Value == Guid.Empty)
+                    {
+                        return new ServiceResult<update_order_details_result_dto>
+                        {
+                            Status = 409,
+                            Success = false,
+                            Message = "Sales id not found for this order. Cannot update sales mode."
+                        };
+                    }
+
+                    if (salesHeaderRecord == null)
+                    {
+                        return new ServiceResult<update_order_details_result_dto>
+                        {
+                            Status = 404,
+                            Success = false,
+                            Message = "Sales header not found for this order. Cannot update sales mode."
+                        };
+                    }
+
+                    salesHeaderRecord.sales_mode = resolvedSalesMode;
+                    _context.so_SalesHeaders.Update(salesHeaderRecord);
+                }
+
+                Guid? resolvedPaymentMethodId = model.payment_method_id;
+                if (!resolvedPaymentMethodId.HasValue && !string.IsNullOrWhiteSpace(model.expected_payment_method))
+                {
+                    var payCode = model.expected_payment_method.Trim().ToUpperInvariant();
+                    resolvedPaymentMethodId = await _context.so_Payment_Types
+                        .Where(x => x.business_id == order.business_id
+                                    && x.is_avilable == "T"
+                                    && x.PayTypeCode != null
+                                    && x.PayTypeCode.ToUpper() == payCode)
+                        .Select(x => x.payment_type_id)
+                        .FirstOrDefaultAsync();
+
+                    if (resolvedPaymentMethodId == Guid.Empty)
+                        resolvedPaymentMethodId = null;
+                }
+
+                // Fallback for upload flow: if client did not pass a payment method, pick the first active one.
+                if (!resolvedPaymentMethodId.HasValue && hasAnyUploadedFile)
+                {
+                    resolvedPaymentMethodId = await _context.so_Payment_Types
+                        .Where(x => x.business_id == order.business_id && x.is_avilable == "T")
+                        .OrderByDescending(x => x.cash_types == "T")
+                        .ThenBy(x => x.Order ?? int.MaxValue)
+                        .Select(x => x.payment_type_id)
+                        .FirstOrDefaultAsync();
+
+                    if (resolvedPaymentMethodId == Guid.Empty)
+                        resolvedPaymentMethodId = null;
+                }
+
+                decimal resolvedAmount = model.amount ?? 0m;
+                if (resolvedAmount <= 0m && hasAnyUploadedFile && salesId.HasValue && salesId.Value != Guid.Empty)
+                {
+                    var alreadyPaid = await _context.pos_SalePayments
+                        .Where(x => x.sale_id == salesId.Value && x.is_voided != "T")
+                        .SumAsync(x => x.amount);
+                    resolvedAmount = order.grand_total - alreadyPaid;
+                    if (resolvedAmount < 0m)
+                        resolvedAmount = 0m;
+                }
+
+                var shouldAttemptPaymentInsert =
+                    hasAnyUploadedFile ||
+                    (model.amount.HasValue && model.amount.Value > 0m) ||
+                    model.payment_method_id.HasValue ||
+                    !string.IsNullOrWhiteSpace(model.expected_payment_method);
+
+                if (shouldAttemptPaymentInsert)
+                {
+                    debugStep = "insert_sale_payment";
+                    if (!salesId.HasValue || salesId.Value == Guid.Empty)
+                    {
+                        return new ServiceResult<update_order_details_result_dto>
+                        {
+                            Status = 409,
+                            Success = false,
+                            Message = "Sales id not found for this order. Cannot add payment."
+                        };
+                    }
+
+                    if (!resolvedPaymentMethodId.HasValue)
+                    {
+                        return new ServiceResult<update_order_details_result_dto>
+                        {
+                            Status = 400,
+                            Success = false,
+                            Message = "Unable to resolve payment method for payment insert."
+                        };
+                    }
+
+                    if (resolvedAmount <= 0m)
+                    {
+                        return new ServiceResult<update_order_details_result_dto>
+                        {
+                            Status = 400,
+                            Success = false,
+                            Message = "Unable to resolve payment amount for payment insert."
+                        };
+                    }
+
+                    var existingLines = await _context.pos_SalePayments
+                        .Where(x => x.sale_id == salesId.Value)
+                        .ToListAsync();
+                    var nextLineNo = (existingLines.Select(x => x.line_no ?? 0).DefaultIfEmpty(0).Max()) + 1;
+
+                    var paymentRow = new pos_SalePayments
+                    {
+                        sale_payment_id = Guid.CreateVersion7(),
+                        business_id = order.business_id,
+                        store_id = order.store_id,
+                        sale_id = salesId.Value,
+                        payment_method_id = resolvedPaymentMethodId.Value,
+                        receipt_no = salesHeaderRecord?.invoice_no,
+                        line_no = nextLineNo,
+                        currency_code = salesHeaderRecord?.base_currency_code ?? order.currency_code,
+                        fx_rate = salesHeaderRecord?.fx_rate_to_base > 0 ? salesHeaderRecord.fx_rate_to_base : 1m,
+                        amount = resolvedAmount,
+                        base_amount = resolvedAmount,
+                        reference_no = model.reference_no,
+                        notes = model.payment_note ?? model.notes,
+                        is_voided = "F",
+                        created_at = now
+                    };
+
+                    _context.pos_SalePayments.Add(paymentRow);
+                    insertedSalePaymentId = paymentRow.sale_payment_id;
+                    hasInsertedPayment = true;
+                }
+
+                if (salesId.HasValue && salesId.Value != Guid.Empty)
+                {
+                    debugStep = "recompute_payment_status";
+                    var totalPaid = await _context.pos_SalePayments
+                        .Where(x => x.sale_id == salesId.Value && x.is_voided != "T")
+                        .SumAsync(x => x.amount);
+
+                    var totalDue = order.grand_total;
+                    if (totalPaid <= 0m)
+                        computedPaymentStatus = "UNPAID";
+                    else if (totalPaid >= totalDue)
+                        computedPaymentStatus = "PAID";
+                    else
+                        computedPaymentStatus = "PARTIAL";
+
+                    // Business rule for delivery update flow:
+                    // when files are uploaded, consider order paid and reflect that in order/lines.
+                    if (hasAnyUploadedFile)
+                        computedPaymentStatus = "PAID";
+
+                    var ordersBySales = await _context.om_CustomerOrders
+                        .Where(x => x.sales_id == salesId.Value)
+                        .ToListAsync();
+
+                    foreach (var orderBySales in ordersBySales)
+                    {
+                        orderBySales.payment_status = computedPaymentStatus;
+                        orderBySales.updated_at = now;
+                        orderBySales.updated_by = model.updated_by;
+                    }
+
+                    if (ordersBySales.Count > 0)
+                        _context.om_CustomerOrders.UpdateRange(ordersBySales);
+
+                    var affectedOrderIds = ordersBySales
+                        .Select(x => x.customer_order_id)
+                        .Distinct()
+                        .ToList();
+
+                    if (affectedOrderIds.Count > 0)
+                    {
+                        // Avoid local-list Contains translation (OPENJSON with '$') for older SQL Server compatibility.
+                        var lines = await _context.om_CustomerOrderLines
+                            .Join(
+                                _context.om_CustomerOrders.Where(o => o.sales_id == salesId.Value),
+                                line => line.customer_order_id,
+                                header => header.customer_order_id,
+                                (line, _) => line)
+                            .ToListAsync();
+
+                        foreach (var line in lines)
+                        {
+                            line.line_status = computedPaymentStatus;
+                            line.updated_at = now;
+                            line.updated_by = model.updated_by;
+                        }
+
+                        if (lines.Count > 0)
+                            _context.om_CustomerOrderLines.UpdateRange(lines);
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(model.payment_status))
+                {
+                    computedPaymentStatus = model.payment_status.Trim().ToUpperInvariant();
+                    order.payment_status = computedPaymentStatus;
+                }
+
+                order.payment_status = computedPaymentStatus;
+                order.updated_at = now;
+                order.updated_by = model.updated_by;
+                _context.om_CustomerOrders.Update(order);
+
+                var eventStatus = string.IsNullOrWhiteSpace(model.status_type)
+                    ? null
+                    : model.status_type.Trim().ToUpperInvariant();
+
+                if (string.IsNullOrWhiteSpace(eventStatus))
+                {
+                    if (hasInsertedPayment || !string.IsNullOrWhiteSpace(model.payment_status))
+                        eventStatus = "PAYMENT";
+                    else if (!string.IsNullOrWhiteSpace(model.delivery_status) || model.out_for_delivery_at.HasValue || model.delivered_at.HasValue)
+                        eventStatus = "DELIVERY";
+                    else if (model.fulfillment_id.HasValue)
+                        eventStatus = "FULFILLMENT";
+                }
+
+                if (!string.IsNullOrWhiteSpace(eventStatus))
+                {
+                    debugStep = "insert_status_history";
+                    var latestHistory = await _context.om_OrderStatusHistories
+                        .Where(x => x.customer_order_id == order.customer_order_id)
+                        .OrderByDescending(x => x.changed_at)
+                        .FirstOrDefaultAsync();
+
+                    _context.om_OrderStatusHistories.Add(new om_OrderStatusHistory
+                    {
+                        order_status_history_id = Guid.CreateVersion7(),
+                        customer_order_id = order.customer_order_id,
+                        old_status = latestHistory?.new_status ?? string.Empty,
+                        new_status = eventStatus,
+                        status_type = eventStatus,
+                        changed_by = model.updated_by,
+                        changed_at = now
+                    });
+                }
+
+                om_FulfillmentOrders? fulfillment = null;
+                if (model.fulfillment_id.HasValue)
+                {
+                    fulfillment = await _context.om_FulfillmentOrders
+                        .FirstOrDefaultAsync(x =>
+                            x.fulfillment_id == model.fulfillment_id.Value &&
+                            x.customer_order_id == order.customer_order_id &&
+                            x.business_id == model.business_id &&
+                            x.store_id == model.store_id);
+
+                    if (fulfillment == null)
+                    {
+                        return new ServiceResult<update_order_details_result_dto>
+                        {
+                            Status = 404,
+                            Success = false,
+                            Message = "Fulfillment not found"
+                        };
+                    }
+                }
+                else
+                {
+                    fulfillment = await _context.om_FulfillmentOrders
+                        .Where(x => x.customer_order_id == order.customer_order_id)
+                        .OrderByDescending(x => x.created_at)
+                        .FirstOrDefaultAsync();
+                }
+
+                if (fulfillment != null)
+                {
+                    if (model.out_for_delivery_at.HasValue)
+                        fulfillment.out_for_delivery_at = model.out_for_delivery_at.Value;
+
+                    if (model.collected_amount.HasValue)
+                        fulfillment.collected_amount = model.collected_amount.Value;
+
+                    if (!string.IsNullOrWhiteSpace(model.delivery_status))
+                        fulfillment.fulfillment_status = model.delivery_status.Trim().ToUpperInvariant();
+
+                    fulfillment.updated_at = now;
+                    fulfillment.updated_by = model.updated_by;
+                    _context.om_FulfillmentOrders.Update(fulfillment);
+                }
+
+                var business = await _context.co_business
+                    .FirstOrDefaultAsync(x => x.company_id == model.business_id);
+
+                if (business == null)
+                {
+                    return new ServiceResult<update_order_details_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Business not found"
+                    };
+                }
+
+                if ((receiptFiles.Count > 0 || otherFiles.Count > 0) && (!salesId.HasValue || salesId.Value == Guid.Empty))
+                {
+                    return new ServiceResult<update_order_details_result_dto>
+                    {
+                        Status = 409,
+                        Success = false,
+                        Message = "Sales id not found for this order. Cannot upload files."
+                    };
+                }
+
+                var sourceId = salesId ?? Guid.Empty;
+                string? proofUrl = null;
+                var receiptCount = 0;
+                var otherCount = 0;
+
+                if (receiptFiles.Count > 0)
+                {
+                    debugStep = "deactivate_old_receipts";
+                    var existingReceipts = await _context.sys_Images
+                        .Where(x =>
+                            x.business_id == order.business_id &&
+                            x.source_id == sourceId &&
+                            x.source_type == "PAYMENT" &&
+                            x.status == "T")
+                        .ToListAsync();
+
+                    foreach (var oldReceipt in existingReceipts)
+                    {
+                        oldReceipt.status = "F";
+                        oldReceipt.updated_at = now;
+                    }
+
+                    if (existingReceipts.Count > 0)
+                        _context.sys_Images.UpdateRange(existingReceipts);
+                }
+
+                foreach (var file in receiptFiles)
+                {
+                    debugStep = "insert_receipt_images";
+                    var invoiceNo = salesHeaderRecord?.invoice_no ?? order.order_no?.ToString() ?? order.customer_order_id.ToString();
+                    var imageUrl = await UploadOrderFileAsync(file, business, sourceId, invoiceNo, "PAYMENT");
+                    _context.sys_Images.Add(new sys_Images
+                    {
+                        image_id = Guid.CreateVersion7(),
+                        source_id = sourceId,
+                        business_id = order.business_id,
+                        source_type = "PAYMENT",
+                        image_url = imageUrl,
+                        created_at = now,
+                        updated_at = now,
+                        status = "T"
+                    });
+                    receiptCount++;
+                    if (proofUrl == null)
+                        proofUrl = imageUrl;
+                }
+
+                foreach (var file in otherFiles)
+                {
+                    debugStep = "insert_other_images";
+                    var invoiceNo = salesHeaderRecord?.invoice_no ?? order.order_no?.ToString() ?? order.customer_order_id.ToString();
+                    var imageUrl = await UploadOrderFileAsync(file, business, sourceId, invoiceNo, "PAYMENT");
+                    _context.sys_Images.Add(new sys_Images
+                    {
+                        image_id = Guid.CreateVersion7(),
+                        source_id = sourceId,
+                        business_id = order.business_id,
+                        source_type = "PAYMENT",
+                        image_url = imageUrl,
+                        created_at = now,
+                        updated_at = now,
+                        status = "T"
+                    });
+                    otherCount++;
+                }
+
+                if (fulfillment != null && !string.IsNullOrWhiteSpace(proofUrl))
+                {
+                    fulfillment.proof_of_delivery_image_url = proofUrl;
+                    fulfillment.updated_at = now;
+                    fulfillment.updated_by = model.updated_by;
+                    _context.om_FulfillmentOrders.Update(fulfillment);
+                }
+
+                // Inventory update on first delivery completion:
+                // Reduce on_hand_quantity and committed_quantity by ordered qty
+                // using store_variant_inventory_id from order lines.
+                var isFirstDeliveryCompletion =
+                    hasAnyUploadedFile &&
+                    !string.Equals(previousDeliveryStatus, "DELIVERED", StringComparison.OrdinalIgnoreCase);
+
+                if (isFirstDeliveryCompletion)
+                {
+                    debugStep = "update_store_variant_inventory";
+
+                    var inventoryReductions = await _context.om_CustomerOrderLines
+                        .Where(x => x.customer_order_id == order.customer_order_id && x.store_variant_inventory_id.HasValue)
+                        .GroupBy(x => x.store_variant_inventory_id!.Value)
+                        .Select(g => new
+                        {
+                            store_variant_inventory_id = g.Key,
+                            qty_to_reduce = g.Sum(x => x.ordered_qty)
+                        })
+                        .ToListAsync();
+
+                    foreach (var reduction in inventoryReductions)
+                    {
+                        var inv = await _context.im_StoreVariantInventory
+                            .FirstOrDefaultAsync(x => x.store_variant_inventory_id == reduction.store_variant_inventory_id);
+
+                        if (inv == null) continue;
+
+                        var reduceBy = reduction.qty_to_reduce < 0m ? 0m : reduction.qty_to_reduce;
+                        var currentOnHand = inv.on_hand_quantity ?? 0m;
+                        var currentCommitted = inv.committed_quantity ?? 0m;
+
+                        var nextOnHand = currentOnHand - reduceBy;
+                        var nextCommitted = currentCommitted - reduceBy;
+
+                        inv.on_hand_quantity = nextOnHand < 0m ? 0m : nextOnHand;
+                        inv.committed_quantity = nextCommitted < 0m ? 0m : nextCommitted;
+
+                        _context.im_StoreVariantInventory.Update(inv);
+                    }
+                }
+
+                if (hasAnyUploadedFile && salesId.HasValue && salesId.Value != Guid.Empty)
+                {
+                    debugStep = "insert_journal_header";
+                    var journalExists = await _context.gl_JournalHeaders
+                        .AnyAsync(x => x.SourceId == salesId.Value && x.SourceType == "POS");
+
+                    if (!journalExists)
+                    {
+                        var journal = await _salesService.Add_Journal_header(salesId.Value);
+                        if (!journal.Success)
+                        {
+                            return new ServiceResult<update_order_details_result_dto>
+                            {
+                                Status = 500,
+                                Success = false,
+                                Message = journal.Message ?? "Failed to create journal header"
+                            };
+                        }
+                    }
+                }
+
+                debugStep = "save_changes";
+                await _context.SaveChangesAsync();
+                debugStep = "commit";
+                await tx.CommitAsync();
+
+                return new ServiceResult<update_order_details_result_dto>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Order details updated successfully",
+                    Data = new update_order_details_result_dto
+                    {
+                        customer_order_id = order.customer_order_id,
+                        fulfillment_id = fulfillment?.fulfillment_id,
+                        receipt_file_count = receiptCount,
+                        other_file_count = otherCount,
+                        proof_of_delivery_image_url = proofUrl ?? fulfillment?.proof_of_delivery_image_url,
+                        sale_payment_id = insertedSalePaymentId,
+                        payment_status = computedPaymentStatus
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "Error updating order details");
+                return new ServiceResult<update_order_details_result_dto>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = $"[{debugStep}] {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ServiceResult<update_sales_mode_result_dto>> Update_sales_mode(update_sales_mode_dto model)
         {
             await using var tx = await _context.Database.BeginTransactionAsync();
             try
             {
+                if (model == null)
+                {
+                    return new ServiceResult<update_sales_mode_result_dto>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+
+                var resolvedSalesMode = string.IsNullOrWhiteSpace(model.sales_mode)
+                    ? "DELIVERED"
+                    : model.sales_mode.Trim().ToUpperInvariant();
+
+                var order = await _context.om_CustomerOrders
+                    .FirstOrDefaultAsync(x =>
+                        x.customer_order_id == model.customer_order_id &&
+                        x.business_id == model.business_id &&
+                        x.store_id == model.store_id);
+
+                if (order == null)
+                {
+                    return new ServiceResult<update_sales_mode_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Order not found"
+                    };
+                }
+
+                if (!order.sales_id.HasValue || order.sales_id.Value == Guid.Empty)
+                {
+                    return new ServiceResult<update_sales_mode_result_dto>
+                    {
+                        Status = 409,
+                        Success = false,
+                        Message = "Sales id not found for this order."
+                    };
+                }
+
+                var salesHeader = await _context.so_SalesHeaders
+                    .FirstOrDefaultAsync(x => x.sales_id == order.sales_id.Value);
+
+                if (salesHeader == null)
+                {
+                    return new ServiceResult<update_sales_mode_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Sales header not found"
+                    };
+                }
+
+                salesHeader.sales_mode = resolvedSalesMode;
+                _context.so_SalesHeaders.Update(salesHeader);
+                await _context.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return new ServiceResult<update_sales_mode_result_dto>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Sales mode updated successfully",
+                    Data = new update_sales_mode_result_dto
+                    {
+                        customer_order_id = order.customer_order_id,
+                        sales_id = order.sales_id.Value,
+                        sales_mode = salesHeader.sales_mode
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "Error updating sales mode");
+                return new ServiceResult<update_sales_mode_result_dto>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<ServiceResult<update_quantity_result_dto>> Update_order_quantity(update_quantity_dto model)
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            var debugStep = "init";
+            try
+            {
+                debugStep = "validate_input";
                 if (model == null)
                 {
                     return new ServiceResult<update_quantity_result_dto>
@@ -1049,12 +1728,47 @@ namespace Faahi.Service.market_place
                     };
                 }
 
-                var now = DateTime.Now;
+                if (model.new_ordered_qty < 0m)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "new_ordered_qty cannot be negative"
+                    };
+                }
 
-                var orderLine = await _context.om_CustomerOrderLines
-                    .FirstOrDefaultAsync(x =>
-                        x.customer_order_line_id == model.customer_order_line_id &&
-                        x.customer_order_id == model.customer_order_id);
+                if (model.new_ordered_qty == 0m && !model.confirm_delete)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "To set quantity to zero, please send confirm_delete = true."
+                    };
+                }
+
+                debugStep = "load_order";
+                var now = DateTime.Now;
+                var order = await _context.om_CustomerOrders.FirstOrDefaultAsync(x =>
+                    x.customer_order_id == model.customer_order_id &&
+                    x.business_id == model.business_id &&
+                    x.store_id == model.store_id);
+
+                if (order == null)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Order not found"
+                    };
+                }
+
+                debugStep = "load_order_line";
+                var orderLine = await _context.om_CustomerOrderLines.FirstOrDefaultAsync(x =>
+                    x.customer_order_line_id == model.customer_order_line_id &&
+                    x.customer_order_id == model.customer_order_id);
 
                 if (orderLine == null)
                 {
@@ -1066,300 +1780,407 @@ namespace Faahi.Service.market_place
                     };
                 }
 
-                var orderHeader = await _context.om_CustomerOrders
-                    .FirstOrDefaultAsync(x =>
-                        x.customer_order_id == model.customer_order_id &&
-                        x.business_id == model.business_id &&
-                        x.store_id == model.store_id);
-
-                if (orderHeader == null)
-                {
-                    return new ServiceResult<update_quantity_result_dto>
-                    {
-                        Status = 404,
-                        Success = false,
-                        Message = "Order header not found"
-                    };
-                }
-
-                so_SalesLines? salesLine = null;
-                if (orderHeader.sales_id.HasValue)
-                {
-                    salesLine = await _context.so_SalesLines
-                        .FirstOrDefaultAsync(x =>
-                            x.sales_id == orderHeader.sales_id.Value &&
-                            x.store_variant_inventory_id == orderLine.store_variant_inventory_id);
-
-                    if (salesLine == null)
-                    {
-                        return new ServiceResult<update_quantity_result_dto>
-                        {
-                            Status = 404,
-                            Success = false,
-                            Message = "Sales line not found for this order line"
-                        };
-                    }
-                }
-
-                if (salesLine != null && model.new_ordered_qty > orderLine.ordered_qty)
-                {
-                    var maxAllowed = salesLine.original_quantity > 0 ? salesLine.original_quantity : salesLine.quantity;
-                    if (model.new_ordered_qty > maxAllowed)
-                    {
-                        return new ServiceResult<update_quantity_result_dto>
-                        {
-                            Status = 409,
-                            Success = false,
-                            Message = $"Only {maxAllowed:0.####} items are available."
-                        };
-                    }
-                }
-
-                if (orderLine.ordered_qty == 1m && model.new_ordered_qty < 1m)
-                {
-                    if (!model.confirm_delete)
-                    {
-                        return new ServiceResult<update_quantity_result_dto>
-                        {
-                            Status = 409,
-                            Success = false,
-                            Message = "Confirm delete required for last quantity."
-                        };
-                    }
-
-                    model.new_ordered_qty = 0m;
-                }
-
                 var oldQty = orderLine.ordered_qty;
                 var newQty = model.new_ordered_qty;
 
-                if (newQty < 0)
+                if (newQty == oldQty)
                 {
                     return new ServiceResult<update_quantity_result_dto>
                     {
-                        Status = 400,
-                        Success = false,
-                        Message = "Quantity cannot be negative"
+                        Status = 200,
+                        Success = true,
+                        Message = "Quantity unchanged",
+                        Data = new update_quantity_result_dto
+                        {
+                            customer_order_line_id = orderLine.customer_order_line_id,
+                            old_qty = oldQty,
+                            new_qty = newQty,
+                            released_qty = 0m
+                        }
                     };
                 }
 
-                var alreadyProcessed = new[]
-                {
-                    orderLine.picked_qty ?? 0m,
-                    orderLine.packed_qty,
-                    orderLine.dispatched_qty,
-                    orderLine.delivered_qty,
-                    orderLine.returned_qty
-                }.Max();
-
-                if (newQty < alreadyProcessed)
+                if (!order.sales_id.HasValue || order.sales_id.Value == Guid.Empty)
                 {
                     return new ServiceResult<update_quantity_result_dto>
                     {
                         Status = 409,
                         Success = false,
-                        Message = $"Cannot reduce below already processed qty ({alreadyProcessed:0.####})"
+                        Message = "Sales id not found for this order"
                     };
                 }
 
-                var delta = newQty - oldQty;
-                decimal totalReleased = 0m;
+                var salesId = order.sales_id.Value;
+                var changedQty = Math.Abs(newQty - oldQty);
+                var isIncrease = newQty > oldQty;
+                if (changedQty <= 0m)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 400,
+                        Success = false,
+                        Message = "No quantity change detected"
+                    };
+                }
 
-                // 1) om_CustomerOrderLines
+                debugStep = "load_sales_header";
+                var salesHeader = await _context.so_SalesHeaders.FirstOrDefaultAsync(x => x.sales_id == salesId);
+                if (salesHeader == null)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Sales header not found"
+                    };
+                }
+
+                debugStep = "load_sales_line";
+                var salesLineQuery = _context.so_SalesLines.Where(x =>
+                    x.sales_id == salesId &&
+                    x.product_id == orderLine.product_id &&
+                    x.variant_id == orderLine.variant_id);
+
+                if (orderLine.store_variant_inventory_id.HasValue)
+                {
+                    var invId = orderLine.store_variant_inventory_id.Value;
+                    salesLineQuery = salesLineQuery.Where(x => x.store_variant_inventory_id == invId);
+                }
+                if (orderLine.batch_id.HasValue)
+                {
+                    var batchId = orderLine.batch_id.Value;
+                    salesLineQuery = salesLineQuery.Where(x => x.batch_id == batchId);
+                }
+
+                var salesLine = await salesLineQuery.FirstOrDefaultAsync()
+                    ?? await _context.so_SalesLines.FirstOrDefaultAsync(x =>
+                        x.sales_id == salesId &&
+                        x.product_id == orderLine.product_id &&
+                        x.variant_id == orderLine.variant_id);
+
+                if (salesLine == null)
+                {
+                    return new ServiceResult<update_quantity_result_dto>
+                    {
+                        Status = 404,
+                        Success = false,
+                        Message = "Matching sales line not found"
+                    };
+                }
+
+                var updatedUser = model.updated_by.HasValue
+                    ? await _context.am_users.FirstOrDefaultAsync(x => x.userId == model.updated_by.Value)
+                    : null;
+                var updatedByName = TruncateText(updatedUser?.fullName ?? "SYSTEM", 50);
+                var safeRemarks255 = TruncateText(model.remarks, 255);
+                var safeReason50 = TruncateText(
+                    string.IsNullOrWhiteSpace(model.remarks)
+                        ? (isIncrease ? "Order quantity increased" : "Order quantity decreased")
+                        : model.remarks,
+                    50);
+
+                var oldSalesQty = salesLine.quantity;
+                var perUnitOrderTax = oldQty > 0m ? orderLine.tax_amount / oldQty : 0m;
+                var perUnitSalesTax = oldSalesQty > 0m ? salesLine.tax_amount / oldSalesQty : 0m;
+                var perUnitSalesTaxBase = oldSalesQty > 0m ? salesLine.tax_amount_base / oldSalesQty : 0m;
+
+                debugStep = "update_order_line";
                 orderLine.ordered_qty = newQty;
-                orderLine.reserved_qty = Math.Min(orderLine.reserved_qty, newQty);
-                orderLine.line_total = (orderLine.unit_price * newQty) - orderLine.discount_amount + orderLine.tax_amount;
+                orderLine.line_total = Round4(newQty * orderLine.unit_price);
+                orderLine.tax_amount = Round4(newQty * perUnitOrderTax);
+                if (!isIncrease)
+                {
+                    orderLine.returned_qty += changedQty;
+                }
                 orderLine.updated_at = now;
                 orderLine.updated_by = model.updated_by;
-                orderLine.remarks = model.remarks ?? orderLine.remarks;
                 _context.om_CustomerOrderLines.Update(orderLine);
 
-                // 2) om_FulfillmentLines
-                var fulfillmentLinesQuery = _context.om_FulfillmentLines
-                    .Where(x => x.customer_order_line_id == model.customer_order_line_id);
+                debugStep = "update_sales_line";
+                salesLine.quantity = newQty;
+                salesLine.line_total = Round4(newQty * salesLine.unit_price);
+                salesLine.tax_amount = Round4(newQty * perUnitSalesTax);
+                salesLine.line_total_base = Round4(newQty * salesLine.unit_price_base);
+                salesLine.tax_amount_base = Round4(newQty * perUnitSalesTaxBase);
+                if (!isIncrease)
+                {
+                    salesLine.return_qty += changedQty;
+                    salesLine.returned_quantity += changedQty;
+                }
+                // Keep non-zero value to satisfy row-level check constraint (fx_rate_to_base > 0).
+                if (salesLine.fx_rate_to_base <= 0m)
+                    salesLine.fx_rate_to_base = 1m;
+                salesLine.remarks = safeRemarks255;
+                _context.so_SalesLines.Update(salesLine);
 
+                if (!isIncrease)
+                {
+                    debugStep = "insert_sales_return";
+                    var returnLineSubTotal = Round4(changedQty * salesLine.unit_price);
+                    var returnLineTax = Round4(changedQty * perUnitSalesTax);
+                    var returnLineSubTotalBase = Round4(changedQty * salesLine.unit_price_base);
+                    var returnLineTaxBase = Round4(changedQty * perUnitSalesTaxBase);
+
+                    var returnHeader = new so_SalesReturnHeaders
+                    {
+                        sales_return_id = Guid.CreateVersion7(),
+                        sales_id = salesId,
+                        business_id = salesHeader.business_id,
+                        store_id = salesHeader.store_id,
+                        customer_id = salesHeader.customer_id,
+                        payment_term_id = salesHeader.payment_term_id,
+                        return_no = TruncateText(await GetNextSalesReturnNoAsync(salesHeader.business_id, salesHeader.store_id), 50),
+                        return_date = now,
+                        doc_type = string.IsNullOrWhiteSpace(salesHeader.doc_type) ? "SALE" : TruncateText(salesHeader.doc_type, 10),
+                        return_type = TruncateText("RETURN", 10),
+                        return_reason = TruncateText(
+                            string.IsNullOrWhiteSpace(model.remarks) ? "Quantity decreased from order details" : model.remarks,
+                            255),
+                        doc_currency_code = TruncateText(salesHeader.doc_currency_code, 15),
+                        base_currency_code = TruncateText(salesHeader.base_currency_code, 15),
+                        fx_rate_to_base = salesHeader.fx_rate_to_base,
+                        sub_total = returnLineSubTotal,
+                        discount_total = 0m,
+                        tax_total = returnLineTax,
+                        grand_total = returnLineSubTotal + returnLineTax,
+                        sub_total_base = returnLineSubTotalBase,
+                        discount_total_base = 0m,
+                        tax_total_base = returnLineTaxBase,
+                        grand_total_base = returnLineSubTotalBase + returnLineTaxBase,
+                        notes = safeRemarks255,
+                        created_at = now,
+                        created_by = TruncateText(updatedByName, 130)
+                    };
+
+                    var returnLine = new so_SalesReturnLines
+                    {
+                        sales_return_line_id = Guid.CreateVersion7(),
+                        sales_return_id = returnHeader.sales_return_id,
+                        business_id = salesLine.business_id,
+                        store_id = salesLine.store_id,
+                        product_id = salesLine.product_id,
+                        variant_id = salesLine.variant_id,
+                        store_variant_inventory_id = salesLine.store_variant_inventory_id,
+                        batch_id = salesLine.batch_id,
+                        barcode = salesLine.barcode,
+                        product_sku = salesLine.product_sku,
+                        track_expiry = salesLine.track_expiry,
+                        item_description = salesLine.item_description,
+                        return_qty = changedQty,
+                        unit_price = salesLine.unit_price,
+                        discount_amount = salesLine.discount_amount,
+                        discount_percent = salesLine.discount_percent,
+                        tax_amount = returnLineTax,
+                        line_total = returnLineSubTotal,
+                        unit_price_base = salesLine.unit_price_base,
+                        discount_amount_base = salesLine.discount_amount_base,
+                        tax_amount_base = returnLineTaxBase,
+                        line_total_base = returnLineSubTotalBase,
+                        tax_class = TruncateText(salesLine.tax_class, 50),
+                        return_reason = safeRemarks255,
+                        created_at = now,
+                        line_status = TruncateText("RETURNED", 10)
+                    };
+
+                    _context.so_SalesReturnHeaders.Add(returnHeader);
+                    _context.so_SalesReturnLines.Add(returnLine);
+                }
+
+                debugStep = "update_fulfillment_lines";
+                var fulfillmentLinesQuery = _context.om_FulfillmentLines
+                    .Where(x => x.customer_order_line_id == orderLine.customer_order_line_id);
                 if (model.fulfillment_id.HasValue)
                 {
-                    fulfillmentLinesQuery = fulfillmentLinesQuery
-                        .Where(x => x.fulfillment_id == model.fulfillment_id.Value);
+                    var fulfillmentId = model.fulfillment_id.Value;
+                    fulfillmentLinesQuery = fulfillmentLinesQuery.Where(x => x.fulfillment_id == fulfillmentId);
                 }
 
                 var fulfillmentLines = await fulfillmentLinesQuery.ToListAsync();
-
-                foreach (var fLine in fulfillmentLines)
+                foreach (var fulfillmentLine in fulfillmentLines)
                 {
-                    fLine.ordered_qty = newQty;
-                    fLine.reserved_qty = Math.Min(fLine.reserved_qty, newQty);
-                    fLine.remarks = model.remarks ?? fLine.remarks;
-
-                    if (newQty == 0)
-                        fLine.line_status = "CANCELLED";
-                    else if (fLine.picked_qty > 0 || fLine.packed_qty > 0)
-                        fLine.line_status = "PICKING";
+                    if (isIncrease)
+                    {
+                        fulfillmentLine.ordered_qty += changedQty;
+                    }
                     else
-                        fLine.line_status = "PENDING";
-                }
+                    {
+                        fulfillmentLine.returned_qty += changedQty;
+                    }
 
+                    if (!string.IsNullOrWhiteSpace(model.remarks))
+                    {
+                        fulfillmentLine.remarks = TruncateText(model.remarks, 200);
+                    }
+                }
                 if (fulfillmentLines.Count > 0)
+                {
                     _context.om_FulfillmentLines.UpdateRange(fulfillmentLines);
-
-                // 3) im_InventoryReservations + 4) im_StoreVariantInventory
-                if (delta < 0)
-                {
-                    var needToRelease = Math.Abs(delta);
-
-                    var reservations = await _context.im_InventoryReservations
-                        .Where(x => x.customer_order_line_id == model.customer_order_line_id
-                                    && (x.reservation_status == "ACTIVE" || x.reservation_status == "PARTIAL"))
-                        .OrderBy(x => x.reserved_at)
-                        .ToListAsync();
-
-                    foreach (var r in reservations)
-                    {
-                        if (needToRelease <= 0) break;
-
-                        var availableToRelease = r.reserved_qty - r.released_qty - r.consumed_qty;
-                        if (availableToRelease <= 0) continue;
-
-                        var releaseNow = Math.Min(availableToRelease, needToRelease);
-
-                        r.released_qty += releaseNow;
-                        r.released_at = now;
-                        r.updated_at = now;
-                        r.updated_by = model.updated_by;
-
-                        var remaining = r.reserved_qty - r.released_qty - r.consumed_qty;
-                        r.reservation_status = remaining <= 0 ? "RELEASED" : "PARTIAL";
-
-                        totalReleased += releaseNow;
-                        needToRelease -= releaseNow;
-
-                        var inv = await _context.im_StoreVariantInventory
-                            .FirstOrDefaultAsync(i =>
-                                i.store_id == r.store_id &&
-                                i.variant_id == r.variant_id);
-
-                        if (inv != null)
-                        {
-                            var currentCommitted = inv.committed_quantity ?? 0m;
-                            var nextCommitted = currentCommitted - releaseNow;
-                            inv.committed_quantity = nextCommitted < 0 ? 0 : nextCommitted;
-                            _context.im_StoreVariantInventory.Update(inv);
-                        }
-                    }
-
-                    _context.im_InventoryReservations.UpdateRange(reservations);
                 }
 
-                // 5) om_FulfillmentOrders totals
-                var affectedFulfillmentIds = fulfillmentLines
-                    .Select(x => x.fulfillment_id)
-                    .Distinct()
-                    .ToList();
-
-                if (affectedFulfillmentIds.Count > 0)
-                {
-                    //var headers = await _context.om_FulfillmentOrders
-                    //    .Where(x => affectedFulfillmentIds.Contains(x.fulfillment_id))
-                    //    .ToListAsync();
-
-                    var allHeadersForOrder = await _context.om_FulfillmentOrders.Where(x => x.customer_order_id == model.customer_order_id).ToListAsync();
-                    var headers = allHeadersForOrder
-                        .Where(x => affectedFulfillmentIds.Contains(x.fulfillment_id))
-                        .ToList();
-
-                    foreach (var h in headers)
-                    {
-                        var lines = await _context.om_FulfillmentLines
-                            .Where(x => x.fulfillment_id == h.fulfillment_id)
-                            .ToListAsync();
-
-                        h.total_ordered_qty = lines.Sum(x => x.ordered_qty);
-                        h.total_reserved_qty = lines.Sum(x => x.reserved_qty);
-                        h.total_delivered_qty = lines.Sum(x => x.delivered_qty);
-                        h.total_returned_qty = lines.Sum(x => x.returned_qty);
-                        h.total_rejected_qty = lines.Sum(x => x.rejected_qty);
-                        h.updated_at = now;
-                        h.updated_by = model.updated_by;
-                    }
-
-                    _context.om_FulfillmentOrders.UpdateRange(headers);
-                }
-
-                // 6) om_CustomerOrders totals
-                var orderLines = await _context.om_CustomerOrderLines
-                    .Where(x => x.customer_order_id == model.customer_order_id)
+                debugStep = "update_fulfillment_orders";
+                var fulfillmentOrders = await _context.om_FulfillmentOrders
+                    .Where(x => x.customer_order_id == order.customer_order_id)
                     .ToListAsync();
 
-                orderHeader.sub_total = orderLines.Sum(x => x.line_total);
-                orderHeader.grand_total = orderHeader.sub_total
-                                        - orderHeader.discount_amount
-                                        + orderHeader.tax_amount
-                                        + orderHeader.delivery_charge
-                                        + orderHeader.other_charges;
-                orderHeader.updated_at = now;
-                orderHeader.updated_by = model.updated_by;
-                _context.om_CustomerOrders.Update(orderHeader);
-
-                // 7) so_SalesLines + 8) so_SalesHeaders via om_CustomerOrders.sales_id
-                if (orderHeader.sales_id.HasValue)
+                foreach (var fulfillmentOrder in fulfillmentOrders)
                 {
-                    var salesId = orderHeader.sales_id.Value;
+                    var totals = await _context.om_FulfillmentLines
+                        .Where(x => x.fulfillment_id == fulfillmentOrder.fulfillment_id)
+                        .GroupBy(_ => 1)
+                        .Select(g => new
+                        {
+                            total_ordered_qty = g.Sum(x => x.ordered_qty),
+                            total_returned_qty = g.Sum(x => x.returned_qty)
+                        })
+                        .FirstOrDefaultAsync();
 
-                    if (salesLine != null)
+                    fulfillmentOrder.total_ordered_qty = totals?.total_ordered_qty ?? 0m;
+                    fulfillmentOrder.total_returned_qty = totals?.total_returned_qty ?? 0m;
+                    fulfillmentOrder.updated_at = now;
+                    fulfillmentOrder.updated_by = model.updated_by;
+                }
+                if (fulfillmentOrders.Count > 0)
+                {
+                    _context.om_FulfillmentOrders.UpdateRange(fulfillmentOrders);
+                }
+
+                debugStep = "insert_inventory_transaction";
+                _context.im_InventoryTransactions.Add(new im_InventoryTransactions
+                {
+                    transaction_id = Guid.CreateVersion7(),
+                    sales_line_id = salesLine.sales_line_id,
+                    store_id = salesLine.store_id,
+                    variant_id = salesLine.variant_id,
+                    batch_id = salesLine.batch_id,
+                    trans_date = now,
+                    trans_type = TruncateText(isIncrease ? "SALE" : "RETURNSALE", 20),
+                    trans_reason = safeReason50,
+                    quantity_change = changedQty,
+                    unit_cost = salesLine.unit_price,
+                    total_cost = Round4(changedQty * salesLine.unit_price),
+                    source_doc_type = TruncateText("ORDER_QTY_UPDATE", 20),
+                    remarks = safeRemarks255,
+                    created_date_time = now
+                });
+
+                debugStep = "insert_inventory_reservation";
+                _context.im_InventoryReservations.Add(new im_InventoryReservations
+                {
+                    reservation_id = Guid.CreateVersion7(),
+                    business_id = order.business_id,
+                    store_id = order.store_id,
+                    customer_order_id = order.customer_order_id,
+                    customer_order_line_id = orderLine.customer_order_line_id,
+                    product_id = orderLine.product_id,
+                    variant_id = orderLine.variant_id,
+                    batch_id = orderLine.batch_id,
+                    reserved_qty = isIncrease ? changedQty : 0m,
+                    released_qty = isIncrease ? 0m : changedQty,
+                    consumed_qty = 0m,
+                    reserved_at = isIncrease ? now : null,
+                    released_at = isIncrease ? null : now,
+                    remarks = safeRemarks255,
+                    created_by = updatedByName,
+                    created_user_id = model.updated_by,
+                    created_at = now,
+                    updated_at = now,
+                    updated_by = model.updated_by,
+                    reservation_status = TruncateText(isIncrease ? "ACTIVE" : "RELEASED", 20)
+                });
+
+                if (orderLine.store_variant_inventory_id.HasValue)
+                {
+                    debugStep = "update_store_variant_inventory";
+                    var storeInventory = await _context.im_StoreVariantInventory
+                        .FirstOrDefaultAsync(x => x.store_variant_inventory_id == orderLine.store_variant_inventory_id.Value);
+
+                    if (storeInventory != null)
                     {
-                        var oldSalesQty = salesLine.quantity;
-                        salesLine.quantity = newQty;
-
-                        var ratio = oldSalesQty > 0 ? (newQty / oldSalesQty) : 1m;
-
-                        salesLine.discount_amount = Math.Round(salesLine.discount_amount * ratio, 4);
-                        salesLine.tax_amount = Math.Round(salesLine.tax_amount * ratio, 4);
-                        salesLine.discount_amount_base = Math.Round(salesLine.discount_amount_base * ratio, 4);
-                        salesLine.tax_amount_base = Math.Round(salesLine.tax_amount_base * ratio, 4);
-
-                     
-                        salesLine.line_total = Math.Round((salesLine.unit_price * newQty) - salesLine.discount_amount + salesLine.tax_amount, 4);
-                        salesLine.line_total_base = Math.Round((salesLine.unit_price_base * newQty) - salesLine.discount_amount_base + salesLine.tax_amount_base, 4);
-
-                        _context.so_SalesLines.Update(salesLine);
-                    }
-
-                    var salesHeader = await _context.so_SalesHeaders.FirstOrDefaultAsync(x => x.sales_id == salesId);
-                    if (salesHeader != null)
-                    {
-                        var allSalesLines = await _context.so_SalesLines
-                            .Where(x => x.sales_id == salesId)
-                            .ToListAsync();
-
-                        var subTotal = allSalesLines.Sum(x => x.unit_price * x.quantity);
-                        var discountTotal = allSalesLines.Sum(x => x.discount_amount);
-                        var taxTotal = allSalesLines.Sum(x => x.tax_amount);
-
-                        var subTotalBase = allSalesLines.Sum(x => x.unit_price_base * x.quantity);
-                        var discountTotalBase = allSalesLines.Sum(x => x.discount_amount_base);
-                        var taxTotalBase = allSalesLines.Sum(x => x.tax_amount_base);
-
-                        salesHeader.sub_total = Math.Round(subTotal, 4);
-                        salesHeader.discount_total = Math.Round(discountTotal, 4);
-                        salesHeader.tax_total = Math.Round(taxTotal, 4);
-                        salesHeader.grand_total = Math.Round(
-                            salesHeader.sub_total - salesHeader.discount_total + salesHeader.tax_total + salesHeader.service_charge,
-                            4
-                        );
-
-                        salesHeader.sub_total_base = Math.Round(subTotalBase, 4);
-                        salesHeader.discount_total_base = Math.Round(discountTotalBase, 4);
-                        salesHeader.tax_total_base = Math.Round(taxTotalBase, 4);
-                        salesHeader.grand_total_base = Math.Round(
-                            salesHeader.sub_total_base - salesHeader.discount_total_base + salesHeader.tax_total_base + salesHeader.service_charge_base,
-                            4
-                        );
-
-                        _context.so_SalesHeaders.Update(salesHeader);
+                        var currentCommitted = storeInventory.committed_quantity ?? 0m;
+                        storeInventory.committed_quantity = isIncrease
+                            ? currentCommitted + changedQty
+                            : Math.Max(0m, currentCommitted - changedQty);
+                        _context.im_StoreVariantInventory.Update(storeInventory);
                     }
                 }
 
+                if (!isIncrease && orderLine.batch_id.HasValue)
+                {
+                    debugStep = "update_item_batch";
+                    var itemBatch = await _context.im_itemBatches
+                        .FirstOrDefaultAsync(x => x.item_batch_id == orderLine.batch_id.Value);
+                    if (itemBatch != null)
+                    {
+                        var currentOnHand = itemBatch.on_hand_quantity ?? 0m;
+                        itemBatch.on_hand_quantity = Math.Max(0m, currentOnHand - changedQty);
+                        _context.im_itemBatches.Update(itemBatch);
+                    }
+                }
+
+                debugStep = "recalculate_sales_header";
+                var salesLineTotals = await _context.so_SalesLines
+                    .Where(x => x.sales_id == salesId)
+                    .GroupBy(_ => 1)
+                    .Select(g => new
+                    {
+                        sub_total = g.Sum(x => x.line_total),
+                        tax_total = g.Sum(x => x.tax_amount),
+                        sub_total_base = g.Sum(x => x.line_total_base),
+                        tax_total_base = g.Sum(x => x.tax_amount_base)
+                    })
+                    .FirstOrDefaultAsync();
+
+                var salesSubTotal = salesLineTotals?.sub_total ?? 0m;
+                var salesTaxTotal = salesLineTotals?.tax_total ?? 0m;
+                var salesSubTotalBase = salesLineTotals?.sub_total_base ?? 0m;
+                var salesTaxTotalBase = salesLineTotals?.tax_total_base ?? 0m;
+
+                salesHeader.sub_total = salesSubTotal;
+                salesHeader.tax_total = salesTaxTotal;
+                salesHeader.grand_total = salesSubTotal + salesTaxTotal;
+                salesHeader.total_taxable_value = salesSubTotal;
+                salesHeader.sub_total_base = salesSubTotalBase;
+                salesHeader.tax_total_base = salesTaxTotalBase;
+                salesHeader.grand_total_base = salesSubTotalBase + salesTaxTotalBase;
+                salesHeader.total_taxable_base = salesSubTotalBase;
+                _context.so_SalesHeaders.Update(salesHeader);
+
+                debugStep = "recalculate_customer_order";
+                var ordersBySales = await _context.om_CustomerOrders
+                    .Where(x => x.sales_id == salesId)
+                    .ToListAsync();
+
+                foreach (var orderBySales in ordersBySales)
+                {
+                    var orderTotals = await _context.om_CustomerOrderLines
+                        .Where(x => x.customer_order_id == orderBySales.customer_order_id)
+                        .GroupBy(_ => 1)
+                        .Select(g => new
+                        {
+                            sub_total = g.Sum(x => x.line_total),
+                            tax_total = g.Sum(x => x.tax_amount)
+                        })
+                        .FirstOrDefaultAsync();
+
+                    var orderSubTotal = orderTotals?.sub_total ?? 0m;
+                    var orderTaxTotal = orderTotals?.tax_total ?? 0m;
+
+                    orderBySales.sub_total = orderSubTotal;
+                    orderBySales.tax_amount = orderTaxTotal;
+                    orderBySales.grand_total = orderSubTotal
+                        + orderTaxTotal
+                        + orderBySales.delivery_charge
+                        + orderBySales.other_charges
+                        - orderBySales.discount_amount;
+                    orderBySales.updated_at = now;
+                    orderBySales.updated_by = model.updated_by;
+                }
+                if (ordersBySales.Count > 0)
+                {
+                    _context.om_CustomerOrders.UpdateRange(ordersBySales);
+                }
+
+                debugStep = "save_changes";
                 await _context.SaveChangesAsync();
                 await tx.CommitAsync();
 
@@ -1367,27 +2188,114 @@ namespace Faahi.Service.market_place
                 {
                     Status = 200,
                     Success = true,
-                    Message = "Quantity updated successfully",
+                    Message = isIncrease ? "Quantity increased successfully" : "Quantity decreased successfully",
                     Data = new update_quantity_result_dto
                     {
-                        customer_order_line_id = model.customer_order_line_id,
+                        customer_order_line_id = orderLine.customer_order_line_id,
                         old_qty = oldQty,
                         new_qty = newQty,
-                        released_qty = totalReleased
+                        released_qty = isIncrease ? 0m : changedQty
                     }
+                };
+            }
+            catch (DbUpdateException ex)
+            {
+                await tx.RollbackAsync();
+                var innerMessage = GetInnermostExceptionMessage(ex);
+                _logger.LogError(ex, "Error updating order quantity at step {DebugStep}. DB error: {InnerMessage}", debugStep, innerMessage);
+                return new ServiceResult<update_quantity_result_dto>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = $"[{debugStep}] {innerMessage}"
                 };
             }
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                _logger.LogError(ex, "Error updating order line quantity");
+                _logger.LogError(ex, "Error updating order quantity");
                 return new ServiceResult<update_quantity_result_dto>
                 {
                     Status = 500,
                     Success = false,
-                    Message = ex.Message
+                    Message = $"[{debugStep}] {ex.Message}"
                 };
             }
+        }
+
+        private static decimal Round4(decimal value)
+        {
+            return decimal.Round(value, 4, MidpointRounding.AwayFromZero);
+        }
+
+        private static string TruncateText(string? value, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+            var text = value.Trim();
+            return text.Length <= maxLength ? text : text[..maxLength];
+        }
+
+        private static string GetInnermostExceptionMessage(Exception ex)
+        {
+            var current = ex;
+            while (current.InnerException != null)
+            {
+                current = current.InnerException;
+            }
+
+            return string.IsNullOrWhiteSpace(current.Message) ? ex.Message : current.Message;
+        }
+
+        private async Task<string> GetNextSalesReturnNoAsync(Guid? businessId, Guid storeId)
+        {
+            var now = DateTime.Now;
+            var store = await _context.st_stores.FirstOrDefaultAsync(x => x.store_id == storeId);
+            var prefix = string.IsNullOrWhiteSpace(store?.default_invoice_init) ? "RET" : store.default_invoice_init;
+            var fallback = $"{prefix}-RET-{now:yyyyMMddHHmmss}";
+
+            if (!businessId.HasValue || businessId.Value == Guid.Empty)
+            {
+                return fallback;
+            }
+
+            var tableKey = await _context.am_table_next_key
+                .FirstOrDefaultAsync(x => x.name == "so_SalesReturnLines" && x.business_id == businessId.Value);
+
+            if (tableKey == null)
+            {
+                return fallback;
+            }
+
+            var next = Convert.ToInt32(tableKey.next_key) + 1;
+            tableKey.next_key = next;
+            _context.am_table_next_key.Update(tableKey);
+
+            return $"{prefix}-{next}";
+        }
+
+        private async Task<string> UploadOrderFileAsync(IFormFile file, co_business business, Guid sourceId, string invoiceNo, string sourceType)
+        {
+            var bucketName = _configuration["Wasabi:BucketName"];
+            if (string.IsNullOrWhiteSpace(bucketName))
+                throw new InvalidOperationException("Wasabi bucket is not configured");
+
+            var extension = Path.GetExtension(file.FileName);
+            var safeFileName = $"{sourceType}_{sourceId}_{Guid.NewGuid()}{extension}";
+            var key = $"faahi/company/{business.company_code}/{sourceType}/{invoiceNo}/{safeFileName}";
+
+            using var stream = file.OpenReadStream();
+            var request = new PutObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key,
+                InputStream = stream,
+                ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
+                CannedACL = S3CannedACL.PublicRead
+            };
+
+            await _s3Client.PutObjectAsync(request);
+            return $"https://cdn.faahi.com/{key}";
         }
     }
 }
