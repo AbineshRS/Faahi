@@ -1,5 +1,6 @@
 ﻿using Faahi.Dto;
 using Faahi.Dto.Inventory_adjustment;
+using Faahi.Dto.Inventory_adjustment.adjusted_inv;
 using Faahi.Dto.Inventory_adjustment.adjustment_rejection;
 using Faahi.Dto.Purchase_dto;
 using Faahi.Dto.temp;
@@ -83,6 +84,11 @@ namespace Faahi.Service.im_products.im_purchase
         Task<ServiceResult<List<im_random_Stock_reject_dto>>> Add_rejected_adjustment(List<im_random_Stock_reject_dto> im_Random_Stock_Reject_Dtos);
 
         Task<ServiceResult<List<temp_stock_ad_lines_dto>>> add_adjustment_inv(List<temp_stock_ad_lines_dto> temp_Stock_Ad_Lines);
+
+        Task<ServiceResult<List<adjusted_inv_dto>>> Get_adjusted_inv(Guid store_id, DateOnly StartDate, DateOnly EndDate);
+
+
+
 
     }
 }

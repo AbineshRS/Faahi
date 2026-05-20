@@ -102,14 +102,14 @@ namespace Faahi.Controllers.im_products.sales
         }
         [Authorize]
         [HttpGet]
-        [Route("get_sales/{company_id}")]
-        public async Task<IActionResult> Get_sales(Guid company_id)
+        [Route("get_sales/{store_id}")]
+        public async Task<IActionResult> Get_sales(Guid store_id, string? search = null,DateOnly? StartDate = null, DateOnly? EndDate = null)
         {
-            if (company_id == null)
+            if (store_id == null)
             {
                 return Ok("NO Id found");
             }
-            var result = await _isalse.Get_sales(company_id);
+            var result = await _isalse.Get_sales(store_id,search,StartDate,EndDate);
             return Ok(result);
         }
         [Authorize]

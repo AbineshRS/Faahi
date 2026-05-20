@@ -23,7 +23,7 @@ namespace Faahi.Service.im_products.sales
 
         Task<ActionResult<ServiceResult<so_SalesHeaders>>> Add_sales(so_SalesHeaders so_SalesHeaders);
 
-        Task<ServiceResult<List<so_SalesHeaders_dto>>> Get_sales(Guid company_id);
+        Task<ServiceResult<List<so_SalesHeaders_dto>>> Get_sales(Guid store_id, string? search = null, DateOnly? StartDate = null, DateOnly? EndDate = null);
 
         Task<ServiceResult<so_SalesHeaders>> Get_sales_salesId(Guid salesId);
 

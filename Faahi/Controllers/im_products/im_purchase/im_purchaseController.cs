@@ -397,5 +397,30 @@ namespace Faahi.Controllers.im_products.im_purchase
             var result = await _im_purchase.add_adjustment_inv(temp_Stock_Ad_Lines);
             return Ok(result);
         }
+
+        [Authorize]
+        [HttpGet]
+        [Route("get_adjusted_inv/{store_id}/{StartDate}/{EndDate}")]
+        public async Task<IActionResult> Get_adjusted_inv(Guid store_id,DateOnly StartDate, DateOnly EndDate)
+        {
+            if (store_id == null)
+            {
+                return Ok("No data found");
+            }
+            var result = await _im_purchase.Get_adjusted_inv(store_id,StartDate, EndDate);
+            return Ok(result);
+        }
+        //[Authorize]
+        //[HttpDelete]
+        //[Route("delete_inv_adjustment_lines/{adjustment_detail_id}")]
+        //public async Task<IActionResult> Delete_inv_adjustment_detail_id(Guid adjustment_detail_id)
+        //{
+        //    if (adjustment_detail_id == null)
+        //    {
+        //        return Ok("No data found");
+        //    }
+        //    var result = await _im_purchase.Delete_inv_adjustment_detail_id(adjustment_detail_id);
+        //    return Ok(result);
+        //}
     }
 }

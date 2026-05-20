@@ -1419,6 +1419,8 @@ namespace Faahi.Service.im_products
                             audit_id = Guid.CreateVersion7(),
                             record_id = product.product_id,
                             business_id = product.company_id,
+                            remarks = "UPDATE",
+                            action_type = "UPDATE",
                             field_name = property.Name,
                             old_value = oldValue,
                             new_value = newValue,
