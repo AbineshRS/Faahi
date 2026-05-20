@@ -1440,11 +1440,11 @@ namespace Faahi.Service.im_products.sales
 
         }
 
-        public async Task<ServiceResult<List<so_SalesHeaders_dto>>> Get_sales(Guid company_id)
+        public async Task<ServiceResult<List<so_SalesHeaders_dto>>> Get_sales(Guid store_id, string? search = null, DateOnly? StartDate = null, DateOnly? EndDate = null)
         {
             try
             {
-                if (company_id == null)
+                if (store_id == null)
                 {
                     _logger.LogInformation("No company_id found");
                     return new ServiceResult<List<so_SalesHeaders_dto>>
@@ -1455,9 +1455,12 @@ namespace Faahi.Service.im_products.sales
                     };
                 }
                 var result = await _context.Database.SqlQueryRaw<so_SalesHeaders_dto>(
-                    "EXEC dbo.sp_sales_report @opr=@opr, @business_id=@business_id",
+                    "EXEC dbo.sp_sales_report @opr=@opr, @store_id=@store_id,@search=@search,@StartDate=@StartDate,@EndDate=@EndDate",
                     new SqlParameter("@opr", 10),
-                    new SqlParameter("@business_id", company_id)
+                    new SqlParameter("@store_id", store_id),
+                    new SqlParameter("@search", search ?? (object)DBNull.Value),
+                    new SqlParameter("@StartDate", StartDate ?? (object)DBNull.Value),
+                    new SqlParameter("@EndDate", EndDate ?? (object)DBNull.Value)
                 ).ToListAsync();
 
                 if (result.Count == 0)

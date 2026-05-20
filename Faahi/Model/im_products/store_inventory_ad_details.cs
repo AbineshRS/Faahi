@@ -47,6 +47,12 @@ namespace Faahi.Model.im_products
         [Column(TypeName = "uniqueidentifier")]
         public Guid? adjustment_detail_id { get; set; }=null;
 
+        [Column(TypeName = "varchar(50)")]
+        public string? sku { get; set; } = null;
+
+        [Column(TypeName = "varchar(200)")]
+        public string? title { get; set; } = null;
+
         [Column(TypeName = "nvarchar(100)")]
         public string? barcode { get; set; } = null;
 

@@ -3,6 +3,7 @@ using Dekiru.QueryFilter.Extensions;
 using Faahi.Controllers.Application;
 using Faahi.Dto;
 using Faahi.Dto.Inventory_adjustment;
+using Faahi.Dto.Inventory_adjustment.adjusted_inv;
 using Faahi.Dto.Inventory_adjustment.adjustment_rejection;
 using Faahi.Dto.Purchase_dto;
 using Faahi.Dto.sales_dto;
@@ -853,7 +854,7 @@ namespace Faahi.Service.im_products.im_purchase
                                 store_id = existing_purchase.site_id,
                                 source_no = Convert.ToString(key_4 + 1),
                                 variant_id = item.sub_variant_id,
-                                product_id = item.product_id??Guid.Empty,
+                                product_id = item.product_id ?? Guid.Empty,
                                 source_id = item.detail_id,
                                 action_type = "INCREASE",
                                 source_type = "PURCHASE",
@@ -5007,7 +5008,7 @@ namespace Faahi.Service.im_products.im_purchase
             }
 
         }
-        
+
         public async Task<ServiceResult<store_inventory_ad_header>> Add_storeinv_header(Guid adjustment_id)
         {
             try
@@ -5029,10 +5030,10 @@ namespace Faahi.Service.im_products.im_purchase
                     delete_data.total_cost = 0;
                     foreach (var item in delete_data.store_inventory_ad_details)
                     {
-                         _context.store_inventory_ad_details.RemoveRange(item);
+                        _context.store_inventory_ad_details.RemoveRange(item);
 
                     }
-                     _context.store_inventory_ad_header.Update(delete_data);
+                    _context.store_inventory_ad_header.Update(delete_data);
                 }
                 var temp = await _context.temp_stock_ad_lines.FirstOrDefaultAsync(a => a.adjustment_id == adjustment_id);
                 if (temp == null)
@@ -5071,7 +5072,7 @@ namespace Faahi.Service.im_products.im_purchase
                     var lines_deatil = await _context.inventory_adjustment_lines.FirstOrDefaultAsync(a => a.adjustment_detail_id == item.adjustment_detail_id);
 
                     var store_inve = await _context.im_StoreVariantInventory.FirstOrDefaultAsync(a => a.store_variant_inventory_id == item.store_variant_inventory_id);
-                    item.adjusted_qty = item.counted_qty - store_inve.on_hand_quantity??0m;
+                    item.adjusted_qty = item.counted_qty - store_inve.on_hand_quantity ?? 0m;
 
                     if (item.adjusted_qty > 0)
                     {
@@ -5095,6 +5096,8 @@ namespace Faahi.Service.im_products.im_purchase
                     store_Inventory_Ad_Detail_line.store_variant_inventory_id = lines_deatil.store_variant_inventory_id;
                     store_Inventory_Ad_Detail_line.adjustment_detail_id = lines_deatil.adjustment_detail_id;
                     store_Inventory_Ad_Detail_line.barcode = lines_deatil.barcode;
+                    store_Inventory_Ad_Detail_line.sku = lines_deatil.sku;
+                    store_Inventory_Ad_Detail_line.title = lines_deatil.title;
                     store_Inventory_Ad_Detail_line.batch_number = lines_deatil.batch_number;
                     store_Inventory_Ad_Detail_line.system_qty = lines_deatil.system_qty;
                     store_Inventory_Ad_Detail_line.expiry_date = lines_deatil.expiry_date;
@@ -5142,6 +5145,54 @@ namespace Faahi.Service.im_products.im_purchase
                 };
             }
 
+        }
+
+        public async Task<ServiceResult<List<adjusted_inv_dto>>> Get_adjusted_inv(Guid store_id, DateOnly StartDate, DateOnly EndDate)
+        {
+            try
+            {
+                if (store_id == null)
+                {
+                    return new ServiceResult<List<adjusted_inv_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                var data = await _context.Database.SqlQueryRaw<adjusted_inv_dto>("EXEC dbo.im_purchase_list @opr=@opr, @store_id=@store_id, @StartDate=@StartDate,@EndDate=@EndDate",
+                    new SqlParameter("@opr", 10),
+                    new SqlParameter("@store_id", store_id),
+                    new SqlParameter("@StartDate",StartDate),
+                    new SqlParameter("@EndDate", EndDate)).ToListAsync();
+               
+                if (!data.Any())
+                {
+                    return new ServiceResult<List<adjusted_inv_dto>>
+                    {
+                        Status = 300,
+                        Success = false,
+                        Message = "No data found"
+                    };
+                }
+                return new ServiceResult<List<adjusted_inv_dto>>
+                {
+                    Status = 200,
+                    Success = true,
+                    Message = "Success",
+                    Data = data
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new ServiceResult<List<adjusted_inv_dto>>
+                {
+                    Status = 500,
+                    Success = false,
+                    Message = ex.Message
+                };
+            }
         }
 
     }
